@@ -1,0 +1,9 @@
+{
+    "rules": [
+        "a",
+        "b"
+    ],
+    "split_char":";",
+    "target_var": "MEDV",
+    "use_regularization": false
+}

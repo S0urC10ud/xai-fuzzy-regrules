@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My TypeScript Project</title>
+</head>
+<body>
+    <h1>Welcome to My TypeScript Project</h1>
+    <div id="app"></div>
+    
+    <!-- Upload Form -->
+    <form id="uploadForm">
+        <label for="csvFile">Upload CSV File:</label>
+        <input type="file" id="csvFile" name="csvFile" accept=".csv" required />
+        <br />
+        <label for="rules">Enter Rules (JSON):</label>
+        <textarea id="rules" name="rules" rows="4" cols="50" required></textarea>
+        <br />
+        <button type="submit">Upload</button>
+    </form>
+    
+    <!-- Include the bundled JavaScript file -->
+    <script src="./dist/bundle.js"></script>
+</body>
+</html>
