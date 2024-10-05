@@ -5,5 +5,9 @@
     ],
     "split_char":";",
     "target_var": "MEDV",
-    "use_regularization": false
+    "regularization": 0.001,
+    "l1_row_threshold":0.1,
+    "l1_column_threshold":0.1,
+    "numerical_fuzzification": ["low", "medium", "high"],
+    "numerical_defuzzification": ["verylow", "low", "mediumlow", "medium", "mediumhigh", "high", "veryhigh"]
 }

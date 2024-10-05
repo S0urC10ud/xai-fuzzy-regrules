@@ -2,12 +2,16 @@ import * as csv from 'csv-parse/sync';
 import * as math from 'mathjs';
 import { generateFuzzificationChart } from './utils/fuzzification';
 import { Matrix } from 'mathjs';
-import { computeMembershipDegrees } from './utils';
+import { computeMembershipDegrees } from './utils/fuzzy';
 
 type Metadata = {
     target_var: string;
     split_char: string;
-    use_regularization: boolean;
+    regularization: number;
+    l1_column_threshold: number;
+    l1_row_threshold: number;
+    numerical_fuzzification: string[];
+    numerical_defuzzification: string[];
 };
 
 type Record = { [key: string]: string | number };
@@ -93,21 +97,42 @@ export function main(metadata: Metadata, data: string): EvaluationMetrics {
     });
 
     // Define all possible output fuzzy sets
-    const outputFuzzySetsList = ['verylow', 'low', 'mediumlow', 'medium', 'mediumhigh', 'high', 'veryhigh'] as const;
+    const outputFuzzySetsList = metadata["numerical_defuzzification"];
+
+    // Precompute Non-Empty Fuzzy Sets
+
+    // 1. Check non-empty antecedent fuzzy sets
+    const inputFuzzySetNonEmpty: { [variable: string]: { [fuzzySet: string]: boolean } } = {};
+    numericalKeys.filter(key => key !== targetVar).forEach(key => {
+        inputFuzzySetNonEmpty[key] = {};
+        metadata["numerical_fuzzification"].forEach(fuzzySet => {
+            inputFuzzySetNonEmpty[key][fuzzySet] = records.some(record => (record[`${key}_${fuzzySet}`] as number) > 0);
+        });
+    });
+
+    // 2. Check non-empty consequent fuzzy sets
+    const outputFuzzySetNonEmpty: { [fuzzySet: string]: boolean } = {};
+    outputFuzzySetsList.forEach(fuzzySet => {
+        outputFuzzySetNonEmpty[fuzzySet] = false;
+        // Check if any degree in the output fuzzy set is greater than zero, done later
+    });
 
     // Generate rules
-    let rules: (Rule|null)[] = [];
+    let rules: (Rule | null)[] = [];
     numericalKeys.filter(key => key !== targetVar).forEach(key => {
-        ['low', 'medium', 'high'].forEach(fuzzySet => {
+        metadata["numerical_fuzzification"].forEach(fuzzySet => {
             outputFuzzySetsList.forEach(outputSet => {
                 if (fuzzySet !== outputSet) { // Adjust this condition as needed
-                    const rule = {
-                        variable: key,
-                        fuzzySet: fuzzySet as 'verylow' | 'low' | 'mediumlow' | 'medium' | 'mediumhigh' | 'high' | 'veryhigh',
-                        outputFuzzySet: outputSet as 'verylow' | 'low' | 'mediumlow' | 'medium' | 'mediumhigh' | 'high' | 'veryhigh',
-                    };
 
-                    rules.push(rule);
+                    // Before adding the rule, check if both antecedent and consequent fuzzy sets are non-empty
+                    if (inputFuzzySetNonEmpty[key][fuzzySet] && outputFuzzySetNonEmpty[outputSet]) {
+                        const rule: Rule = {
+                            variable: key,
+                            fuzzySet: fuzzySet as 'verylow' | 'low' | 'mediumlow' | 'medium' | 'mediumhigh' | 'high' | 'veryhigh',
+                            outputFuzzySet: outputSet as 'verylow' | 'low' | 'mediumlow' | 'medium' | 'mediumhigh' | 'high' | 'veryhigh',
+                        };
+                        rules.push(rule);
+                    }
                 }
             });
         });
@@ -149,6 +174,32 @@ export function main(metadata: Metadata, data: string): EvaluationMetrics {
         outputFuzzySets.veryhigh.push(degrees.veryhigh);
     });
 
+    // Now that outputFuzzySets are defined, update outputFuzzySetNonEmpty
+    outputFuzzySetsList.forEach(fuzzySet => {
+        outputFuzzySetNonEmpty[fuzzySet] = outputFuzzySets[fuzzySet as keyof typeof outputFuzzySets].some(degree => degree > 0);
+    });
+
+    // Re-generate rules with the updated outputFuzzySetNonEmpty
+    rules = []; // Reset rules
+    numericalKeys.filter(key => key !== targetVar).forEach(key => {
+        ['low', 'medium', 'high'].forEach(fuzzySet => {
+            outputFuzzySetsList.forEach(outputSet => {
+                if (fuzzySet !== outputSet) { // Adjust this condition as needed
+
+                    // Check if both antecedent and consequent fuzzy sets are non-empty
+                    if (inputFuzzySetNonEmpty[key][fuzzySet] && outputFuzzySetNonEmpty[outputSet]) {
+                        const rule: Rule = {
+                            variable: key,
+                            fuzzySet: fuzzySet as 'verylow' | 'low' | 'mediumlow' | 'medium' | 'mediumhigh' | 'high' | 'veryhigh',
+                            outputFuzzySet: outputSet as 'verylow' | 'low' | 'mediumlow' | 'medium' | 'mediumhigh' | 'high' | 'veryhigh',
+                        };
+                        rules.push(rule);
+                    }
+                }
+            });
+        });
+    });
+
     // Initialize feature matrix X and target vector y
     const X: number[][] = []; // Each row corresponds to a record (and contains all rules), each column corresponds to a rule's crisp output
     const y: number[] = originalTargetValues;
@@ -158,8 +209,8 @@ export function main(metadata: Metadata, data: string): EvaluationMetrics {
         const featureVector: number[] = [];
 
         rules.forEach(rule => {
-            if(rule == null)
-                return
+            if (rule == null)
+                return;
             const firingStrength = record[`${rule.variable}_${rule.fuzzySet}`] as number;
 
             // Get the output fuzzy set's membership degrees over the output universe
@@ -172,7 +223,7 @@ export function main(metadata: Metadata, data: string): EvaluationMetrics {
             const maxMembershipDegree = Math.max(...ruleOutputMembershipDegrees);
 
             // Find all indices where the membership degree equals the maximum
-            const indicesAtMax = [];
+            const indicesAtMax: number[] = [];
             for (let i = 0; i < ruleOutputMembershipDegrees.length; i++) {
                 if (ruleOutputMembershipDegrees[i] === maxMembershipDegree) {
                     indicesAtMax.push(i);
@@ -193,93 +244,138 @@ export function main(metadata: Metadata, data: string): EvaluationMetrics {
         X.push(featureVector);
     });
 
-    // Eliminate Duplicate Samples/Rows
+    // ================================
+    // Updated Duplicate Row Removal
+    // ================================
 
-    // Function to serialize a row for comparison
-    const serializeRow = (row: number[]): string => row.join(',');
+    // Function to compute L1 norm between two rows
+    const computeL1Norm = (row1: number[], row2: number[]): number => {
+        if (row1.length !== row2.length) {
+            throw new Error('Rows must have the same length to compute L1 norm.');
+        }
+        let sum = 0;
+        for (let i = 0; i < row1.length; i++) {
+            sum += Math.abs(row1[i] - row2[i]);
+        }
+        return sum;
+    };
 
-    const uniqueRowSet = new Set<string>();
     const uniqueX: number[][] = [];
     const uniqueY: number[] = [];
     let duplicateRowCount = 0;
+    const rowThreshold = metadata["l1_row_threshold"]; // L1 norm threshold
 
     for (let i = 0; i < X.length; i++) {
-        const rowKey = serializeRow(X[i]);
-        if (!uniqueRowSet.has(rowKey)) {
-            uniqueRowSet.add(rowKey);
-            uniqueX.push(X[i]);
+        const currentRow = X[i];
+        let isDuplicate = false;
+
+        for (const uniqueRow of uniqueX) {
+            const l1Norm = computeL1Norm(currentRow, uniqueRow);
+            if (l1Norm < rowThreshold) {
+                isDuplicate = true;
+                duplicateRowCount++;
+                break;
+            }
+        }
+
+        if (!isDuplicate) {
+            uniqueX.push(currentRow);
             uniqueY.push(y[i]);
-        } else {
-            duplicateRowCount++;
         }
     }
 
     if (duplicateRowCount > 0) {
-        warnings.push(`Duplicate rows detected and removed: ${duplicateRowCount}`);
+        const warn_msg = `Duplicate rows detected and removed based on L1-Norm < ${rowThreshold}: ${duplicateRowCount}`;
+        warnings.push(warn_msg);
+        console.warn(warn_msg);
     }
     const finalX = uniqueX;
     const finalY = uniqueY;
 
-    // Eliminate Duplicate Columns
+    // ================================
+    // Updated Duplicate Column Removal
+    // ================================
 
-    // Function to serialize a column for comparison
-    const serializeColumn = (columnIndex: number): string => {
-        return finalX.map(row => row[columnIndex]).join(',');
+    // Function to compute L1 norm between two columns
+    const computeColumnL1Norm = (col1: number[], col2: number[]): number => {
+        if (col1.length !== col2.length) {
+            throw new Error('Columns must have the same length to compute L1 norm.');
+        }
+        let sum = 0;
+        for (let i = 0; i < col1.length; i++) {
+            sum += Math.abs(col1[i] - col2[i]);
+        }
+        return sum;
     };
 
-    const columnMap = new Map<string, number[]>();
-    const duplicateColumns: { [key: string]: number[] } = {};
-
+    const columnsToKeep = new Set<number>();
+    const duplicateColumnGroups: number[][] = [];
+    const keptColumns: number[] = [];
+    const columnL1Threshold = metadata["l1_column_threshold"];
     for (let col = 0; col < finalX[0].length; col++) {
-        const colKey = serializeColumn(col);
-        if (columnMap.has(colKey)) {
-            const existingCols = columnMap.get(colKey)!;
-            existingCols.push(col);
-            duplicateColumns[`Rule ${col}`] = existingCols;
-        } else {
-            columnMap.set(colKey, [col]);
+        let isDuplicate = false;
+        for (const keptCol of keptColumns) {
+            const col1 = finalX.map(row => row[col]);
+            const col2 = finalX.map(row => row[keptCol]);
+            const l1Norm = computeColumnL1Norm(col1, col2);
+            if (l1Norm < columnL1Threshold) {
+                // Find the group that the keptCol belongs to
+                let groupFound = false;
+                for (const group of duplicateColumnGroups) {
+                    if (group.includes(keptCol)) {
+                        group.push(col);
+                        groupFound = true;
+                        break;
+                    }
+                }
+                if (!groupFound) {
+                    duplicateColumnGroups.push([keptCol, col]);
+                }
+                isDuplicate = true;
+                break;
+            }
+        }
+
+        if (!isDuplicate) {
+            keptColumns.push(col);
         }
     }
 
-    // Collect all duplicate column groups
-    const duplicateColumnGroups: number[][] = [];
-    columnMap.forEach((cols, key) => {
-        if (cols.length > 1) {
-            duplicateColumnGroups.push(cols);
-        }
-    });
-
     if (duplicateColumnGroups.length > 0) {
-        const duplicateDetails = duplicateColumnGroups.map(group => {
-            const ruleNames = group.map(colIndex => {
-                const rule = rules[colIndex];
-                if(rule == null)
-                    return;
-                return `If ${rule.variable} is ${rule.fuzzySet} then ${targetVar} is ${rule.outputFuzzySet}`;
-            }).filter(Boolean).join(' | ');
-            return ruleNames;
-        }).join('\n');
+        // Collect details for warnings
+        const duplicateDetails = duplicateColumnGroups
+            .filter(group => group.length > 1)
+            .map(group => {
+                const [primary, ...duplicates] = group;
+                const primaryRule = rules[primary];
+                if (!primaryRule) return '';
+                const duplicateRules = duplicates.map(colIndex => {
+                    const rule = rules[colIndex];
+                    if (rule == null) return '';
+                    const ret_text = `If ${rule.variable} is ${rule.fuzzySet} then ${targetVar} is ${rule.outputFuzzySet}`;
+                    rules[colIndex] = null;
+                    return ret_text;
+                }).filter(Boolean).join(' | ');
+                return `Primary Rule: If ${primaryRule.variable} is ${primaryRule.fuzzySet} then ${targetVar} is ${primaryRule.outputFuzzySet}\nDuplicate Rules: ${duplicateRules}`;
+            })
+            .filter(detail => detail !== '')
+            .join('\n\n');
 
-        // Add the warning about duplicate columns detected
-        warnings.push(`Duplicate columns detected:\n${duplicateDetails}`);
+        const warn_msg = `Duplicate columns detected based on L1-Norm < ${columnL1Threshold}:\n${duplicateDetails}`;
+        warnings.push(warn_msg);
+        console.warn(warn_msg);
 
-        // Remove duplicate columns from finalX and their corresponding rules
-        const columnsToKeep = new Set<number>(finalX[0].map((_, colIndex) => colIndex)); // Initially keep all columns
-        duplicateColumnGroups.forEach(group => {
-            // Keep only the first column in each group and remove corresponding rules
-            for (let i = 1; i < group.length; i++) {
-                columnsToKeep.delete(group[i]);
-                rules[group[i]] = null; // Mark rule for deletion
-            }
+        // Remove marked null rules and corresponding columns
+        const keptColumnsSet = new Set(keptColumns);
+        const uniqueXUpdated = finalX.map(row => {
+            return row.filter((_, colIndex) => keptColumnsSet.has(colIndex));
         });
+        const filteredRules = rules.filter(rule => rule !== null) as Rule[];
 
-        // Remove marked null rules
-        rules = rules.filter(rule => rule !== null);
-
-        // Rebuild finalX by keeping only unique columns
-        const uniqueXUpdated = finalX.map(row => Array.from(columnsToKeep).map(colIndex => row[colIndex]));
+        // Replace finalX and rules with filtered versions
         finalX.length = 0;
-        finalX.push(...uniqueXUpdated); // Replace finalX with unique columns
+        finalX.push(...uniqueXUpdated);
+        rules = filteredRules;
     }
 
     // Proceed with finalX and finalY
@@ -289,39 +385,39 @@ export function main(metadata: Metadata, data: string): EvaluationMetrics {
     // Compute Xt and XtX
     const Xt = math.transpose(X_matrix);
     const XtX = math.multiply(Xt, X_matrix);
-    let XtX_reg;
 
-    if(metadata["use_regularization"]) {
-        const lambda = 1e-5; // Small regularization parameter
-        const identityMatrix = math.identity(XtX.size()[0]);
-        XtX_reg = math.add(XtX, math.multiply(identityMatrix, lambda)) as Matrix;
-    } else {
-        XtX_reg = XtX;
-    }
-
-    // Check if XtX_reg is invertible by checking its determinant
-    const determinant = math.det(XtX_reg);
-    if (determinant === 0) {
-        console.error('The matrix X^T X is singular (determinant is 0).');
-        throw new Error('Cannot invert X^T X because it is singular.');
-    }
+    const lambda = metadata["regularization"]; // Small regularization parameter
+    const identityMatrix = math.identity(XtX.size()[0]);
+    const XtX_reg = math.add(XtX, math.multiply(identityMatrix, lambda)) as Matrix;
 
     // Convert to a numeric matrix
     const XtX_reg_numeric = (XtX_reg as Matrix).toArray() as number[][];
 
-    const XtX_inv = math.inv(XtX_reg_numeric);
-    const Xt_y = math.multiply(Xt, y_vector);
-    const coeffs = math.multiply(XtX_inv, Xt_y);
+    // ================================
+    // SVD-Based Pseudo-Inversion
+    // ================================
 
-    const coeffsArray = coeffs.valueOf() as number[];
+    // Compute the Moore-Penrose pseudo-inverse using SVD via mathjs's pinv
+    const XtX_pinv = math.pinv(XtX_reg_numeric) as number[][];
+
+    // Multiply Xt_pinv with y_vector
+    const Xt_y = math.multiply(Xt, y_vector) as Matrix;
+    const Xt_y_array = Xt_y.toArray() as number[];
+
+    // Compute coefficients using the pseudo-inverse
+    const coeffs = math.multiply(XtX_pinv, Xt_y_array) as number[];
+
+    // ================================
+
+    const coeffsArray = coeffs as number[];
 
     // Associate coefficients with rules and return them as objects
     const ruleCoefficients = rules.map((rule, index) => {
-        if(rule == null)
+        if (rule == null)
             return {
                 rule: "deleted - you should not see this here",
                 coefficient: 0
-            }
+            };
         return {
             rule: `If ${rule.variable} is ${rule.fuzzySet} then ${targetVar} is ${rule.outputFuzzySet}`,
             coefficient: coeffsArray[index],
