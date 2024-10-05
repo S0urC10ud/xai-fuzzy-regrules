@@ -1,9 +1,8 @@
 import * as csv from 'csv-parse/sync';
 import * as math from 'mathjs';
-import { computeQuantiles } from './utils/quantiles';
-import { computeMembershipDegrees } from './utils/fuzzy';
 import { generateFuzzificationChart } from './utils/fuzzification';
 import { Matrix } from 'mathjs';
+import { computeMembershipDegrees } from './utils';
 
 type Metadata = {
     target_var: string;
@@ -13,13 +12,24 @@ type Metadata = {
 
 type Record = { [key: string]: string | number };
 
+// Updated Rule type to include new output fuzzy sets
 type Rule = {
     variable: string;
-    fuzzySet: 'low' | 'medium' | 'high';
-    outputFuzzySet: 'low' | 'medium' | 'high'; // Since output fuzzy set corresponds to input fuzzy set
+    fuzzySet: 'verylow' | 'low' | 'mediumlow' | 'medium' | 'mediumhigh' | 'high' | 'veryhigh';
+    outputFuzzySet: 'verylow' | 'low' | 'mediumlow' | 'medium' | 'mediumhigh' | 'high' | 'veryhigh';
 };
 
-export function main(metadata: Metadata, data: string): { sorted_rules: { rule: string, coefficient: number }[]; mean_squared_error: number; warnings: string[] } {
+// Define the structure for the returned metrics
+type EvaluationMetrics = {
+    sorted_rules: { rule: string, coefficient: number }[];
+    mean_absolute_error: number;
+    root_mean_squared_error: number;
+    r_squared: number;
+    mean_absolute_percentage_error: number;
+    warnings: string[];
+};
+
+export function main(metadata: Metadata, data: string): EvaluationMetrics {
     const targetVar = metadata["target_var"];
     const warnings: string[] = [];
     const records: Record[] = csv.parse(data, {
@@ -39,7 +49,7 @@ export function main(metadata: Metadata, data: string): { sorted_rules: { rule: 
     const categoricalKeys: string[] = Object.keys(records[0]).filter(key => !numericalKeys.includes(key));
 
     // Store quantiles for numerical variables
-    const variableQuantiles: { [key: string]: { min: number, q1: number, q2: number, max: number } } = {};
+    const variableBounds: { [key: string]: { min: number, max: number } } = {};
 
     // Process numerical columns (including target variable)
     numericalKeys.forEach(key => {
@@ -47,21 +57,22 @@ export function main(metadata: Metadata, data: string): { sorted_rules: { rule: 
         const sortedValues = [...values].sort((a, b) => a - b);
         const min = sortedValues[0];
         const max = sortedValues[sortedValues.length - 1];
-        const quantiles = computeQuantiles(sortedValues, [0.33, 0.66]);
-        const q1 = quantiles[0];
-        const q2 = quantiles[1];
-
-        variableQuantiles[key] = { min, q1, q2, max };
+        variableBounds[key] = { min, max };
 
         if (key !== targetVar) {
-            generateFuzzificationChart(values, min, q1, q2, max, key);
+            generateFuzzificationChart(values, min, max, key);
 
             records.forEach(record => {
                 const x = parseFloat(record[key] as string);
-                const degrees = computeMembershipDegrees(x, min, q1, q2, max);
+                const degrees = computeMembershipDegrees(x, min, max);
+                // Updated to include all seven fuzzy sets
+                record[`${key}_verylow`] = parseFloat(degrees.verylow.toFixed(4));
                 record[`${key}_low`] = parseFloat(degrees.low.toFixed(4));
+                record[`${key}_mediumlow`] = parseFloat(degrees.mediumlow.toFixed(4));
                 record[`${key}_medium`] = parseFloat(degrees.medium.toFixed(4));
+                record[`${key}_mediumhigh`] = parseFloat(degrees.mediumhigh.toFixed(4));
                 record[`${key}_high`] = parseFloat(degrees.high.toFixed(4));
+                record[`${key}_veryhigh`] = parseFloat(degrees.veryhigh.toFixed(4));
                 delete record[key];
             });
         }
@@ -81,16 +92,19 @@ export function main(metadata: Metadata, data: string): { sorted_rules: { rule: 
         });
     });
 
+    // Define all possible output fuzzy sets
+    const outputFuzzySetsList = ['verylow', 'low', 'mediumlow', 'medium', 'mediumhigh', 'high', 'veryhigh'] as const;
+
     // Generate rules
     let rules: (Rule|null)[] = [];
     numericalKeys.filter(key => key !== targetVar).forEach(key => {
         ['low', 'medium', 'high'].forEach(fuzzySet => {
-            ['low', 'medium', 'high'].forEach(outputSet => {
-                if (fuzzySet !== outputSet) {
+            outputFuzzySetsList.forEach(outputSet => {
+                if (fuzzySet !== outputSet) { // Adjust this condition as needed
                     const rule = {
                         variable: key,
-                        fuzzySet: fuzzySet as 'low' | 'medium' | 'high',
-                        outputFuzzySet: outputSet as 'low' | 'medium' | 'high',
+                        fuzzySet: fuzzySet as 'verylow' | 'low' | 'mediumlow' | 'medium' | 'mediumhigh' | 'high' | 'veryhigh',
+                        outputFuzzySet: outputSet as 'verylow' | 'low' | 'mediumlow' | 'medium' | 'mediumhigh' | 'high' | 'veryhigh',
                     };
 
                     rules.push(rule);
@@ -100,11 +114,9 @@ export function main(metadata: Metadata, data: string): { sorted_rules: { rule: 
     });
 
     // Prepare the output fuzzy sets for the target variable
-    const targetQuantiles = variableQuantiles[targetVar];
-    const targetMin = targetQuantiles.min;
-    const targetQ1 = targetQuantiles.q1;
-    const targetQ2 = targetQuantiles.q2;
-    const targetMax = targetQuantiles.max;
+    const targetBounds = variableBounds[targetVar];
+    const targetMin = targetBounds.min;
+    const targetMax = targetBounds.max;
 
     const outputUniverse: number[] = [];
     const numOutputPoints = 100;
@@ -115,17 +127,26 @@ export function main(metadata: Metadata, data: string): { sorted_rules: { rule: 
         outputUniverse.push(value);
     }
 
+    // Updated to include all seven fuzzy sets
     const outputFuzzySets = {
+        verylow: [] as number[],
         low: [] as number[],
+        mediumlow: [] as number[],
         medium: [] as number[],
+        mediumhigh: [] as number[],
         high: [] as number[],
+        veryhigh: [] as number[],
     };
 
     outputUniverse.forEach(value => {
-        const degrees = computeMembershipDegrees(value, targetMin, targetQ1, targetQ2, targetMax);
+        const degrees = computeMembershipDegrees(value, targetMin, targetMax);
+        outputFuzzySets.verylow.push(degrees.verylow);
         outputFuzzySets.low.push(degrees.low);
+        outputFuzzySets.mediumlow.push(degrees.mediumlow);
         outputFuzzySets.medium.push(degrees.medium);
+        outputFuzzySets.mediumhigh.push(degrees.mediumhigh);
         outputFuzzySets.high.push(degrees.high);
+        outputFuzzySets.veryhigh.push(degrees.veryhigh);
     });
 
     // Initialize feature matrix X and target vector y
@@ -233,10 +254,10 @@ export function main(metadata: Metadata, data: string): { sorted_rules: { rule: 
             const ruleNames = group.map(colIndex => {
                 const rule = rules[colIndex];
                 if(rule == null)
-                    return
+                    return;
                 return `If ${rule.variable} is ${rule.fuzzySet} then ${targetVar} is ${rule.outputFuzzySet}`;
-            });
-            return ruleNames.join(' | ');
+            }).filter(Boolean).join(' | ');
+            return ruleNames;
         }).join('\n');
 
         // Add the warning about duplicate columns detected
@@ -256,9 +277,9 @@ export function main(metadata: Metadata, data: string): { sorted_rules: { rule: 
         rules = rules.filter(rule => rule !== null);
 
         // Rebuild finalX by keeping only unique columns
-        const uniqueX = finalX.map(row => Array.from(columnsToKeep).map(colIndex => row[colIndex]));
+        const uniqueXUpdated = finalX.map(row => Array.from(columnsToKeep).map(colIndex => row[colIndex]));
         finalX.length = 0;
-        finalX.push(...uniqueX); // Replace finalX with unique columns
+        finalX.push(...uniqueXUpdated); // Replace finalX with unique columns
     }
 
     // Proceed with finalX and finalY
@@ -314,12 +335,31 @@ export function main(metadata: Metadata, data: string): { sorted_rules: { rule: 
         return row.reduce((sum, val, idx) => sum + val * coeffsArray[idx], 0);
     });
 
-    // Compute error metrics, y_pred vs finalY
-    const mse = finalY.reduce((acc, val, idx) => acc + Math.pow(val - y_pred[idx], 2), 0) / finalY.length;
+    // Compute error metrics
+    const n = finalY.length;
+
+    const mae = finalY.reduce((acc, val, idx) => acc + Math.abs(val - y_pred[idx]), 0) / n;
+    const mse = finalY.reduce((acc, val, idx) => acc + Math.pow(val - y_pred[idx], 2), 0) / n;
+    const rmse = Math.sqrt(mse);
+
+    // R-squared
+    const meanY = finalY.reduce((acc, val) => acc + val, 0) / n;
+    const ssTot = finalY.reduce((acc, val) => acc + Math.pow(val - meanY, 2), 0);
+    const ssRes = finalY.reduce((acc, val, idx) => acc + Math.pow(val - y_pred[idx], 2), 0);
+    const rSquared = 1 - (ssRes / ssTot);
+
+    // Mean Absolute Percentage Error (MAPE)
+    const epsilon = 1e-10; // avoid divBy0
+    const mape = finalY.reduce((acc, val, idx) => {
+        return acc + Math.abs((val - y_pred[idx]) / (Math.abs(val) + epsilon));
+    }, 0) / n * 100;
 
     return {
-        "sorted_rules": sortedRules,
-        "mean_squared_error": mse,
-        "warnings": warnings
+        sorted_rules: sortedRules,
+        mean_absolute_error: mae,
+        root_mean_squared_error: rmse,
+        r_squared: rSquared,
+        mean_absolute_percentage_error: mape,
+        warnings: warnings
     };
 }

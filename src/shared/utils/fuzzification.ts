@@ -6,8 +6,6 @@ import { computeMembershipDegrees } from './fuzzy';
 export function generateFuzzificationChart(
     values: number[],
     min: number,
-    q1: number,
-    q2: number,
     max: number,
     key: string
 ) {
@@ -25,7 +23,14 @@ export function generateFuzzificationChart(
     ctx.fillRect(0, 0, width, height);
 
     // Define margins
-    const margin = { top: 50, right: 50, bottom: 50, left: 50 };
+    const margin = { top: 50, right: 50, bottom: 50, left: 100 };
+
+    // Calculate step for 7 fuzzy sets
+    const numFuzzySets = 7;
+    const step = (max - min) / (numFuzzySets - 1);
+
+    // Define key points
+    const points = Array.from({ length: numFuzzySets }, (_, i) => min + i * step);
 
     // Scaled positions
     const scaleX = (value: number) => {
@@ -35,10 +40,7 @@ export function generateFuzzificationChart(
         );
     };
 
-    const xMin = scaleX(min);
-    const xQ1 = scaleX(q1);
-    const xQ2 = scaleX(q2);
-    const xMax = scaleX(max);
+    const scaledPoints = points.map(scaleX);
 
     // Y-axis positions (membership degree from 0 to 1)
     const yZero = height - margin.bottom;
@@ -64,55 +66,61 @@ export function generateFuzzificationChart(
     ctx.fillText(`Value Ranges (${key})`, width / 2, height - 10);
 
     // X-axis labels
-    ctx.textAlign = 'center';
-    ctx.fillText(`${min.toFixed(2)}`, xMin, yZero + 30);
-    ctx.fillText(`${q1.toFixed(2)}`, xQ1, yZero + 30);
-    ctx.fillText(`${q2.toFixed(2)}`, xQ2, yZero + 30);
-    ctx.fillText(`${max.toFixed(2)}`, xMax, yZero + 30);
+    points.forEach((point, index) => {
+        ctx.textAlign = 'center';
+        ctx.fillText(`${point.toFixed(2)}`, scaledPoints[index], yZero + 30);
+    });
 
     // Draw ticks
     const tickLength = 10;
-    [xMin, xQ1, xQ2, xMax].forEach((x) => {
+    scaledPoints.forEach((x) => {
         ctx.beginPath();
         ctx.moveTo(x, yZero);
         ctx.lineTo(x, yZero + tickLength);
         ctx.stroke();
     });
 
+    // Define fuzzy set colors
+    const fuzzySets = [
+        { name: 'verylow', color: 'rgba(128, 0, 128, 0.7)' },    // Purple
+        { name: 'low', color: 'rgba(255, 0, 0, 0.7)' },         // Red
+        { name: 'mediumlow', color: 'rgba(255, 165, 0, 0.7)' }, // Orange
+        { name: 'medium', color: 'rgba(255, 255, 0, 0.7)' },     // Yellow
+        { name: 'mediumhigh', color: 'rgba(173, 255, 47, 0.7)' }, // GreenYellow
+        { name: 'high', color: 'rgba(0, 255, 0, 0.7)' },        // Green
+        { name: 'veryhigh', color: 'rgba(0, 0, 255, 0.7)' },    // Blue
+    ];
+
     // Draw fuzzy sets
-    // Low - Red Triangle
-    ctx.strokeStyle = 'rgba(255, 0, 0, 0.7)';
-    ctx.fillStyle = 'rgba(255, 0, 0, 0.3)';
-    ctx.beginPath();
-    ctx.moveTo(xMin, yZero); // Start at min
-    ctx.lineTo(xMin, yOne); // Peak at min
-    ctx.lineTo(xQ1, yZero); // End at q1
-    ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
+    fuzzySets.forEach((fuzzySet, index) => {
+        const degrees = computeMembershipDegrees(points[index], min, max);
 
-    // Medium - Green Trapezoid with lower base from min to max
-    ctx.strokeStyle = 'rgba(0, 255, 0, 0.7)';
-    ctx.fillStyle = 'rgba(0, 255, 0, 0.3)';
-    ctx.beginPath();
-    ctx.moveTo(xMin, yZero); // Start at min
-    ctx.lineTo(xQ1, yOne); // Rising to q1
-    ctx.lineTo(xQ2, yOne); // Plateau at q2
-    ctx.lineTo(xMax, yZero); // Descend to max
-    ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
+        // Define the shape based on membership degrees
+        ctx.strokeStyle = fuzzySet.color;
+        ctx.fillStyle = fuzzySet.color.replace('0.7', '0.5'); // Darker fill
+        ctx.beginPath();
 
-    // High - Blue Triangle
-    ctx.strokeStyle = 'rgba(0, 0, 255, 0.7)';
-    ctx.fillStyle = 'rgba(0, 0, 255, 0.3)';
-    ctx.beginPath();
-    ctx.moveTo(xQ2, yZero); // Start at q2
-    ctx.lineTo(xMax, yOne); // Peak at max
-    ctx.lineTo(xMax, yZero); // End at max
-    ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
+        // Draw triangles for all fuzzy sets
+        if (fuzzySet.name === 'verylow') {
+            // Right-angled triangle for verylow (covering min)
+            ctx.moveTo(scaledPoints[0], yZero); // Start at min
+            ctx.lineTo(scaledPoints[0], yOne); // Peak at min (right-angled)
+            ctx.lineTo(scaledPoints[1], yZero); // End at second point
+        } else if (fuzzySet.name === 'veryhigh') {
+            // Right-angled triangle for veryhigh (covering max)
+            ctx.moveTo(scaledPoints[numFuzzySets - 2], yZero); // Start at second last point
+            ctx.lineTo(scaledPoints[numFuzzySets - 1], yOne); // Peak at max (right-angled)
+            ctx.lineTo(scaledPoints[numFuzzySets - 1], yZero); // End at max
+        } else {
+            // Triangular for others
+            ctx.moveTo(scaledPoints[index - 1], yZero); // Start at previous point
+            ctx.lineTo(scaledPoints[index], yOne); // Peak at current point
+            ctx.lineTo(scaledPoints[index + 1], yZero); // End at next point
+        }
+
+        ctx.closePath();
+        ctx.stroke();
+    });
 
     // Plot points for each record with random vertical jitter and membership degree colors
     values.forEach((value) => {
@@ -120,21 +128,20 @@ export function generateFuzzificationChart(
         if (value < min || value > max) return;
 
         // Get the membership degrees
-        const { low, medium, high } = computeMembershipDegrees(
-            value,
-            min,
-            q1,
-            q2,
-            max
-        );
+        const degrees = computeMembershipDegrees(value, min, max);
 
-        // Generate the color by mixing red, green, and blue based on the membership degrees
-        const r = Math.floor(low * 255); // Red component (low)
-        const g = Math.floor(medium * 255); // Green component (medium)
-        const b = Math.floor(high * 255); // Blue component (high)
+        // Generate the color by mixing colors based on the membership degrees
+        // Here, we assign colors based on the highest membership degree
+        const fuzzySetKeys = ['verylow', 'low', 'mediumlow', 'medium', 'mediumhigh', 'high', 'veryhigh'];
+        let maxDegree = 0;
+        let selectedColor = 'rgba(0,0,0,0.2)'; // Default color
 
-        // Set the fill style based on the RGB values with opacity 0.2
-        ctx.fillStyle = `rgba(${r}, ${g}, ${b}, 0.2)`;
+        fuzzySetKeys.forEach((key, idx) => {
+            if (degrees[key as keyof typeof degrees] > maxDegree) {
+                maxDegree = degrees[key as keyof typeof degrees];
+                selectedColor = fuzzySets[idx].color.replace('0.7', '0.5'); // Darker fill for points too
+            }
+        });
 
         // Calculate the x position on the chart
         const x = scaleX(value);
@@ -143,6 +150,7 @@ export function generateFuzzificationChart(
         const randomJitter = Math.random() * 20;
 
         // Draw the point
+        ctx.fillStyle = selectedColor;
         ctx.beginPath();
         ctx.arc(x, yZero - randomJitter, 5, 0, Math.PI * 2);
         ctx.fill();
