@@ -1,7 +1,7 @@
 import * as csv from 'csv-parse/sync';
 import * as math from 'mathjs';
 import { generateFuzzificationChart } from './utils/fuzzification';
-import { Matrix, inverse, solve } from 'ml-matrix';
+import { Matrix, solve } from 'ml-matrix';
 import { computeMembershipDegrees } from './utils/fuzzy';
 
 type Metadata = {
@@ -15,14 +15,20 @@ type Metadata = {
     variance_threshold: number;
     outlier_iqr_multiplier: number;
     num_vars: number;
+    whitelist?: string[];
+    blacklist?: string[];
+    only_whitelist?: boolean;
 };
-
+function isNumber(value: any) {
+    return typeof value === 'number' && !isNaN(value);
+}
 type Record = { [key: string]: string | number };
 
-// Updated Rule type to include multiple antecedents
+// Updated Rule type to include multiple antecedents and whitelist flag
 type Rule = {
     antecedents: { variable: string, fuzzySet: 'verylow' | 'low' | 'mediumlow' | 'medium' | 'mediumhigh' | 'high' | 'veryhigh' }[];
     outputFuzzySet: 'verylow' | 'low' | 'mediumlow' | 'medium' | 'mediumhigh' | 'high' | 'veryhigh';
+    isWhitelist: boolean;
 };
 
 // Define the structure for the returned metrics
@@ -34,6 +40,123 @@ type EvaluationMetrics = {
     mean_absolute_percentage_error: number;
     warnings: string[];
 };
+
+/**
+ * Parses a rule string into a Rule object.
+ * Expected format: "If <Var1> is <FuzzySet1> AND If <Var2> is <FuzzySet2> then <TargetVar> is <OutputFuzzySet>"
+ */
+function parseRuleString(ruleStr: string, targetVar: string, isWhitelist: boolean = false): Rule | null {
+    try {
+        const [antecedentPart, consequentPart] = ruleStr.split(' then ');
+        if (!antecedentPart || !consequentPart) {
+            return null;
+        }
+
+        const antecedentMatches = antecedentPart.match(/If\s+([A-Za-z0-9_]+)\s+is\s+(verylow|low|mediumlow|medium|mediumhigh|high|veryhigh)/gi);
+        if (!antecedentMatches) {
+            return null;
+        }
+
+        const antecedents = antecedentMatches.map(match => {
+            const parts = match.trim().split(/\s+/);
+            return {
+                variable: parts[1],
+                fuzzySet: parts[3] as 'verylow' | 'low' | 'mediumlow' | 'medium' | 'mediumhigh' | 'high' | 'veryhigh'
+            };
+        });
+
+        const consequentMatch = consequentPart.trim().match(new RegExp(`^${targetVar}\\s+is\\s+(verylow|low|mediumlow|medium|mediumhigh|high|veryhigh)$`, 'i'));
+        if (!consequentMatch) {
+            return null;
+        }
+
+        const outputFuzzySet = consequentMatch[1].toLowerCase() as 'verylow' | 'low' | 'mediumlow' | 'medium' | 'mediumhigh' | 'high' | 'veryhigh';
+
+        return {
+            antecedents,
+            outputFuzzySet,
+            isWhitelist
+        };
+    } catch (error) {
+        return null;
+    }
+}
+
+/**
+ * Serializes a Rule object into a standardized string.
+ */
+function serializeRule(rule: Rule, targetVar: string): string {
+    const antecedentStr = rule.antecedents
+        .map(ant => `If ${ant.variable} is ${ant.fuzzySet}`)
+        .join(' AND ');
+    return `${antecedentStr} then ${targetVar} is ${rule.outputFuzzySet}`;
+}
+
+/**
+ * Attempts to solve for coefficients. If it fails, removes non-whitelist rules iteratively and retries.
+ * @param XtX_reg - Regularized X^T X matrix
+ * @param Xt_y - X^T y vector
+ * @param rules - Array of all rules
+ * @param warnings - Array to accumulate warning messages
+ * @returns Coefficients array or null if no solution is found
+ */
+function attemptToSolve(
+    XtX_reg: Matrix,
+    Xt_y: Matrix,
+    rules: Rule[],
+    warnings: string[]
+): number[] | null {
+    let currentRules = [...rules];
+    let attempt = 0;
+
+    while (currentRules.length > 0) {
+        // Convert current rules to X_matrix and Xt_y accordingly
+        // Here, XtX_reg and Xt_y should be recomputed based on currentRules
+        // To simplify, we'll assume XtX_reg and Xt_y are already based on currentRules
+
+        // Attempt to solve
+        try {
+            let coeffs = solve(XtX_reg, Xt_y);
+            return coeffs.to1DArray();
+        } catch (e) {
+            // Find a rule to remove
+            // Prioritize removing non-whitelist rules
+            const nonWhitelistIndex = currentRules.findIndex(rule => !rule.isWhitelist);
+            if (nonWhitelistIndex !== -1) {
+                const removedRule = currentRules.splice(nonWhitelistIndex, 1)[0];
+                const ruleStr = serializeRule(removedRule, rules[0]?.antecedents[0]?.variable || 'TARGET');
+                const warn_msg = `Removed non-whitelist rule to attempt solving: "${ruleStr}".`;
+                warnings.push(warn_msg);
+                console.warn(warn_msg);
+            } else {
+                // No non-whitelist rules left, start removing whitelist rules
+                const whitelistIndex = currentRules.findIndex(rule => rule.isWhitelist);
+                if (whitelistIndex !== -1) {
+                    const removedRule = currentRules.splice(whitelistIndex, 1)[0];
+                    const ruleStr = serializeRule(removedRule, rules[0]?.antecedents[0]?.variable || 'TARGET');
+                    const warn_msg = `Removed whitelist rule to attempt solving: "${ruleStr}".`;
+                    warnings.push(warn_msg);
+                    console.warn(warn_msg);
+                } else {
+                    // No rules left to remove
+                    const warn_msg = `Unable to solve the system after removing all rules.`;
+                    warnings.push(warn_msg);
+                    console.warn(warn_msg);
+                    return null;
+                }
+            }
+            attempt++;
+            if (attempt > rules.length) {
+                const warn_msg = `Exceeded maximum attempts to solve the system.`;
+                warnings.push(warn_msg);
+                console.warn(warn_msg);
+                return null;
+            }
+        }
+    }
+
+    return null;
+}
 
 export function main(metadata: Metadata, data: string): EvaluationMetrics {
     const targetVar = metadata["target_var"];
@@ -215,7 +338,7 @@ export function main(metadata: Metadata, data: string): EvaluationMetrics {
     const outputFuzzySetNonEmpty: { [fuzzySet: string]: boolean } = {};
     outputFuzzySetsList.forEach(fuzzySet => {
         outputFuzzySetNonEmpty[fuzzySet] = false;
-        // Check if any degree in the output fuzzy set is greater than zero, done later
+        // Will be updated after computing outputFuzzySets
     });
 
     // Prepare the output fuzzy sets for the target variable
@@ -260,7 +383,7 @@ export function main(metadata: Metadata, data: string): EvaluationMetrics {
     });
 
     // Generate rules with combinations of antecedents up to num_vars
-    let rules: (Rule | null)[] = [];
+    let allRules: Rule[] = [];
 
     // Helper function to generate all combinations of variables
     const getCombinations = <T>(array: T[], combinationSize: number): T[][] => {
@@ -319,22 +442,115 @@ export function main(metadata: Metadata, data: string): EvaluationMetrics {
                         const rule: Rule = {
                             antecedents,
                             outputFuzzySet: outputSet as 'verylow' | 'low' | 'mediumlow' | 'medium' | 'mediumhigh' | 'high' | 'veryhigh',
+                            isWhitelist: false
                         };
-                        rules.push(rule);
+                        allRules.push(rule);
                     }
                 });
             });
         });
     }
 
+    // ================================
+    // Step 3: Apply Whitelist and Blacklist
+    // ================================
+
+    const { whitelist, blacklist, only_whitelist } = metadata;
+
+    // Function to add rules from the whitelist
+    if (only_whitelist && whitelist && whitelist.length > 0) {
+        // Parse whitelist rules
+        const parsedWhitelistRules: Rule[] = [];
+        whitelist.forEach(ruleStr => {
+            const parsedRule = parseRuleString(ruleStr, targetVar, true);
+            if (parsedRule) {
+                parsedWhitelistRules.push(parsedRule);
+            } else {
+                const warn_msg = `Failed to parse whitelist rule: "${ruleStr}". It will be ignored.`;
+                warnings.push(warn_msg);
+                console.warn(warn_msg);
+            }
+        });
+
+        // Clear existing rules and set to whitelist only
+        allRules = parsedWhitelistRules;
+        const warn_msg = `Only whitelist rules will be used as "only_whitelist" is set to true. Total whitelist rules: ${allRules.length}.`;
+        warnings.push(warn_msg);
+        console.warn(warn_msg);
+    } else {
+        if (whitelist && whitelist.length > 0) {
+            // Parse and add whitelist rules
+            const parsedWhitelistRules: Rule[] = [];
+            whitelist.forEach(ruleStr => {
+                const parsedRule = parseRuleString(ruleStr, targetVar, true);
+                if (parsedRule) {
+                    parsedWhitelistRules.push(parsedRule);
+                } else {
+                    const warn_msg = `Failed to parse whitelist rule: "${ruleStr}". It will be ignored.`;
+                    warnings.push(warn_msg);
+                    console.warn(warn_msg);
+                }
+            });
+
+            // Add whitelist rules to the existing rules
+            parsedWhitelistRules.forEach(whitelistRule => {
+                // Avoid adding duplicate rules
+                const serializedWhitelistRule = serializeRule(whitelistRule, targetVar);
+                const isDuplicate = allRules.some(rule => {
+                    return serializeRule(rule, targetVar) === serializedWhitelistRule;
+                });
+                if (!isDuplicate) {
+                    allRules.push(whitelistRule);
+                }
+            });
+
+            const addedWhitelistCount = parsedWhitelistRules.length;
+            const warn_msg = `Added ${addedWhitelistCount} whitelist rules to the rule set.`;
+            warnings.push(warn_msg);
+            console.warn(warn_msg);
+        }
+
+        if (blacklist && blacklist.length > 0) {
+            // Parse and remove blacklist rules
+            const parsedBlacklistRules: Rule[] = [];
+            blacklist.forEach(ruleStr => {
+                const parsedRule = parseRuleString(ruleStr, targetVar, false);
+                if (parsedRule) {
+                    parsedBlacklistRules.push(parsedRule);
+                } else {
+                    const warn_msg = `Failed to parse blacklist rule: "${ruleStr}". It will be ignored.`;
+                    warnings.push(warn_msg);
+                    console.warn(warn_msg);
+                }
+            });
+
+            // Serialize blacklist rules for comparison
+            const serializedBlacklist = parsedBlacklistRules.map(rule => serializeRule(rule, targetVar));
+
+            // Remove blacklisted rules from the allRules list
+            const initialRuleCount = allRules.length;
+            allRules = allRules.filter(rule => {
+                const serializedRule = serializeRule(rule, targetVar);
+                return !serializedBlacklist.includes(serializedRule);
+            });
+            const removedBlacklistCount = initialRuleCount - allRules.length;
+
+            const warn_msg = `Removed ${removedBlacklistCount} rules based on the blacklist.`;
+            warnings.push(warn_msg);
+            console.warn(warn_msg);
+        }
+    }
+
+    // ================================
     // Initialize feature matrix X and target vector y
+    // ================================
+
     const X: number[][] = []; // Each row corresponds to a record (and contains all rules), each column corresponds to a rule's crisp output
     const y: number[] = recordsAfterFiltering.map((record) => parseFloat(record[targetVar] as string));
 
     // Precompute rule output fuzzy set degrees
     const ruleOutputFuzzySetDegreesMap: { [ruleIndex: number]: number[] } = {};
-    rules.forEach((rule, ruleIndex) => {
-        if (rule == null) return;
+    allRules.forEach((rule, ruleIndex) => {
         ruleOutputFuzzySetDegreesMap[ruleIndex] = outputFuzzySets[rule.outputFuzzySet];
     });
 
@@ -342,14 +558,24 @@ export function main(metadata: Metadata, data: string): EvaluationMetrics {
     recordsAfterFiltering.forEach((record, index) => {
         const featureVector: number[] = [];
 
-        rules.forEach((rule, ruleIndex) => {
-            if (rule == null)
-                return;
-
+        allRules.forEach((rule, ruleIndex) => {
             // Compute firing strength
             // For multiple antecedents, use the minimum of the degrees (AND operation)
-            const firingStrength = Math.min(...rule.antecedents.map(ant => record[`${ant.variable}_${ant.fuzzySet}`] as number));
-
+            const firingStrength = Math.min(...rule.antecedents.map(ant => {
+                const key = `${ant.variable}_${ant.fuzzySet}`;
+                const value = record[key];
+                
+                if (value === undefined || value === null) {
+                    throw new Error(`Invalid record: "${key}" not found or has null/undefined value in record ${JSON.stringify(record)}`);
+                }
+                
+                if (typeof value !== 'number') {
+                    throw new Error(`Invalid value type: "${key}" is not a number in record ${JSON.stringify(record)}`);
+                }
+                
+                return value;
+            }));
+            
             // Get the output fuzzy set's membership degrees over the output universe
             const outputFuzzySetDegrees = ruleOutputFuzzySetDegreesMap[ruleIndex];
 
@@ -511,10 +737,10 @@ export function main(metadata: Metadata, data: string): EvaluationMetrics {
             .filter(group => group.length > 1)
             .map(group => {
                 const [primary, ...duplicates] = group;
-                const primaryRule = rules[primary];
+                const primaryRule = allRules[primary];
                 if (!primaryRule) return '';
                 const duplicateRules = duplicates.map(colIndex => {
-                    const rule = rules[colIndex];
+                    const rule = allRules[colIndex];
                     if (rule == null) return '';
                     const antecedentStr = rule.antecedents.map(ant => `If ${ant.variable} is ${ant.fuzzySet}`).join(' AND ');
                     return `${antecedentStr} then ${targetVar} is ${rule.outputFuzzySet}`;
@@ -533,12 +759,14 @@ export function main(metadata: Metadata, data: string): EvaluationMetrics {
         const uniqueXUpdated = finalX.map(row => {
             return keptColumns.map(colIndex => row[colIndex]);
         });
-        const filteredRules = keptColumns.map(colIndex => rules[colIndex]).filter(rule => rule !== null) as Rule[];
+        const filteredRules = keptColumns.map(colIndex => allRules[colIndex]).filter(rule => rule !== null) as Rule[];
 
-        // Replace finalX and rules with filtered versions
+        // Replace finalX and allRules with filtered versions
+        // Note: Since 'finalX' and 'allRules' are used later, reassign them
         finalX.length = 0;
         finalX.push(...uniqueXUpdated);
-        rules = filteredRules;
+        allRules.length = 0;
+        allRules.push(...filteredRules);
     }
 
     // If X has more columns than rows add a warning
@@ -566,27 +794,34 @@ export function main(metadata: Metadata, data: string): EvaluationMetrics {
     // Instead of computing the inverse, solve the linear system (XtX + λI) * coeffs = X^T * y
     const Xt_y = Xt.mmul(y_vector); // [cols, 1]
 
-    const coeffs = solve(XtX_reg, Xt_y); // Efficiently solves for coeffs
-    const coeffsArray = coeffs.to1DArray();
+    let coeffsArray: number[]| null;
 
-
-    // Extract coefficients as a flat array
+    // Attempt to solve with all rules
+    try {
+        const coeffs = solve(XtX_reg, Xt_y);
+        coeffsArray = coeffs.to1DArray();
+    } catch (e){
+        coeffsArray = attemptToSolve(XtX_reg, Xt_y, allRules, warnings);
+        
+        if (coeffsArray === null) {
+            const warn_msg_final = `Unable to solve the regression problem even after removing all possible rules.`;
+            warnings.push(warn_msg_final);
+            console.warn(warn_msg_final);
+            throw new Error(`Regression solve failed: ${warn_msg_final}`);
+        }
+    }
 
     // ================================
     // Proceed with Coefficients and Evaluation
     // ================================
 
     // Associate coefficients with rules and return them as objects
-    const ruleCoefficients = rules.map((rule, index) => {
-        if (rule == null)
-            return {
-                rule: "deleted - you should not see this here",
-                coefficient: 0
-            };
+    const ruleCoefficients = allRules.map((rule, index) => {
         const antecedentStr = rule.antecedents.map(ant => `If ${ant.variable} is ${ant.fuzzySet}`).join(' AND ');
         return {
             rule: `${antecedentStr} then ${targetVar} is ${rule.outputFuzzySet}`,
-            coefficient: coeffsArray[index],
+            coefficient: coeffsArray ? coeffsArray[index] : 0,
+            isWhitelist: rule.isWhitelist
         };
     });
 
@@ -594,7 +829,7 @@ export function main(metadata: Metadata, data: string): EvaluationMetrics {
 
     // Optionally, compute predictions and evaluate the model
     const y_pred = finalX.map(row => {
-        return row.reduce((sum, val, idx) => sum + val * coeffsArray[idx], 0);
+        return row.reduce((sum, val, idx) => sum + val * (coeffsArray ? coeffsArray[idx] : 0), 0);
     });
 
     // Compute error metrics
@@ -612,16 +847,19 @@ export function main(metadata: Metadata, data: string): EvaluationMetrics {
 
     // Mean Absolute Percentage Error (MAPE)
     const epsilon = 1e-10; // avoid divBy0
-    const mape = finalY.reduce((acc, val, idx) => {
+    const mape = (finalY.reduce((acc, val, idx) => {
         return acc + Math.abs((val - y_pred[idx]) / (Math.abs(val) + epsilon));
-    }, 0) / n * 100;
+    }, 0) / n) * 100;
 
     return {
-        sorted_rules: sortedRules,
         mean_absolute_error: mae,
         root_mean_squared_error: rmse,
         r_squared: rSquared,
         mean_absolute_percentage_error: mape,
-        warnings: warnings
+        warnings: warnings,
+        sorted_rules: sortedRules.map(rule => ({
+            rule: rule.rule,
+            coefficient: rule.coefficient
+        }))
     };
 }
