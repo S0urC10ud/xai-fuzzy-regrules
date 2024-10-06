@@ -11,5 +11,6 @@
     "numerical_fuzzification": ["low", "medium", "high"],
     "numerical_defuzzification": ["verylow", "low", "mediumlow", "medium", "mediumhigh", "high", "veryhigh"],
     "variance_threshold": 1e-5,
-    "outlier_iqr_multiplier": 5
+    "outlier_iqr_multiplier": 5,
+    "num_vars": 1
 }

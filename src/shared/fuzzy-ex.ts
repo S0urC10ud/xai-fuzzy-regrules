@@ -1,7 +1,7 @@
 import * as csv from 'csv-parse/sync';
 import * as math from 'mathjs';
 import { generateFuzzificationChart } from './utils/fuzzification';
-import { Matrix } from 'mathjs';
+import { Matrix, inverse, solve } from 'ml-matrix';
 import { computeMembershipDegrees } from './utils/fuzzy';
 
 type Metadata = {
@@ -14,14 +14,14 @@ type Metadata = {
     numerical_defuzzification: string[];
     variance_threshold: number;
     outlier_iqr_multiplier: number;
+    num_vars: number;
 };
 
 type Record = { [key: string]: string | number };
 
-// Updated Rule type to include new output fuzzy sets
+// Updated Rule type to include multiple antecedents
 type Rule = {
-    variable: string;
-    fuzzySet: 'verylow' | 'low' | 'mediumlow' | 'medium' | 'mediumhigh' | 'high' | 'veryhigh';
+    antecedents: { variable: string, fuzzySet: 'verylow' | 'low' | 'mediumlow' | 'medium' | 'mediumhigh' | 'high' | 'veryhigh' }[];
     outputFuzzySet: 'verylow' | 'low' | 'mediumlow' | 'medium' | 'mediumhigh' | 'high' | 'veryhigh';
 };
 
@@ -47,6 +47,7 @@ export function main(metadata: Metadata, data: string): EvaluationMetrics {
     // Optional parameters with default values
     const varianceThreshold = metadata.variance_threshold;
     const iqrMultiplier = metadata.outlier_iqr_multiplier;
+    const numVars = metadata.num_vars; // Maximum number of antecedents in a rule
 
     // Identify numerical and categorical keys
     let numericalKeys: string[] = Object.keys(records[0]).filter(key => {
@@ -217,27 +218,6 @@ export function main(metadata: Metadata, data: string): EvaluationMetrics {
         // Check if any degree in the output fuzzy set is greater than zero, done later
     });
 
-    // Generate rules
-    let rules: (Rule | null)[] = [];
-    numericalKeys.filter(key => key !== targetVar).forEach(key => {
-        metadata["numerical_fuzzification"].forEach(fuzzySet => {
-            outputFuzzySetsList.forEach(outputSet => {
-                if (fuzzySet !== outputSet) { // Adjust this condition as needed
-
-                    // Before adding the rule, check if both antecedent and consequent fuzzy sets are non-empty
-                    if (inputFuzzySetNonEmpty[key][fuzzySet] && outputFuzzySetNonEmpty[outputSet]) {
-                        const rule: Rule = {
-                            variable: key,
-                            fuzzySet: fuzzySet as 'verylow' | 'low' | 'mediumlow' | 'medium' | 'mediumhigh' | 'high' | 'veryhigh',
-                            outputFuzzySet: outputSet as 'verylow' | 'low' | 'mediumlow' | 'medium' | 'mediumhigh' | 'high' | 'veryhigh',
-                        };
-                        rules.push(rule);
-                    }
-                }
-            });
-        });
-    });
-
     // Prepare the output fuzzy sets for the target variable
     const targetBounds = variableBounds[targetVar];
     const targetMin = targetBounds.min;
@@ -279,44 +259,104 @@ export function main(metadata: Metadata, data: string): EvaluationMetrics {
         outputFuzzySetNonEmpty[fuzzySet] = outputFuzzySets[fuzzySet as keyof typeof outputFuzzySets].some(degree => degree > 0);
     });
 
-    // Re-generate rules with the updated outputFuzzySetNonEmpty
-    rules = []; // Reset rules
-    numericalKeys.filter(key => key !== targetVar).forEach(key => {
-        metadata["numerical_fuzzification"].forEach(fuzzySet => {
-            ['low', 'medium', 'high'].forEach(fuzzySetVariant => { // Adjusted fuzzy sets as per original code
-                outputFuzzySetsList.forEach(outputSet => {
-                    if (fuzzySet !== outputSet) { // Adjust this condition as needed
+    // Generate rules with combinations of antecedents up to num_vars
+    let rules: (Rule | null)[] = [];
 
-                        // Check if both antecedent and consequent fuzzy sets are non-empty
-                        if (inputFuzzySetNonEmpty[key][fuzzySet] && outputFuzzySetNonEmpty[outputSet]) {
-                            const rule: Rule = {
-                                variable: key,
-                                fuzzySet: fuzzySet as 'verylow' | 'low' | 'mediumlow' | 'medium' | 'mediumhigh' | 'high' | 'veryhigh',
-                                outputFuzzySet: outputSet as 'verylow' | 'low' | 'mediumlow' | 'medium' | 'mediumhigh' | 'high' | 'veryhigh',
-                            };
-                            rules.push(rule);
-                        }
+    // Helper function to generate all combinations of variables
+    const getCombinations = <T>(array: T[], combinationSize: number): T[][] => {
+        const results: T[][] = [];
+        const recurse = (start: number, combo: T[]) => {
+            if (combo.length === combinationSize) {
+                results.push([...combo]);
+                return;
+            }
+            for (let i = start; i < array.length; i++) {
+                combo.push(array[i]);
+                recurse(i + 1, combo);
+                combo.pop();
+            }
+        };
+        recurse(0, []);
+        return results;
+    };
+
+    // Iterate over combination sizes from 1 to num_vars
+    for (let size = 1; size <= numVars; size++) {
+        const variableCombinations = getCombinations(numericalKeys.filter(key => key !== targetVar), size);
+        variableCombinations.forEach(variableCombo => {
+            // For each combination of variables, iterate over all possible fuzzy set assignments
+            // This is a Cartesian product of fuzzy sets for each variable in the combination
+            const fuzzySetsPerVariable = variableCombo.map(variable => metadata["numerical_fuzzification"]);
+            const fuzzySetCombinations = cartesianProduct(...fuzzySetsPerVariable);
+
+            fuzzySetCombinations.forEach(fuzzySetCombo => {
+                // Construct antecedents
+                const antecedents = variableCombo.map((variable, idx) => ({
+                    variable,
+                    fuzzySet: fuzzySetCombo[idx] as 'verylow' | 'low' | 'mediumlow' | 'medium' | 'mediumhigh' | 'high' | 'veryhigh'
+                }));
+
+                // Iterate over all possible consequents
+                outputFuzzySetsList.forEach(outputSet => {
+                    // Check if all antecedent fuzzy sets are non-empty
+                    const antecedentsNonEmpty = antecedents.every(ant => inputFuzzySetNonEmpty[ant.variable][ant.fuzzySet]);
+
+                    // Check if the consequent fuzzy set is non-empty
+                    if (antecedentsNonEmpty && outputFuzzySetNonEmpty[outputSet]) {
+                        const rule: Rule = {
+                            antecedents,
+                            outputFuzzySet: outputSet as 'verylow' | 'low' | 'mediumlow' | 'medium' | 'mediumhigh' | 'high' | 'veryhigh',
+                        };
+                        rules.push(rule);
                     }
                 });
             });
         });
-    });
+    }
+
+    // Helper function to compute the Cartesian product of arrays
+    function cartesianProduct<T>(...arrays: T[][]): T[][] {
+        return arrays.reduce<T[][]>((acc, curr) => {
+            const res: T[][] = [];
+            acc.forEach(a => {
+                curr.forEach(b => {
+                    res.push([...a, b]);
+                });
+            });
+            return res;
+        }, [[]]);
+    }
 
     // Initialize feature matrix X and target vector y
     const X: number[][] = []; // Each row corresponds to a record (and contains all rules), each column corresponds to a rule's crisp output
     const y: number[] = recordsAfterFiltering.map((record) => parseFloat(record[targetVar] as string));
 
+    // Precompute rule output fuzzy set degrees
+    const ruleOutputFuzzySetDegreesMap: { [ruleIndex: number]: number[] } = {};
+    rules.forEach((rule, ruleIndex) => {
+        if (rule == null) return;
+        ruleOutputFuzzySetDegreesMap[ruleIndex] = outputFuzzySets[rule.outputFuzzySet];
+    });
+
     // For each record, compute the crisp output for each rule
     recordsAfterFiltering.forEach((record, index) => {
         const featureVector: number[] = [];
 
-        rules.forEach(rule => {
+        rules.forEach((rule, ruleIndex) => {
             if (rule == null)
                 return;
-            const firingStrength = record[`${rule.variable}_${rule.fuzzySet}`] as number;
+
+            // Compute firing strength
+            // For multiple antecedents, use the minimum of the degrees (AND operation)
+            const firingStrength = Math.min(...rule.antecedents.map(ant => record[`${ant.variable}_${ant.fuzzySet}`] as number));
 
             // Get the output fuzzy set's membership degrees over the output universe
-            const outputFuzzySetDegrees = outputFuzzySets[rule.outputFuzzySet];
+            const outputFuzzySetDegrees = ruleOutputFuzzySetDegreesMap[ruleIndex];
+
+            if (!outputFuzzySetDegrees) {
+                // If the output fuzzy set degrees are not precomputed, compute them now
+                throw new Error(`Output fuzzy set degrees not found for rule index ${ruleIndex}.`);
+            }
 
             // Vertically cap
             const ruleOutputMembershipDegrees = outputFuzzySetDegrees.map(degree => Math.min(firingStrength, degree));
@@ -453,11 +493,11 @@ export function main(metadata: Metadata, data: string): EvaluationMetrics {
                 const duplicateRules = duplicates.map(colIndex => {
                     const rule = rules[colIndex];
                     if (rule == null) return '';
-                    const ret_text = `If ${rule.variable} is ${rule.fuzzySet} then ${targetVar} is ${rule.outputFuzzySet}`;
-                    rules[colIndex] = null;
-                    return ret_text;
+                    const antecedentStr = rule.antecedents.map(ant => `If ${ant.variable} is ${ant.fuzzySet}`).join(' AND ');
+                    return `${antecedentStr} then ${targetVar} is ${rule.outputFuzzySet}`;
                 }).filter(Boolean).join(' | ');
-                return `Primary Rule: If ${primaryRule.variable} is ${primaryRule.fuzzySet} then ${targetVar} is ${primaryRule.outputFuzzySet}\nDuplicate Rules: ${duplicateRules}`;
+                const primaryAntecedentStr = primaryRule.antecedents.map(ant => `If ${ant.variable} is ${ant.fuzzySet}`).join(' AND ');
+                return `Primary Rule: ${primaryAntecedentStr} then ${targetVar} is ${primaryRule.outputFuzzySet}\nDuplicate Rules: ${duplicateRules}`;
             })
             .filter(detail => detail !== '')
             .join('\n\n');
@@ -479,38 +519,40 @@ export function main(metadata: Metadata, data: string): EvaluationMetrics {
         rules = filteredRules;
     }
 
-    // Proceed with finalX and finalY
-    const X_matrix = math.matrix(finalX);
-    const y_vector = math.matrix(finalY);
-
-    // Compute Xt and XtX
-    const Xt = math.transpose(X_matrix);
-    const XtX = math.multiply(Xt, X_matrix);
-
-    const lambda = metadata["regularization"]; // Small regularization parameter
-    const identityMatrix = math.identity(XtX.size()[0]);
-    const XtX_reg = math.add(XtX, math.multiply(identityMatrix, lambda)) as Matrix;
-
-    // Convert to a numeric matrix
-    const XtX_reg_numeric = (XtX_reg as Matrix).toArray() as number[][];
+    // If X has more columns than rows add a warning
+    if (finalX.length < finalX[0].length) {
+        const warn_msg = `The feature matrix has more columns (${finalX[0].length}) than rows (${finalX.length}) after the removal of duplicate rows/columns. This may lead to poor performance of the model.`;
+        warnings.push(warn_msg);
+        console.warn(warn_msg);
+    }
 
     // ================================
-    // SVD-Based Pseudo-Inversion
+    // Optimize Regression Computation
     // ================================
 
-    // Compute the Moore-Penrose pseudo-inverse using SVD via mathjs's pinv
-    const XtX_pinv = math.pinv(XtX_reg_numeric) as number[][];
+    // Convert finalX and finalY to ml-matrix
+    const X_matrix = new Matrix(finalX); // Dimensions: [rows, cols]
+    const y_vector = Matrix.columnVector(finalY); // Dimensions: [rows, 1]
 
-    // Multiply Xt_pinv with y_vector
-    const Xt_y = math.multiply(Xt, y_vector) as Matrix;
-    const Xt_y_array = Xt_y.toArray() as number[];
+    // Apply regularization by adding lambda * I to X^T X
+    const Xt = X_matrix.transpose(); // [cols, rows]
+    const XtX = Xt.mmul(X_matrix); // [cols, cols]
+    const lambda = metadata.regularization;
+    const identityMatrix = Matrix.eye(XtX.rows).mul(lambda);
+    const XtX_reg = XtX.add(identityMatrix); // [cols, cols]
 
-    // Compute coefficients using the pseudo-inverse
-    const coeffs = math.multiply(XtX_pinv, Xt_y_array) as number[];
+    // Instead of computing the inverse, solve the linear system (XtX + λI) * coeffs = X^T * y
+    const Xt_y = Xt.mmul(y_vector); // [cols, 1]
+
+    const coeffs = solve(XtX_reg, Xt_y); // Efficiently solves for coeffs
+    const coeffsArray = coeffs.to1DArray();
+
+
+    // Extract coefficients as a flat array
 
     // ================================
-
-    const coeffsArray = coeffs as number[];
+    // Proceed with Coefficients and Evaluation
+    // ================================
 
     // Associate coefficients with rules and return them as objects
     const ruleCoefficients = rules.map((rule, index) => {
@@ -519,8 +561,9 @@ export function main(metadata: Metadata, data: string): EvaluationMetrics {
                 rule: "deleted - you should not see this here",
                 coefficient: 0
             };
+        const antecedentStr = rule.antecedents.map(ant => `If ${ant.variable} is ${ant.fuzzySet}`).join(' AND ');
         return {
-            rule: `If ${rule.variable} is ${rule.fuzzySet} then ${targetVar} is ${rule.outputFuzzySet}`,
+            rule: `${antecedentStr} then ${targetVar} is ${rule.outputFuzzySet}`,
             coefficient: coeffsArray[index],
         };
     });
