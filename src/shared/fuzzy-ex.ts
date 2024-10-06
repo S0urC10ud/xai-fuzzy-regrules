@@ -12,6 +12,8 @@ type Metadata = {
     l1_row_threshold: number;
     numerical_fuzzification: string[];
     numerical_defuzzification: string[];
+    variance_threshold: number;
+    outlier_iqr_multiplier: number;
 };
 
 type Record = { [key: string]: string | number };
@@ -42,22 +44,120 @@ export function main(metadata: Metadata, data: string): EvaluationMetrics {
         skip_empty_lines: true,
     });
 
-    // Make a copy of the target variable before fuzzification
-    const originalTargetValues: number[] = records.map((record) => parseFloat(record[targetVar] as string));
+    // Optional parameters with default values
+    const varianceThreshold = metadata.variance_threshold;
+    const iqrMultiplier = metadata.outlier_iqr_multiplier;
 
     // Identify numerical and categorical keys
-    const numericalKeys: string[] = Object.keys(records[0]).filter(key => {
+    let numericalKeys: string[] = Object.keys(records[0]).filter(key => {
         return records.every(record => !isNaN(parseFloat(record[key] as string)));
     });
 
     const categoricalKeys: string[] = Object.keys(records[0]).filter(key => !numericalKeys.includes(key));
+
+    // ================================
+    // Step 1: Remove Outliers from Numeric Columns (Conditional Filtering)
+    // ================================
+
+    // Function to compute IQR and bounds
+    const computeIQRBounds = (values: number[], multiplier: number = 1.5): { lower: number, upper: number } => {
+        const sorted = [...values].sort((a, b) => a - b);
+        const q1 = math.quantileSeq(sorted, 0.25, true) as number;
+        const q3 = math.quantileSeq(sorted, 0.75, true) as number;
+        const iqr = q3 - q1;
+        const lower = q1 - multiplier * iqr;
+        const upper = q3 + multiplier * iqr;
+        return { lower, upper };
+    };
+
+    // Determine outlier bounds for each numeric column
+    const outlierBounds: { [key: string]: { lower: number, upper: number } } = {};
+    numericalKeys.forEach(key => {
+        const values: number[] = records.map(record => parseFloat(record[key] as string));
+        outlierBounds[key] = computeIQRBounds(values, iqrMultiplier);
+    });
+
+    // Initialize a set to keep track of record indices to remove
+    const outlierRecordIndices: Set<number> = new Set();
+
+    // Iterate over each numeric column to find outliers and conditionally mark records for removal
+    numericalKeys.forEach((key, colIndex) => {
+        const { lower, upper } = outlierBounds[key];
+        const outlierIndicesForColumn: number[] = [];
+
+        records.forEach((record, index) => {
+            const value = parseFloat(record[key] as string);
+            if (value < lower || value > upper) {
+                outlierIndicesForColumn.push(index);
+            }
+        });
+
+        const outlierCount = outlierIndicesForColumn.length;
+
+        // Only perform outlier filtering if there are fewer than 5 outliers in the column
+        if (outlierCount < 5) {
+            outlierIndicesForColumn.forEach(idx => outlierRecordIndices.add(idx));
+        }
+    });
+
+    // Filter out records that are marked as outliers in any column with fewer than 5 outliers
+    const filteredRecords = records.filter((_, index) => !outlierRecordIndices.has(index));
+    const removedOutliers = outlierRecordIndices.size;
+
+    if (removedOutliers > 0) {
+        const warn_msg = `Removed ${removedOutliers} records containing outliers in columns with fewer than 5 outliers based on IQR multiplier ${iqrMultiplier}.`;
+        warnings.push(warn_msg);
+        console.warn(warn_msg);
+    }
+
+    // Update records to filteredRecords
+    const updatedRecords = filteredRecords;
+
+    // ================================
+    // Step 2: Remove Numeric Columns with Low Variance
+    // ================================
+
+    // Function to compute variance
+    const computeVariance = (values: number[]): number => {
+        const mean = math.mean(values);
+        const squaredDiffs = values.map(val => Math.pow(val - mean, 2));
+        return math.mean(squaredDiffs);
+    };
+
+    // Compute variance for each numeric column
+    const variances: { [key: string]: number } = {};
+    numericalKeys.forEach(key => {
+        const values: number[] = updatedRecords.map(record => parseFloat(record[key] as string));
+        variances[key] = computeVariance(values);
+    });
+
+    // Identify columns to keep (variance >= threshold)
+    const columnsToKeep = numericalKeys.filter(key => variances[key] >= varianceThreshold);
+    const removedLowVarianceColumns = numericalKeys.length - columnsToKeep.length;
+
+    if (removedLowVarianceColumns > 0) {
+        const warn_msg = `Removed ${removedLowVarianceColumns} numeric columns with variance below ${varianceThreshold}.`;
+        warnings.push(warn_msg);
+        console.warn(warn_msg);
+    }
+
+    // Update numericalKeys to columnsToKeep
+    numericalKeys = columnsToKeep;
+
+    // If the target variable was removed due to low variance, throw an error
+    if (!numericalKeys.includes(targetVar)) {
+        throw new Error(`The target variable '${targetVar}' was removed due to low variance.`);
+    }
+
+    // Proceed with updatedRecords and numericalKeys
+    const recordsAfterFiltering = updatedRecords;
 
     // Store quantiles for numerical variables
     const variableBounds: { [key: string]: { min: number, max: number } } = {};
 
     // Process numerical columns (including target variable)
     numericalKeys.forEach(key => {
-        const values: number[] = records.map(record => parseFloat(record[key] as string));
+        const values: number[] = recordsAfterFiltering.map(record => parseFloat(record[key] as string));
         const sortedValues = [...values].sort((a, b) => a - b);
         const min = sortedValues[0];
         const max = sortedValues[sortedValues.length - 1];
@@ -66,7 +166,7 @@ export function main(metadata: Metadata, data: string): EvaluationMetrics {
         if (key !== targetVar) {
             generateFuzzificationChart(values, min, max, key);
 
-            records.forEach(record => {
+            recordsAfterFiltering.forEach(record => {
                 const x = parseFloat(record[key] as string);
                 const degrees = computeMembershipDegrees(x, min, max);
                 // Updated to include all seven fuzzy sets
@@ -83,15 +183,15 @@ export function main(metadata: Metadata, data: string): EvaluationMetrics {
     });
 
     categoricalKeys.forEach(key => {
-        const uniqueCategories: string[] = [...new Set(records.map(record => record[key] as string))];
+        const uniqueCategories: string[] = [...new Set(recordsAfterFiltering.map(record => record[key] as string))];
 
         uniqueCategories.forEach(category => {
-            records.forEach(record => {
+            recordsAfterFiltering.forEach(record => {
                 record[`${key}_${category}`] = record[key] === category ? 1 : 0;
             });
         });
 
-        records.forEach(record => {
+        recordsAfterFiltering.forEach(record => {
             delete record[key];
         });
     });
@@ -106,7 +206,7 @@ export function main(metadata: Metadata, data: string): EvaluationMetrics {
     numericalKeys.filter(key => key !== targetVar).forEach(key => {
         inputFuzzySetNonEmpty[key] = {};
         metadata["numerical_fuzzification"].forEach(fuzzySet => {
-            inputFuzzySetNonEmpty[key][fuzzySet] = records.some(record => (record[`${key}_${fuzzySet}`] as number) > 0);
+            inputFuzzySetNonEmpty[key][fuzzySet] = recordsAfterFiltering.some(record => (record[`${key}_${fuzzySet}`] as number) > 0);
         });
     });
 
@@ -182,30 +282,32 @@ export function main(metadata: Metadata, data: string): EvaluationMetrics {
     // Re-generate rules with the updated outputFuzzySetNonEmpty
     rules = []; // Reset rules
     numericalKeys.filter(key => key !== targetVar).forEach(key => {
-        ['low', 'medium', 'high'].forEach(fuzzySet => {
-            outputFuzzySetsList.forEach(outputSet => {
-                if (fuzzySet !== outputSet) { // Adjust this condition as needed
+        metadata["numerical_fuzzification"].forEach(fuzzySet => {
+            ['low', 'medium', 'high'].forEach(fuzzySetVariant => { // Adjusted fuzzy sets as per original code
+                outputFuzzySetsList.forEach(outputSet => {
+                    if (fuzzySet !== outputSet) { // Adjust this condition as needed
 
-                    // Check if both antecedent and consequent fuzzy sets are non-empty
-                    if (inputFuzzySetNonEmpty[key][fuzzySet] && outputFuzzySetNonEmpty[outputSet]) {
-                        const rule: Rule = {
-                            variable: key,
-                            fuzzySet: fuzzySet as 'verylow' | 'low' | 'mediumlow' | 'medium' | 'mediumhigh' | 'high' | 'veryhigh',
-                            outputFuzzySet: outputSet as 'verylow' | 'low' | 'mediumlow' | 'medium' | 'mediumhigh' | 'high' | 'veryhigh',
-                        };
-                        rules.push(rule);
+                        // Check if both antecedent and consequent fuzzy sets are non-empty
+                        if (inputFuzzySetNonEmpty[key][fuzzySet] && outputFuzzySetNonEmpty[outputSet]) {
+                            const rule: Rule = {
+                                variable: key,
+                                fuzzySet: fuzzySet as 'verylow' | 'low' | 'mediumlow' | 'medium' | 'mediumhigh' | 'high' | 'veryhigh',
+                                outputFuzzySet: outputSet as 'verylow' | 'low' | 'mediumlow' | 'medium' | 'mediumhigh' | 'high' | 'veryhigh',
+                            };
+                            rules.push(rule);
+                        }
                     }
-                }
+                });
             });
         });
     });
 
     // Initialize feature matrix X and target vector y
     const X: number[][] = []; // Each row corresponds to a record (and contains all rules), each column corresponds to a rule's crisp output
-    const y: number[] = originalTargetValues;
+    const y: number[] = recordsAfterFiltering.map((record) => parseFloat(record[targetVar] as string));
 
     // For each record, compute the crisp output for each rule
-    records.forEach((record, index) => {
+    recordsAfterFiltering.forEach((record, index) => {
         const featureVector: number[] = [];
 
         rules.forEach(rule => {
@@ -308,7 +410,6 @@ export function main(metadata: Metadata, data: string): EvaluationMetrics {
         return sum;
     };
 
-    const columnsToKeep = new Set<number>();
     const duplicateColumnGroups: number[][] = [];
     const keptColumns: number[] = [];
     const columnL1Threshold = metadata["l1_column_threshold"];

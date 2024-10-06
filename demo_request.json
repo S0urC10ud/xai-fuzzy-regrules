@@ -9,5 +9,7 @@
     "l1_row_threshold":0.1,
     "l1_column_threshold":0.1,
     "numerical_fuzzification": ["low", "medium", "high"],
-    "numerical_defuzzification": ["verylow", "low", "mediumlow", "medium", "mediumhigh", "high", "veryhigh"]
+    "numerical_defuzzification": ["verylow", "low", "mediumlow", "medium", "mediumhigh", "high", "veryhigh"],
+    "variance_threshold": 1e-5,
+    "outlier_iqr_multiplier": 5
 }
