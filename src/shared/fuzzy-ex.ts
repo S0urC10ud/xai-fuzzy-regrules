@@ -280,6 +280,19 @@ export function main(metadata: Metadata, data: string): EvaluationMetrics {
         return results;
     };
 
+    // Helper function to compute the Cartesian product of arrays
+    function cartesianProduct<T>(...arrays: T[][]): T[][] {
+        return arrays.reduce<T[][]>((acc, curr) => {
+            const res: T[][] = [];
+            acc.forEach(a => {
+                curr.forEach(b => {
+                    res.push([...a, b]);
+                });
+            });
+            return res;
+        }, [[]]);
+    }
+
     // Iterate over combination sizes from 1 to num_vars
     for (let size = 1; size <= numVars; size++) {
         const variableCombinations = getCombinations(numericalKeys.filter(key => key !== targetVar), size);
@@ -312,19 +325,6 @@ export function main(metadata: Metadata, data: string): EvaluationMetrics {
                 });
             });
         });
-    }
-
-    // Helper function to compute the Cartesian product of arrays
-    function cartesianProduct<T>(...arrays: T[][]): T[][] {
-        return arrays.reduce<T[][]>((acc, curr) => {
-            const res: T[][] = [];
-            acc.forEach(a => {
-                curr.forEach(b => {
-                    res.push([...a, b]);
-                });
-            });
-            return res;
-        }, [[]]);
     }
 
     // Initialize feature matrix X and target vector y
@@ -387,42 +387,52 @@ export function main(metadata: Metadata, data: string): EvaluationMetrics {
     });
 
     // ================================
-    // Updated Duplicate Row Removal
+    // Optimized Duplicate Row Removal
     // ================================
 
-    // Function to compute L1 norm between two rows
-    const computeL1Norm = (row1: number[], row2: number[]): number => {
-        if (row1.length !== row2.length) {
-            throw new Error('Rows must have the same length to compute L1 norm.');
-        }
-        let sum = 0;
-        for (let i = 0; i < row1.length; i++) {
-            sum += Math.abs(row1[i] - row2[i]);
-        }
-        return sum;
+    // Function to hash a row based on rounded values
+    const hashRow = (row: number[], threshold: number): string => {
+        const numDimensions = row.length;
+        const precision = threshold / numDimensions / 2; // Ensures that two rows within threshold are hashed to the same bucket
+        return row.map(value => Math.round(value / precision)).join('_');
     };
 
     const uniqueX: number[][] = [];
     const uniqueY: number[] = [];
+    const rowHashes = new Map<string, number>();
     let duplicateRowCount = 0;
     const rowThreshold = metadata["l1_row_threshold"]; // L1 norm threshold
 
     for (let i = 0; i < X.length; i++) {
         const currentRow = X[i];
-        let isDuplicate = false;
+        const currentHash = hashRow(currentRow, rowThreshold);
 
-        for (const uniqueRow of uniqueX) {
-            const l1Norm = computeL1Norm(currentRow, uniqueRow);
-            if (l1Norm < rowThreshold) {
-                isDuplicate = true;
-                duplicateRowCount++;
-                break;
-            }
-        }
-
-        if (!isDuplicate) {
+        if (!rowHashes.has(currentHash)) {
+            rowHashes.set(currentHash, uniqueX.length);
             uniqueX.push(currentRow);
             uniqueY.push(y[i]);
+        } else {
+            // Optionally, verify if the existing row is indeed within the threshold
+            const existingIndex = rowHashes.get(currentHash)!;
+            const existingRow = uniqueX[existingIndex];
+            let isDuplicate = true;
+            let accumulatedDiff = 0;
+
+            for (let j = 0; j < currentRow.length; j++) {
+                accumulatedDiff += Math.abs(currentRow[j] - existingRow[j]);
+                if (accumulatedDiff >= rowThreshold) {
+                    isDuplicate = false;
+                    break;
+                }
+            }
+
+            if (isDuplicate) {
+                duplicateRowCount++;
+            } else {
+                rowHashes.set(currentHash, uniqueX.length);
+                uniqueX.push(currentRow);
+                uniqueY.push(y[i]);
+            }
         }
     }
 
@@ -431,58 +441,71 @@ export function main(metadata: Metadata, data: string): EvaluationMetrics {
         warnings.push(warn_msg);
         console.warn(warn_msg);
     }
+
     const finalX = uniqueX;
     const finalY = uniqueY;
 
     // ================================
-    // Updated Duplicate Column Removal
+    // Optimized Duplicate Column Removal
     // ================================
 
-    // Function to compute L1 norm between two columns
-    const computeColumnL1Norm = (col1: number[], col2: number[]): number => {
-        if (col1.length !== col2.length) {
-            throw new Error('Columns must have the same length to compute L1 norm.');
-        }
-        let sum = 0;
-        for (let i = 0; i < col1.length; i++) {
-            sum += Math.abs(col1[i] - col2[i]);
-        }
-        return sum;
+    // Function to hash a column based on rounded values
+    const hashColumn = (column: number[], threshold: number): string => {
+        const numElements = column.length;
+        const precision = threshold / numElements / 2; // Ensures that two columns within threshold are hashed to the same bucket
+        return column.map(value => Math.round(value / precision)).join('_');
     };
 
-    const duplicateColumnGroups: number[][] = [];
     const keptColumns: number[] = [];
-    const columnL1Threshold = metadata["l1_column_threshold"];
+    const columnHashes = new Map<string, number>();
+    const duplicateColumnGroups: number[][] = [];
+    const columnThreshold = metadata["l1_column_threshold"]; // L1 norm threshold
+
     for (let col = 0; col < finalX[0].length; col++) {
-        let isDuplicate = false;
-        for (const keptCol of keptColumns) {
-            const col1 = finalX.map(row => row[col]);
-            const col2 = finalX.map(row => row[keptCol]);
-            const l1Norm = computeColumnL1Norm(col1, col2);
-            if (l1Norm < columnL1Threshold) {
+        const currentColumn = finalX.map(row => row[col]);
+        const currentHash = hashColumn(currentColumn, columnThreshold);
+
+        if (!columnHashes.has(currentHash)) {
+            columnHashes.set(currentHash, keptColumns.length);
+            keptColumns.push(col);
+        } else {
+            // Optionally, verify if the existing column is indeed within the threshold
+            const existingIndex = columnHashes.get(currentHash)!;
+            const existingColumn = finalX.map(row => row[keptColumns[existingIndex]]);
+            let isDuplicate = true;
+            let accumulatedDiff = 0;
+
+            for (let j = 0; j < currentColumn.length; j++) {
+                accumulatedDiff += Math.abs(currentColumn[j] - existingColumn[j]);
+                if (accumulatedDiff >= columnThreshold) {
+                    isDuplicate = false;
+                    break;
+                }
+            }
+
+            if (isDuplicate) {
                 // Find the group that the keptCol belongs to
                 let groupFound = false;
                 for (const group of duplicateColumnGroups) {
-                    if (group.includes(keptCol)) {
+                    if (group.includes(keptColumns[existingIndex])) {
                         group.push(col);
                         groupFound = true;
                         break;
                     }
                 }
                 if (!groupFound) {
-                    duplicateColumnGroups.push([keptCol, col]);
+                    duplicateColumnGroups.push([keptColumns[existingIndex], col]);
                 }
-                isDuplicate = true;
-                break;
+            } else {
+                columnHashes.set(currentHash, keptColumns.length);
+                keptColumns.push(col);
             }
-        }
-
-        if (!isDuplicate) {
-            keptColumns.push(col);
         }
     }
 
-    if (duplicateColumnGroups.length > 0) {
+    const duplicateColumnCount = finalX[0].length - keptColumns.length;
+
+    if (duplicateColumnCount > 0) {
         // Collect details for warnings
         const duplicateDetails = duplicateColumnGroups
             .filter(group => group.length > 1)
@@ -502,16 +525,15 @@ export function main(metadata: Metadata, data: string): EvaluationMetrics {
             .filter(detail => detail !== '')
             .join('\n\n');
 
-        const warn_msg = `Duplicate columns detected based on L1-Norm < ${columnL1Threshold}:\n${duplicateDetails}`;
+        const warn_msg = `Duplicate columns detected and removed based on L1-Norm < ${columnThreshold}:\n${duplicateDetails}`;
         warnings.push(warn_msg);
         console.warn(warn_msg);
 
-        // Remove marked null rules and corresponding columns
-        const keptColumnsSet = new Set(keptColumns);
+        // Remove duplicate columns from finalX and rules
         const uniqueXUpdated = finalX.map(row => {
-            return row.filter((_, colIndex) => keptColumnsSet.has(colIndex));
+            return keptColumns.map(colIndex => row[colIndex]);
         });
-        const filteredRules = rules.filter(rule => rule !== null) as Rule[];
+        const filteredRules = keptColumns.map(colIndex => rules[colIndex]).filter(rule => rule !== null) as Rule[];
 
         // Replace finalX and rules with filtered versions
         finalX.length = 0;
