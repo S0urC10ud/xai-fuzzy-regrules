@@ -1,6 +1,6 @@
 import express, { Request, Response } from 'express';
 import multer from 'multer';
-import { main } from '../shared/fuzzy-ex';
+import { main } from '../shared';
 
 // Extend the Request type to include the file property from multer
 interface CustomRequest extends Request {

@@ -1,2 +1,2 @@
 export * from './fuzzy';
-export * from './fuzzification';
+export * from './vis_fuzzification';
