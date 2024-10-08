@@ -18,17 +18,17 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 
 app.post('/api/upload', upload.single('csvFile'), (req: CustomRequest, res: Response): void => {
-    const csvFile = req.file; // Access the uploaded CSV file
-    const metadata = req.body.metadata; // Access the JSON rules array
+    const csvFile = req.file;
+    const metadata = req.body.metadata;
 
     if (!csvFile) {
         res.status(400).json({ error: 'No file uploaded' });
-        return;  // Ensure the function returns void
+        return;
     }
 
     if (!metadata) {
         res.status(400).json({ error: 'No metadata provided' });
-        return;  // Ensure the function returns void
+        return;
     }
     
     res.status(200).json(main(JSON.parse(metadata), csvFile.buffer.toString()));
