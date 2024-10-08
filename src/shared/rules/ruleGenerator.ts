@@ -1,44 +1,34 @@
-// src/rules/ruleGenerator.ts
-
-import { Rule, Metadata, Record } from '../types';
+import { Rule, Metadata, FuzzySet } from '../types';
 import { getCombinations, cartesianProduct } from '../utils/combinations';
-import { logWarning } from '../utils/logger';
 
 export function generateAllPossibleRules(
     numericalKeys: string[],
+    categoricalKeys: string[],
     targetVar: string,
     numVars: number,
-    metadata: Metadata,
+    variableFuzzySets: { [variable: string]: string[] },
     inputFuzzySetNonEmpty: { [variable: string]: { [fuzzySet: string]: boolean } },
     outputFuzzySetNonEmpty: { [fuzzySet: string]: boolean },
-    warnings: string[]
+    warnings: string[],
+    metadata: Metadata
 ): Rule[] {
     let allRules: Rule[] = [];
+    const allVariables = [...numericalKeys, ...categoricalKeys].filter(key => key !== targetVar);
 
     for (let size = 1; size <= numVars; size++) {
-        const variableCombinations = getCombinations(
-            numericalKeys.filter(key => key !== targetVar),
-            size
-        );
+        const variableCombinations = getCombinations(allVariables, size);
 
         variableCombinations.forEach(variableCombo => {
-            const fuzzySetsPerVariable = variableCombo.map(() => metadata.numerical_fuzzification);
+            const fuzzySetsPerVariable = variableCombo.map(variable => variableFuzzySets[variable]);
             const fuzzySetCombinations = cartesianProduct(...fuzzySetsPerVariable);
 
             fuzzySetCombinations.forEach(fuzzySetCombo => {
                 const antecedents = variableCombo.map((variable, idx) => ({
                     variable,
-                    fuzzySet: fuzzySetCombo[idx] as
-                        | 'verylow'
-                        | 'low'
-                        | 'mediumlow'
-                        | 'medium'
-                        | 'mediumhigh'
-                        | 'high'
-                        | 'veryhigh',
+                    fuzzySet: fuzzySetCombo[idx]
                 }));
 
-                metadata.numerical_defuzzification.forEach(outputSet => {
+                metadata.numerical_defuzzification.forEach((outputSet: FuzzySet) => {
                     const antecedentsNonEmpty = antecedents.every(
                         ant => inputFuzzySetNonEmpty[ant.variable][ant.fuzzySet]
                     );
@@ -46,14 +36,7 @@ export function generateAllPossibleRules(
                     if (antecedentsNonEmpty && outputFuzzySetNonEmpty[outputSet]) {
                         const rule: Rule = {
                             antecedents,
-                            outputFuzzySet: outputSet as
-                                | 'verylow'
-                                | 'low'
-                                | 'mediumlow'
-                                | 'medium'
-                                | 'mediumhigh'
-                                | 'high'
-                                | 'veryhigh',
+                            outputFuzzySet: outputSet,
                             isWhitelist: false,
                         };
                         allRules.push(rule);

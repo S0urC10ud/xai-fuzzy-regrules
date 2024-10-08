@@ -4,9 +4,13 @@ export function encodeCategoricalVariables(
     records: Record[],
     categoricalKeys: string[],
     warnings: string[]
-): void {
+): { [key: string]: string[] } {
+    const categoricalFuzzySets: { [key: string]: string[] } = {};
+
     categoricalKeys.forEach(key => {
         const uniqueCategories: string[] = [...new Set(records.map(record => record[key] as string))];
+
+        categoricalFuzzySets[key] = uniqueCategories;
 
         uniqueCategories.forEach(category => {
             records.forEach(record => {
@@ -18,4 +22,6 @@ export function encodeCategoricalVariables(
             delete record[key];
         });
     });
+
+    return categoricalFuzzySets;
 }

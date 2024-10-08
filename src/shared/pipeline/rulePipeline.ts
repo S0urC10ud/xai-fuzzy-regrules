@@ -1,12 +1,13 @@
-import { Rule, Metadata, Record } from '../types';
+import { Rule, Metadata } from '../types';
 import { generateAllPossibleRules } from '../rules/ruleGenerator';
 import { applyWhitelistBlacklist } from '../rules/ruleManager';
-import { logWarning } from '../utils/logger';
 
 export function executeRulePipeline(
     numericalKeys: string[],
+    categoricalKeys: string[],
     targetVar: string,
     metadata: Metadata,
+    variableFuzzySets: { [variable: string]: string[] },
     inputFuzzySetNonEmpty: { [variable: string]: { [fuzzySet: string]: boolean } },
     outputFuzzySetNonEmpty: { [fuzzySet: string]: boolean },
     warnings: string[]
@@ -14,12 +15,14 @@ export function executeRulePipeline(
     // Generate all possible rules
     let allRules: Rule[] = generateAllPossibleRules(
         numericalKeys,
+        categoricalKeys,
         targetVar,
         metadata.num_vars,
-        metadata,
+        variableFuzzySets,
         inputFuzzySetNonEmpty,
         outputFuzzySetNonEmpty,
-        warnings
+        warnings,
+        metadata // Pass metadata here
     );
 
     // Apply Whitelist and Blacklist
