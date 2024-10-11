@@ -1,15 +1,20 @@
 // src/dataProcessing/outlierRemoval.ts
 
 import * as math from 'mathjs';
-import { Record } from '../types';
+import { Record, Metadata } from '../types';
 import { logWarning } from '../utils/logger';
 
 export function removeOutliers(
     records: Record[],
     numericalKeys: string[],
     iqrMultiplier: number,
-    warnings: string[]
+    warnings: string[],
+    metadata: Metadata
 ): Record[] {
+    if (!metadata.enable_outlier_removal) {
+        return records;
+    }
+
     const computeIQRBounds = (values: number[], multiplier: number = 1.5): { lower: number; upper: number } => {
         const sorted = [...values].sort((a, b) => a - b);
         const q1 = math.quantileSeq(sorted, 0.25, true) as number;
@@ -22,8 +27,12 @@ export function removeOutliers(
 
     const outlierBounds: { [key: string]: { lower: number; upper: number } } = {};
     numericalKeys.forEach((key) => {
-        const values: number[] = records.map((record) => parseFloat(record[key] as string));
-        outlierBounds[key] = computeIQRBounds(values, iqrMultiplier);
+        if (metadata.outlier_bounds && metadata.outlier_bounds[key]) {
+            outlierBounds[key] = metadata.outlier_bounds[key];
+        } else {
+            const values: number[] = records.map((record) => parseFloat(record[key] as string));
+            outlierBounds[key] = computeIQRBounds(values, iqrMultiplier);
+        }
     });
 
     const outlierRecordIndices: Set<number> = new Set();

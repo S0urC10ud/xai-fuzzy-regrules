@@ -19,7 +19,7 @@ export function executeDataPipeline(
         key => !numericalKeys.includes(key)
     );
 
-    records = removeOutliers(records, numericalKeys, metadata.outlier_iqr_multiplier, warnings);
+    records = removeOutliers(records, numericalKeys, metadata.outlier_iqr_multiplier, warnings, metadata);
 
     const { filteredKeys } = filterLowVarianceColumns(
         records,
