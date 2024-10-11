@@ -1,8 +1,4 @@
 {
-    "rules": [
-        "a",
-        "b"
-    ],
     "split_char":";",
     "target_var": "MEDV",
     "regularization": 0.001,

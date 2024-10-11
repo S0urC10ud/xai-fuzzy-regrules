@@ -10,8 +10,9 @@ export function executeRulePipeline(
     variableFuzzySets: { [variable: string]: string[] },
     inputFuzzySetNonEmpty: { [variable: string]: { [fuzzySet: string]: boolean } },
     outputFuzzySetNonEmpty: { [fuzzySet: string]: boolean },
+    outputFuzzySets: { [x: string]: number[]; verylow: number[]; low: number[]; mediumlow: number[]; medium: number[]; mediumhigh: number[]; high: number[]; veryhigh: number[]; },
     warnings: string[]
-): Rule[] {
+) {
     let allRules: Rule[] = generateAllPossibleRules(
         numericalKeys,
         categoricalKeys,
@@ -26,5 +27,10 @@ export function executeRulePipeline(
 
     allRules = applyWhitelistBlacklist(allRules, metadata, targetVar, warnings);
 
-    return allRules;
+    const ruleOutputFuzzySetDegreesMap: { [ruleIndex: number]: number[]; } = {};
+    allRules.forEach((rule, ruleIndex) => {
+        ruleOutputFuzzySetDegreesMap[ruleIndex] = outputFuzzySets[rule.outputFuzzySet];
+    });
+
+    return {allRules, ruleOutputFuzzySetDegreesMap};
 }

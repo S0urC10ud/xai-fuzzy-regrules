@@ -1,5 +1,4 @@
-import { Metadata, EvaluationMetrics, Record, Rule } from '../types';
-import { executeRulePipeline } from '../pipeline/rulePipeline';
+import { Metadata, Record } from '../types';
 import { computeMembershipDegrees } from '../utils/fuzzy';
 
 export function prepareDefuzzification(
@@ -87,24 +86,5 @@ export function prepareDefuzzification(
         });
     });
 
-    const allRules: Rule[] = executeRulePipeline(
-        numericalKeys,
-        categoricalKeys,
-        metadata.target_var,
-        metadata,
-        variableFuzzySets,
-        inputFuzzySetNonEmpty,
-        outputFuzzySetNonEmpty,
-        warnings
-    );
-
-    const X: number[][] = [];
-    const y: number[] = records.map(record => parseFloat(record[metadata.target_var] as string));
-
-    const ruleOutputFuzzySetDegreesMap: { [ruleIndex: number]: number[]; } = {};
-    allRules.forEach((rule, ruleIndex) => {
-        
-        ruleOutputFuzzySetDegreesMap[ruleIndex] = outputFuzzySets[rule.outputFuzzySet];
-    });
-    return { allRules, ruleOutputFuzzySetDegreesMap, outputUniverse, X, y };
+    return {outputUniverse, variableFuzzySets, inputFuzzySetNonEmpty, outputFuzzySetNonEmpty, outputFuzzySets}
 }

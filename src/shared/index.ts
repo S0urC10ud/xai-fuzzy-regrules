@@ -1,10 +1,11 @@
-import { Metadata, EvaluationMetrics } from './types';
+import { Metadata, EvaluationMetrics, Rule } from './types';
 import { executeDataPipeline } from './pipeline/dataPipeline';
 import { executeFeaturePipeline } from './pipeline/featurePipeline';
 import { executeRegressionPipeline } from './pipeline/regressionPipeline';
 import { executeEvaluationPipeline } from './pipeline/evaluationPipeline';
 import { prepareDefuzzification } from './pipeline/defuzzificationPipeline';
 import { performInference } from './utils/fuzzy_inference';
+import { executeRulePipeline } from './pipeline/rulePipeline';
 
 export function main(metadata: Metadata, data: string): EvaluationMetrics {
     const warnings: string[] = [];
@@ -20,7 +21,7 @@ export function main(metadata: Metadata, data: string): EvaluationMetrics {
 
     const { categoricalFuzzySets } = executeFeaturePipeline(records, numericalKeys, categoricalKeys, metadata, variableBounds, warnings);
 
-    const { allRules, ruleOutputFuzzySetDegreesMap, outputUniverse, X, y } = prepareDefuzzification(
+    const { outputUniverse, variableFuzzySets, inputFuzzySetNonEmpty, outputFuzzySetNonEmpty, outputFuzzySets }  = prepareDefuzzification(
         numericalKeys,
         categoricalKeys,
         categoricalFuzzySets,
@@ -29,6 +30,21 @@ export function main(metadata: Metadata, data: string): EvaluationMetrics {
         variableBounds,
         warnings
     );
+
+    const {allRules,ruleOutputFuzzySetDegreesMap} = executeRulePipeline(
+        numericalKeys,
+        categoricalKeys,
+        metadata.target_var,
+        metadata,
+        variableFuzzySets,
+        inputFuzzySetNonEmpty,
+        outputFuzzySetNonEmpty,
+        outputFuzzySets,
+        warnings
+    );
+    
+    const X: number[][] = [];
+    const y: number[] = records.map(record => parseFloat(record[metadata.target_var] as string));
 
     performInference(records, allRules, ruleOutputFuzzySetDegreesMap, outputUniverse, X);
 
@@ -53,7 +69,6 @@ export function main(metadata: Metadata, data: string): EvaluationMetrics {
 
     const sortedRules = ruleCoefficients.sort((a, b) => b.coefficient - a.coefficient);
 
-    //Compute Predictions
     const y_pred = finalX.map(row => {
         return row.reduce((sum, val, idx) => sum + val * (coeffsArray ? coeffsArray[idx] : 0), 0);
     });

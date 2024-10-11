@@ -10,7 +10,7 @@ export function performRegression(
     metadata: any,
     warnings: string[]
 ): number[] {
-    const X_matrix = new Matrix(finalX); // [rows, cols]
+    const X_matrix = new Matrix(finalX); // design matrix [rows, cols]
     const y_vector = Matrix.columnVector(finalY); // [rows, 1]
 
     const XtX = X_matrix.transpose().mmul(X_matrix); // [cols, cols]
