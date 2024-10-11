@@ -7,6 +7,7 @@ export function attemptToSolve(
     XtX_reg: Matrix,
     Xt_y: Matrix,
     rules: Rule[],
+    metadata: any,
     warnings: string[]
 ): number[] | null {
     let currentRules = [...rules];
@@ -20,14 +21,14 @@ export function attemptToSolve(
             const nonWhitelistIndex = currentRules.findIndex((rule) => !rule.isWhitelist);
             if (nonWhitelistIndex !== -1) {
                 const removedRule = currentRules.splice(nonWhitelistIndex, 1)[0];
-                const ruleStr = serializeRule(removedRule, 'TARGET'); // Replace 'TARGET' appropriately
+                const ruleStr = serializeRule(removedRule, metadata["target_var"]);
                 const warnMsg = `Removed non-whitelist rule to attempt solving: "${ruleStr}".`;
                 logWarning(warnMsg, warnings);
             } else {
                 const whitelistIndex = currentRules.findIndex((rule) => rule.isWhitelist);
                 if (whitelistIndex !== -1) {
                     const removedRule = currentRules.splice(whitelistIndex, 1)[0];
-                    const ruleStr = serializeRule(removedRule, 'TARGET'); // Replace 'TARGET' appropriately
+                    const ruleStr = serializeRule(removedRule, metadata["target_var"]);
                     const warnMsg = `Removed whitelist rule to attempt solving: "${ruleStr}".`;
                     logWarning(warnMsg, warnings);
                 } else {

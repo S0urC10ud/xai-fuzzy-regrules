@@ -26,7 +26,7 @@ export function performRegression(
         const coeffs = solve(XtX_reg, Xt_y);
         coeffsArray = coeffs.to1DArray();
     } catch (error) {
-        coeffsArray = attemptToSolve(XtX_reg, Xt_y, allRules, warnings);
+        coeffsArray = attemptToSolve(XtX_reg, Xt_y, allRules, metadata, warnings);
         if (coeffsArray === null) {
             const finalWarn = `Unable to solve the regression problem even after removing all possible rules.`;
             logWarning(finalWarn, warnings);

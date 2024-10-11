@@ -87,7 +87,6 @@ export function prepareDefuzzification(
         });
     });
 
-    // Rule Generation
     const allRules: Rule[] = executeRulePipeline(
         numericalKeys,
         categoricalKeys,
@@ -99,7 +98,6 @@ export function prepareDefuzzification(
         warnings
     );
 
-    // Prepare feature matrix X and target vector y
     const X: number[][] = [];
     const y: number[] = records.map(record => parseFloat(record[metadata.target_var] as string));
 

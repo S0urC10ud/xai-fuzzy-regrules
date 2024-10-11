@@ -1,4 +1,4 @@
-import { Metadata, EvaluationMetrics, Record, Rule } from './types';
+import { Metadata, EvaluationMetrics } from './types';
 import { executeDataPipeline } from './pipeline/dataPipeline';
 import { executeFeaturePipeline } from './pipeline/featurePipeline';
 import { executeRegressionPipeline } from './pipeline/regressionPipeline';
@@ -20,7 +20,6 @@ export function main(metadata: Metadata, data: string): EvaluationMetrics {
 
     const { categoricalFuzzySets } = executeFeaturePipeline(records, numericalKeys, categoricalKeys, metadata, variableBounds, warnings);
 
-    // Filter relevant fuzzy sets
     const { allRules, ruleOutputFuzzySetDegreesMap, outputUniverse, X, y } = prepareDefuzzification(
         numericalKeys,
         categoricalKeys,

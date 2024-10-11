@@ -12,7 +12,6 @@ export function executeRulePipeline(
     outputFuzzySetNonEmpty: { [fuzzySet: string]: boolean },
     warnings: string[]
 ): Rule[] {
-    // Generate all possible rules
     let allRules: Rule[] = generateAllPossibleRules(
         numericalKeys,
         categoricalKeys,
@@ -22,10 +21,9 @@ export function executeRulePipeline(
         inputFuzzySetNonEmpty,
         outputFuzzySetNonEmpty,
         warnings,
-        metadata // Pass metadata here
+        metadata
     );
 
-    // Apply Whitelist and Blacklist
     allRules = applyWhitelistBlacklist(allRules, metadata, targetVar, warnings);
 
     return allRules;

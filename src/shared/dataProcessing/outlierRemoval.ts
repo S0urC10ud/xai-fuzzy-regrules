@@ -32,6 +32,8 @@ export function removeOutliers(
         const { lower, upper } = outlierBounds[key];
         const outlierIndices = records.reduce<number[]>((acc, record, idx) => {
             const value = parseFloat(record[key] as string);
+            if (lower === upper) // no difference between q1 and q3 - then interesting data might be "outliers"
+                return acc;
             if (value < lower || value > upper) acc.push(idx);
             return acc;
         }, []);
