@@ -21,13 +21,15 @@ export function executeDataPipeline(
 
     records = removeOutliers(records, numericalKeys, warnings, metadata);
 
-    const { filteredKeys } = filterLowVarianceColumns(
+    const { filteredKeys, updatedRecords } = filterLowVarianceColumns(
         records,
         numericalKeys,
         metadata.variance_threshold,
         metadata.target_var,
-        warnings
+        warnings,
+        metadata
     );
+    records = updatedRecords;
     numericalKeys = filteredKeys;
 
     return { records, numericalKeys, categoricalKeys };

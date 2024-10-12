@@ -1,5 +1,5 @@
 import * as math from 'mathjs';
-import { Record } from '../types';
+import { Record, Metadata } from '../types';
 import { logWarning } from '../utils/logger';
 
 export function filterLowVarianceColumns(
@@ -7,7 +7,8 @@ export function filterLowVarianceColumns(
     numericalKeys: string[],
     varianceThreshold: number,
     targetVar: string,
-    warnings: string[]
+    warnings: string[],
+    metadata: Metadata
 ): { filteredKeys: string[]; updatedRecords: Record[] } {
     const computeVariance = (values: number[]): number => {
         const mean = math.mean(values);
@@ -31,12 +32,32 @@ export function filterLowVarianceColumns(
         );
     }
 
-    if (!columnsToKeep.includes(targetVar)) {
+    if (metadata.remove_low_variance && !columnsToKeep.includes(targetVar)) {
         throw new Error(`The target variable '${targetVar}' was removed due to low variance.`);
     }
 
-    return {
-        filteredKeys: columnsToKeep,
-        updatedRecords: records,
-    };
+    if (metadata.remove_low_variance) {
+        return {
+            filteredKeys: columnsToKeep,
+            updatedRecords: records.map(record => {
+                const updatedRecord: Record = { ...record };
+                numericalKeys.forEach(key => {
+                    if (!columnsToKeep.includes(key)) {
+                        delete updatedRecord[key];
+                    }
+                });
+                return updatedRecord;
+            }),
+        };
+    } else {
+        numericalKeys.forEach(key => {
+            if (!columnsToKeep.includes(key)) {
+                logWarning(`The variable '${key}' has low variance and would have been removed.`, warnings);
+            }
+        });
+        return {
+            filteredKeys: numericalKeys,
+            updatedRecords: records,
+        };
+    }
 }

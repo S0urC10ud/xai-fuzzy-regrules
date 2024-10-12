@@ -19,7 +19,8 @@ export interface Metadata {
     whitelist?: string[];
     blacklist?: string[];
     only_whitelist?: boolean;
-};
+    remove_low_variance?: boolean;
+}
 
 export type Record = { [key: string]: string | number };
 
