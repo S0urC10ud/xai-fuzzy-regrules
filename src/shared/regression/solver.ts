@@ -8,7 +8,7 @@ export function attemptToSolve(
     Xt_y: Matrix,
     rules: Rule[],
     metadata: any,
-    warnings: string[]
+    warnings: any[]
 ): number[] | null {
     let currentRules = [...rules];
     let attempt = 0;

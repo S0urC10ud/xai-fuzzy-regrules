@@ -43,5 +43,5 @@ export type EvaluationMetrics = {
     root_mean_squared_error: number;
     r_squared: number;
     mean_absolute_percentage_error: number;
-    warnings: string[];
+    warnings: any[];
 };

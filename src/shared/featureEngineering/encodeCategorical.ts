@@ -3,7 +3,7 @@ import { Record } from '../types';
 export function encodeCategoricalVariables(
     records: Record[],
     categoricalKeys: string[],
-    warnings: string[]
+    warnings: any[]
 ): { [key: string]: string[] } {
     const categoricalFuzzySets: { [key: string]: string[] } = {};
 

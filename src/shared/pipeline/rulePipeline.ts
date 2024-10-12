@@ -11,7 +11,7 @@ export function executeRulePipeline(
     inputFuzzySetNonEmpty: { [variable: string]: { [fuzzySet: string]: boolean } },
     outputFuzzySetNonEmpty: { [fuzzySet: string]: boolean },
     outputFuzzySets: { [x: string]: number[]; verylow: number[]; low: number[]; mediumlow: number[]; medium: number[]; mediumhigh: number[]; high: number[]; veryhigh: number[]; },
-    warnings: string[]
+    warnings: any[]
 ) {
     let allRules: Rule[] = generateAllPossibleRules(
         numericalKeys,

@@ -8,7 +8,7 @@ export function performRegression(
     finalY: number[],
     allRules: Rule[],
     metadata: any,
-    warnings: string[]
+    warnings: any[]
 ): number[] {
     const X_matrix = new Matrix(finalX); // design matrix [rows, cols]
     const y_vector = Matrix.columnVector(finalY); // [rows, 1]

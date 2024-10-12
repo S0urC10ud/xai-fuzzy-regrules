@@ -8,7 +8,7 @@ import { performInference } from './utils/fuzzy_inference';
 import { executeRulePipeline } from './pipeline/rulePipeline';
 
 export function main(metadata: Metadata, data: string): EvaluationMetrics {
-    const warnings: string[] = [];
+    const warnings: any[] = [];
 
     const { records, numericalKeys, categoricalKeys } = executeDataPipeline(data, metadata, warnings);
     const variableBounds: { [key: string]: { min: number; max: number } } = {};

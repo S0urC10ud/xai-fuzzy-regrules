@@ -9,7 +9,7 @@ export function fuzzifyNumericalData(
     targetVar: string,
     metadata: Metadata,
     variableBounds: { [key: string]: { min: number; max: number } },
-    warnings: string[]
+    warnings: any[]
 ): void {
     numericalKeys.forEach(key => {
         const values: number[] = records.map(record => parseFloat(record[key] as string));

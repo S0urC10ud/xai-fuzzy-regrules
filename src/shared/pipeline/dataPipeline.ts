@@ -7,7 +7,7 @@ import { logWarning } from '../utils/logger';
 export function executeDataPipeline(
     data: string,
     metadata: Metadata,
-    warnings: string[]
+    warnings: any[]
 ): { records: Record[]; numericalKeys: string[]; categoricalKeys: string[] } {
     let records: Record[] = parseCSV(data, metadata.split_char);
 

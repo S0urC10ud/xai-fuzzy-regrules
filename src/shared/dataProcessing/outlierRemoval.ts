@@ -16,7 +16,7 @@ function quantile(arr: number[], q: number): number {
 export function removeOutliers(
     records: Record[],
     numericalKeys: string[],
-    warnings: string[],
+    warnings: any[],
     metadata: Metadata
 ): Record[] {
     if (!metadata.outlier_filtering) {

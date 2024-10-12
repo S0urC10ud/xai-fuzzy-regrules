@@ -8,7 +8,7 @@ export function prepareDefuzzification(
     metadata: Metadata,
     records: Record[],
     variableBounds: { [key: string]: { min: number; max: number; }; },
-    warnings: string[]
+    warnings: any[]
 ) {
     const inputFuzzySetNonEmpty: { [variable: string]: { [fuzzySet: string]: boolean; }; } = {};
     const variableFuzzySets: { [variable: string]: string[] } = {};

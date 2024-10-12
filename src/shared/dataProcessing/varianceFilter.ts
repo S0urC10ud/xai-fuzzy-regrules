@@ -7,7 +7,7 @@ export function filterLowVarianceColumns(
     numericalKeys: string[],
     varianceThreshold: number,
     targetVar: string,
-    warnings: string[],
+    warnings: any[],
     metadata: Metadata
 ): { filteredKeys: string[]; updatedRecords: Record[] } {
     const computeVariance = (values: number[]): number => {

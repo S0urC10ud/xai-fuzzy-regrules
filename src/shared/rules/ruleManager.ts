@@ -7,7 +7,7 @@ export function applyWhitelistBlacklist(
     allRules: Rule[],
     metadata: any,
     targetVar: string,
-    warnings: string[]
+    warnings: any[]
 ): Rule[] {
     const { whitelist, blacklist, only_whitelist } = metadata;
 

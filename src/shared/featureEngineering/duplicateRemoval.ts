@@ -2,6 +2,19 @@ import { Rule, Record } from '../types';
 import { hashRow, hashColumn } from '../utils/hashUtils';
 import { logWarning } from '../utils/logger';
 
+interface DuplicateDetail {
+    primary: string;
+    secondary: string[];
+}
+
+/**
+ * Removes duplicate rows from the dataset based on the L1-Norm threshold.
+ * @param X - The feature matrix.
+ * @param y - The target vector.
+ * @param rowThreshold - The L1-Norm threshold for determining duplicates.
+ * @param warnings - An array to store warning messages.
+ * @returns An object containing the filtered feature matrix and target vector.
+ */
 export function removeDuplicateRows(
     X: number[][],
     y: number[],
@@ -55,16 +68,25 @@ export function removeDuplicateRows(
     return { finalX: uniqueX, finalY: uniqueY };
 }
 
+/**
+ * Removes duplicate columns from the dataset based on the L1-Norm threshold and updates the rules accordingly.
+ * @param X - The feature matrix.
+ * @param allRules - An array of rules corresponding to each column.
+ * @param columnThreshold - The L1-Norm threshold for determining duplicates.
+ * @param targetVar - The target variable name.
+ * @param warnings - An array to store warning messages.
+ * @returns An object containing the filtered feature matrix and filtered rules.
+ */
 export function removeDuplicateColumns(
     X: number[][],
     allRules: Rule[],
     columnThreshold: number,
     targetVar: string,
-    warnings: string[]
+    warnings: DuplicateDetail[] // Changed from string[] to DuplicateDetail[]
 ): { finalX: number[][]; filteredRules: Rule[] } {
     const keptColumns: number[] = [];
     const columnHashes = new Map<string, number>();
-    const duplicateColumnGroups: number[][] = [];
+    const duplicateColumnGroups: DuplicateDetail[] = [];
 
     for (let col = 0; col < X[0].length; col++) {
         const currentColumn = X.map(row => row[col]);
@@ -88,16 +110,32 @@ export function removeDuplicateColumns(
             }
 
             if (isDuplicate) {
-                let groupFound = false;
-                for (const group of duplicateColumnGroups) {
-                    if (group.includes(keptColumns[existingIndex])) {
-                        group.push(col);
-                        groupFound = true;
-                        break;
+                const primaryRule = allRules[keptColumns[existingIndex]];
+                const duplicateRule = allRules[col];
+                if (primaryRule && duplicateRule) {
+                    const primaryAntecedents = primaryRule.antecedents
+                        .map(ant => `If ${ant.variable} is ${ant.fuzzySet}`)
+                        .join(' AND ');
+                    const duplicateAntecedents = duplicateRule.antecedents
+                        .map(ant => `If ${ant.variable} is ${ant.fuzzySet}`)
+                        .join(' AND ');
+
+                    const primaryRuleStr = `${primaryAntecedents} then ${targetVar} is ${primaryRule.outputFuzzySet}`;
+                    const duplicateRuleStr = `${duplicateAntecedents} then ${targetVar} is ${duplicateRule.outputFuzzySet}`;
+
+                    // Check if a group for this primary already exists
+                    const existingGroup = duplicateColumnGroups.find(
+                        group => group.primary === primaryRuleStr
+                    );
+
+                    if (existingGroup) {
+                        existingGroup.secondary.push(duplicateRuleStr);
+                    } else {
+                        duplicateColumnGroups.push({
+                            primary: primaryRuleStr,
+                            secondary: [duplicateRuleStr],
+                        });
                     }
-                }
-                if (!groupFound) {
-                    duplicateColumnGroups.push([keptColumns[existingIndex], col]);
                 }
             } else {
                 columnHashes.set(currentHash, keptColumns.length);
@@ -109,28 +147,18 @@ export function removeDuplicateColumns(
     const duplicateColumnCount = X[0].length - keptColumns.length;
 
     if (duplicateColumnCount > 0) {
-        const duplicateDetails = duplicateColumnGroups
-            .filter(group => group.length > 1)
-            .map(group => {
-                const [primary, ...duplicates] = group;
-                const primaryRule = allRules[primary];
-                if (!primaryRule) return '';
-                const duplicateRules = duplicates.map(colIndex => {
-                    const rule = allRules[colIndex];
-                    if (!rule) return '';
-                    const antecedentStr = rule.antecedents.map(ant => `If ${ant.variable} is ${ant.fuzzySet}`).join(' AND ');
-                    return `${antecedentStr} then ${targetVar} is ${rule.outputFuzzySet}`;
-                }).filter(Boolean).join(' | ');
-                const primaryAntecedentStr = primaryRule.antecedents.map(ant => `If ${ant.variable} is ${ant.fuzzySet}`).join(' AND ');
-                return `Primary Rule: ${primaryAntecedentStr} then ${targetVar} is ${primaryRule.outputFuzzySet}\nDuplicate Rules: ${duplicateRules}`;
-            })
-            .filter(detail => detail !== '')
-            .join('\n\n');
-
-        logWarning(
-            `Duplicate columns detected and removed based on L1-Norm < ${columnThreshold}:\n${duplicateDetails}`,
-            warnings
-        );
+        if (duplicateColumnGroups.length > 0) {
+            logWarning(
+                duplicateColumnGroups,
+                warnings
+            );
+        } else {
+            // Fallback warning if no detailed groups are found
+            logWarning(
+                `Duplicate columns detected and removed based on L1-Norm < ${columnThreshold}: ${duplicateColumnCount}`,
+                warnings
+            );
+        }
 
         const uniqueXUpdated = X.map(row => keptColumns.map(colIndex => row[colIndex]));
         const filteredRules = keptColumns.map(colIndex => allRules[colIndex]).filter(rule => rule !== null) as Rule[];

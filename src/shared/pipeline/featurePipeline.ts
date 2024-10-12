@@ -8,7 +8,7 @@ export function executeFeaturePipeline(
     categoricalKeys: string[],
     metadata: Metadata,
     variableBounds: { [key: string]: { min: number; max: number } },
-    warnings: string[]
+    warnings: any[]
 ): { categoricalFuzzySets: { [key: string]: string[] } } {
     const categoricalFuzzySets = encodeCategoricalVariables(records, categoricalKeys, warnings);
     fuzzifyNumericalData(records, numericalKeys, metadata.target_var, metadata, variableBounds, warnings);

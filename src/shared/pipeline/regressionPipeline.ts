@@ -8,7 +8,7 @@ export function executeRegressionPipeline(
     y: number[],
     allRules: Rule[],
     metadata: Metadata,
-    warnings: string[]
+    warnings: any[]
 ): { coeffsArray: number[]; finalX: number[][]; finalY: number[]; filteredRules: Rule[] } {
     const { finalX, finalY } = removeDuplicateRows(X, y, metadata.l1_row_threshold, warnings);
 

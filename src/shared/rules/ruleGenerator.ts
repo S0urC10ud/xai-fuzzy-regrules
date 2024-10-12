@@ -9,7 +9,7 @@ export function generateAllPossibleRules(
     variableFuzzySets: { [variable: string]: string[] },
     inputFuzzySetNonEmpty: { [variable: string]: { [fuzzySet: string]: boolean } },
     outputFuzzySetNonEmpty: { [fuzzySet: string]: boolean },
-    warnings: string[],
+    warnings: any[],
     metadata: Metadata
 ): Rule[] {
     let allRules: Rule[] = [];
