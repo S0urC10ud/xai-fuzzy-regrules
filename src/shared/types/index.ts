@@ -1,5 +1,13 @@
-export type Metadata = {
+export interface Metadata {
     target_var: string;
+    outlier_filtering?: {
+        [key: string]: {
+            method: "IQR" | "VariableBounds";
+            outlier_iqr_multiplier?: number;
+            min?: number;
+            max?: number;
+        };
+    };
     split_char: string;
     regularization: number;
     l1_column_threshold: number;
@@ -7,13 +15,10 @@ export type Metadata = {
     numerical_fuzzification: FuzzySet[];
     numerical_defuzzification: FuzzySet[];
     variance_threshold: number;
-    outlier_iqr_multiplier: number;
     num_vars: number;
     whitelist?: string[];
     blacklist?: string[];
     only_whitelist?: boolean;
-    outlier_bounds?: { [key: string]: { lower: number; upper: number } };
-    enable_outlier_removal?: boolean;
 };
 
 export type Record = { [key: string]: string | number };

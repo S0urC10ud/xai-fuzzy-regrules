@@ -7,51 +7,28 @@
     "numerical_fuzzification": ["low", "medium", "high"],
     "numerical_defuzzification": ["verylow", "low", "mediumlow", "medium", "mediumhigh", "high", "veryhigh"],
     "variance_threshold": 1e-5,
-    "outlier_iqr_multiplier": 5,
+    "outlier_filtering":{
+        "AGE": {
+            "method": "VariableBounds",
+            "min": 0,
+            "max": 100
+        },
+        "TAX": {
+            "method": "IQR",
+            "outlier_iqr_multiplier": 4
+        }
+    },
     "num_vars": 2,
     "whitelist": [
         "If CRIM is high AND If PTRATIO is high then MEDV is low",
         "If DIS is low AND If INDUS is high then MEDV is low",
         "If RM is high then MEDV is high",
-        "If AGE is high AND If TAX is high then MEDV is low",
-        "If CRIM is low AND If RM is high then MEDV is high",
-        "If NOX is high then MEDV is low",
-        "If DIS is high AND If LSTAT is low then MEDV is high",
-        "If ZN is low AND If INDUS is high then MEDV is low",
-        "If RAD is high AND If TAX is high then MEDV is low",
-        "If RM is low AND If LSTAT is high then MEDV is low",
-        "If PTRATIO is low AND If CRIM is low then MEDV is high",
-        "If ZN is high AND If AGE is low then MEDV is high",
-        "If CRIM is high AND If LSTAT is high then MEDV is low",
-        "If CHAS is 1 AND If RM is high then MEDV is high",
-        "If INDUS is low AND If TAX is low then MEDV is high",
-        "If NOX is low AND If RM is high then MEDV is high",
-        "If AGE is low AND If DIS is high then MEDV is high",
-        "If RAD is low AND If TAX is low then MEDV is high",
-        "If PTRATIO is high AND If NOX is high then MEDV is low",
-        "If DIS is low AND If LSTAT is high then MEDV is low"
+        "If AGE is high AND If TAX is high then MEDV is low"
     ],
     "blacklist":
     [
         "If CRIM is high AND If RM is high then MEDV is low",
-        "If DIS is high AND If LSTAT is high then MEDV is high",
-        "If ZN is high AND If TAX is high then MEDV is high",
-        "If AGE is low AND If PTRATIO is high then MEDV is high",
-        "If INDUS is high AND If NOX is high then MEDV is high",
-        "If LSTAT is low AND If CRIM is high then MEDV is low",
-        "If CHAS is 1 AND If NOX is high then MEDV is low",
-        "If DIS is high AND If AGE is high then MEDV is high",
-        "If PTRATIO is high AND If RM is high then MEDV is low",
-        "If TAX is low AND If LSTAT is high then MEDV is high",
-        "If CHAS is 0 AND If NOX is low then MEDV is low",
-        "If CRIM is low AND If TAX is high then MEDV is high",
-        "If RAD is low AND If NOX is high then MEDV is high",
-        "If RM is low AND If NOX is low then MEDV is high",
-        "If AGE is high AND If RM is high then MEDV is low",
-        "If PTRATIO is low AND If NOX is high then MEDV is high",
-        "If ZN is medium AND If INDUS is high then MEDV is high",
-        "If TAX is high AND If RAD is high then MEDV is high",
-        "If CRIM is high AND If ZN is high then MEDV is high",
-        "If AGE is low AND If NOX is high then MEDV is high"
-    ]
+        "If DIS is high AND If LSTAT is high then MEDV is high"
+    ],
+    "only_whitelist":false
 }

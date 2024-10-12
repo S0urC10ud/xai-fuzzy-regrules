@@ -1,64 +1,65 @@
-// src/dataProcessing/outlierRemoval.ts
-
-import * as math from 'mathjs';
 import { Record, Metadata } from '../types';
 import { logWarning } from '../utils/logger';
+
+function quantile(arr: number[], q: number): number {
+    const sorted = arr.slice().sort((a, b) => a - b);
+    const pos = (sorted.length - 1) * q;
+    const base = Math.floor(pos);
+    const rest = pos - base;
+    if (sorted[base + 1] !== undefined) {
+        return sorted[base] + rest * (sorted[base + 1] - sorted[base]);
+    } else {
+        return sorted[base];
+    }
+}
 
 export function removeOutliers(
     records: Record[],
     numericalKeys: string[],
-    iqrMultiplier: number,
     warnings: string[],
     metadata: Metadata
 ): Record[] {
-    if (!metadata.enable_outlier_removal) {
+    if (!metadata.outlier_filtering) {
         return records;
     }
 
-    const computeIQRBounds = (values: number[], multiplier: number = 1.5): { lower: number; upper: number } => {
-        const sorted = [...values].sort((a, b) => a - b);
-        const q1 = math.quantileSeq(sorted, 0.25, true) as number;
-        const q3 = math.quantileSeq(sorted, 0.75, true) as number;
-        const iqr = q3 - q1;
-        const lower = q1 - multiplier * iqr;
-        const upper = q3 + multiplier * iqr;
-        return { lower, upper };
-    };
+    const initialLength = records.length;
+    const removedCounts: { [key: string]: number } = {};
 
-    const outlierBounds: { [key: string]: { lower: number; upper: number } } = {};
-    numericalKeys.forEach((key) => {
-        if (metadata.outlier_bounds && metadata.outlier_bounds[key]) {
-            outlierBounds[key] = metadata.outlier_bounds[key];
-        } else {
-            const values: number[] = records.map((record) => parseFloat(record[key] as string));
-            outlierBounds[key] = computeIQRBounds(values, iqrMultiplier);
-        }
+    records = records.filter(record => {
+        return numericalKeys.every(key => {
+            const filterConfig = metadata.outlier_filtering![key];
+            if (!filterConfig) {
+                return true;
+            }
+
+            const values = records.map(r => r[key]) as number[];
+            const value = Number(record[key]);
+
+            if (filterConfig.method === "IQR" && filterConfig.outlier_iqr_multiplier !== undefined) {
+                const q1 = quantile(values, 0.25);
+                const q3 = quantile(values, 0.75);
+                const iqr = q3 - q1;
+                const lowerBound = q1 - filterConfig.outlier_iqr_multiplier * iqr;
+                const upperBound = q3 + filterConfig.outlier_iqr_multiplier * iqr;
+
+                if (value < lowerBound || value > upperBound) {
+                    removedCounts[key] = (removedCounts[key] || 0) + 1;
+                    return false;
+                }
+            } else if (filterConfig.method === "VariableBounds" && filterConfig.min !== undefined && filterConfig.max !== undefined) {
+                if (value < filterConfig.min || value > filterConfig.max) {
+                    removedCounts[key] = (removedCounts[key] || 0) + 1;
+                    return false;
+                }
+            }
+            return true;
+        });
     });
 
-    const outlierRecordIndices: Set<number> = new Set();
-
-    numericalKeys.forEach((key) => {
-        const { lower, upper } = outlierBounds[key];
-        const outlierIndices = records.reduce<number[]>((acc, record, idx) => {
-            const value = parseFloat(record[key] as string);
-            if (lower === upper) // no difference between q1 and q3 - then interesting data might be "outliers"
-                return acc;
-            if (value < lower || value > upper) acc.push(idx);
-            return acc;
-        }, []);
-
-        if (outlierIndices.length < 5) {
-            outlierIndices.forEach((idx) => outlierRecordIndices.add(idx));
-        }
-    });
-
-    const removedOutliers = outlierRecordIndices.size;
-    if (removedOutliers > 0) {
-        logWarning(
-            `Removed ${removedOutliers} records containing outliers in columns with fewer than 5 outliers based on IQR multiplier ${iqrMultiplier}.`,
-            warnings
-        );
+    for (const key in removedCounts) {
+        warnings.push(`Removed ${removedCounts[key]} rows due to outlier filter on ${key}`);
     }
 
-    return records.filter((_, idx) => !outlierRecordIndices.has(idx));
+    return records;
 }
