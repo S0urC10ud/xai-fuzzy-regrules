@@ -22,18 +22,24 @@ export function removeOutliers(
         return records;
     }
 
-    const initialLength = records.length;
     const removedCounts: { [key: string]: number } = {};
+    let nullValueRemovedCount = 0;
 
     records = records.filter(record => {
         return numericalKeys.every(key => {
             const filterConfig = metadata.outlier_filtering![key];
+            const value = Number(record[key]);
+
+            if (isNaN(value)) {
+                nullValueRemovedCount++;
+                return false;
+            }
+
             if (!filterConfig) {
                 return true;
             }
 
             const values = records.map(r => r[key]) as number[];
-            const value = Number(record[key]);
 
             if (filterConfig.method === "IQR" && filterConfig.outlier_iqr_multiplier !== undefined) {
                 const q1 = quantile(values, 0.25);
@@ -58,6 +64,10 @@ export function removeOutliers(
 
     for (const key in removedCounts) {
         warnings.push(`Removed ${removedCounts[key]} rows due to outlier filter on ${key}`);
+    }
+
+    if (nullValueRemovedCount > 0) {
+        warnings.push(`Removed ${nullValueRemovedCount} rows due to null values in numerical columns`);
     }
 
     return records;
