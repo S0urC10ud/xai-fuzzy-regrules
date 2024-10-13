@@ -2,6 +2,7 @@ import { Matrix, CholeskyDecomposition, LuDecomposition } from 'ml-matrix';
 import { Rule } from '../types';
 import { attemptToSolve } from './solver';
 import { logWarning } from '../utils/logger';
+import tCDF from '@stdlib/stats-base-dists-t-cdf';
 
 function getTopThreeIndices(arr: number[]) {
     const indexedArr = arr.map((value: any, index: number) => ({ value, index }));
@@ -11,7 +12,7 @@ function getTopThreeIndices(arr: number[]) {
 }
 
 /**
- * Performs regression with linear dependency handling using Cholesky and LU decomposition.
+ * Performs regression with likelihood ratio test to decide if a rule is needed.
  *
  * @param finalX - The design matrix with samples as rows and rules as columns.
  * @param finalY - The target vector.
@@ -31,7 +32,8 @@ export function performRegression(
     allRules = allRules.map(rule => new Rule(rule.antecedents, rule.outputFuzzySet, rule.isWhitelist));
     let currentRules = allRules.slice(); // Clone the rules
     const lambda = metadata.regularization || 0; // Default to 0 if undefined
-    const dependencyThreshold = metadata.dependencyThreshold; // Threshold for diagonal absolute value
+    const dependencyThreshold = metadata.dependency_threshold; // Threshold for diagonal absolute value
+    const significanceLevel = metadata.significance_level || 0.05; // Default significance level
 
     let coefficients: number[] | null = null;
     let attempts = 0;
@@ -43,7 +45,12 @@ export function performRegression(
         const identityMatrix = Matrix.eye(XtX.rows).mul(lambda);
         const XtX_reg = XtX.add(identityMatrix); // Regularized X^T X
 
-        let chol: CholeskyDecomposition | null = new CholeskyDecomposition(XtX_reg);
+        let chol: CholeskyDecomposition | null;
+        try {
+            chol = new CholeskyDecomposition(XtX_reg);
+        } catch (error) {
+            chol = null;
+        }
 
         if (chol) {
             // Validate the diagonal elements
@@ -58,33 +65,107 @@ export function performRegression(
 
             if (problematicIndices.length === 0) {
                 // Decomposition is successful and all diagonals are valid
-                break;
+                // Proceed to solve the regression
+                const y_vector = Matrix.columnVector(finalY);
+                const Xt_y = X_matrix.transpose().mmul(y_vector);
+
+                // Solve for coefficients
+                const coeffs = chol.solve(Xt_y).to1DArray();
+                coefficients = coeffs;
+
+                // Compute residuals
+                const predictedY = X_matrix.mmul(Matrix.columnVector(coefficients));
+                const residuals = y_vector.sub(predictedY);
+                const residualSumOfSquares = residuals.transpose().mmul(residuals).get(0, 0);
+                const degreesOfFreedom = currentX.length - currentX[0].length;
+                const sigmaSquared = residualSumOfSquares / degreesOfFreedom;
+
+                // Compute covariance matrix of coefficients
+                const XtX_inv = chol.solve(Matrix.eye(XtX_reg.rows));
+                const covarianceMatrix = XtX_inv.mul(sigmaSquared);
+
+                // Compute standard errors
+                const standardErrors = covarianceMatrix.diagonal().map(Math.sqrt);
+
+                // Compute t-statistics and p-values
+                const tStatistics = coefficients.map((coef, idx) => coef / standardErrors[idx]);
+                const pValues = tStatistics.map(tStat =>
+                    2 * (1 - tCDF(Math.abs(tStat), degreesOfFreedom))                
+                );
+
+                // Find indices of insignificant variables
+                const insignificantIndices = pValues
+                    .map((pValue, index) => ({ pValue, index }))
+                    .filter(({ pValue }) => pValue > significanceLevel)
+                    .map(({ index }) => index);
+
+                if (insignificantIndices.length === 0) {
+                    // All variables are significant; exit the loop
+                    break;
+                }
+
+                // Remove insignificant variables
+                // Iterate from highest index to avoid shifting issues
+                insignificantIndices
+                    .sort((a, b) => b - a)
+                    .forEach(index => {
+                        const ruleToRemove = currentRules[index];
+                        if (ruleToRemove) {
+                            currentRules.splice(index, 1); // Remove at index
+                            currentX = currentX.map(row => {
+                                const newRow = row.slice();
+                                newRow.splice(index, 1);
+                                return newRow;
+                            });
+
+                            const warnMsg = {
+                                log: `Removed rule "${ruleToRemove.toString(
+                                    metadata.target_var
+                                )}" due to insignificance (p-value: ${pValues[index].toFixed(4)}).`,
+                            };
+
+                            logWarning(warnMsg, warnings);
+                            attempts++;
+                        }
+                    });
+
+                continue; // Retry with the reduced set of rules
             }
 
             // Remove rules corresponding to problematic indices
             // Iterate from highest index to avoid shifting issues
-            problematicIndices.sort((a, b) => b - a).forEach(index => {
-                const ruleToRemove = currentRules[index];
-                if (ruleToRemove) {
-                    currentRules.splice(index, 1); //remove at index
-                    currentX = currentX.map(row => {
-                        const newRow = row.slice();
-                        newRow.splice(index, 1);
-                        return newRow;
-                    });              
+            problematicIndices
+                .sort((a, b) => b - a)
+                .forEach(index => {
+                    const ruleToRemove = currentRules[index];
+                    if (ruleToRemove) {
+                        currentRules.splice(index, 1); // Remove at index
+                        currentX = currentX.map(row => {
+                            const newRow = row.slice();
+                            newRow.splice(index, 1);
+                            return newRow;
+                        });
 
-                    const warnMsg = {
-                        "log": `Removed rule "${ruleToRemove.toString(metadata.target_var)}" due to linear dependence (small Cholesky diagonal value) ${diagElements[index].toExponential()}.`,
-                        "top3LinearDependentRules": getTopThreeIndices(cholMatrix.getRow(index)).map((item_id: number) => {return {
-                            "rule": allRules[item_id].toString(metadata.target_var),
-                            "coefficient": cholMatrix.getRow(index)[item_id]
-                        }})
+                        const warnMsg = {
+                            log: `Removed rule "${ruleToRemove.toString(
+                                metadata.target_var
+                            )}" due to linear dependence (small Cholesky diagonal value ${diagElements[
+                                index
+                            ].toExponential()}).`,
+                            top3LinearDependentRules: getTopThreeIndices(
+                                cholMatrix.getRow(index)
+                            ).map((item_id: number) => {
+                                return {
+                                    rule: allRules[item_id].toString(metadata.target_var),
+                                    coefficient: cholMatrix.getRow(index)[item_id],
+                                };
+                            }),
+                        };
+
+                        logWarning(warnMsg, warnings);
+                        attempts++;
                     }
-
-                    logWarning(warnMsg, warnings);
-                    attempts++;
-                }   
-            });
+                });
 
             continue; // Retry with the reduced set of rules
         }
@@ -94,7 +175,9 @@ export function performRegression(
         const ruleToRemove = currentRules.pop();
         if (ruleToRemove) {
             currentX = currentX.map(row => row.slice(0, -1));
-            const warnMsg = `Removed rule "${ruleToRemove.toString(metadata.target_var)}" due to Cholesky decomposition failure.`;
+            const warnMsg = `Removed rule "${ruleToRemove.toString(
+                metadata.target_var
+            )}" due to Cholesky decomposition failure.`;
             logWarning(warnMsg, warnings);
             attempts++;
             continue;
@@ -110,29 +193,6 @@ export function performRegression(
         const finalWarn = `Unable to resolve linear dependencies after removing ${attempts} rules.`;
         logWarning(finalWarn, warnings);
         throw new Error(`Regression solve failed: ${finalWarn}`);
-    }
-
-    // Proceed to solve the regression
-    const XtX_final = currentX.length > 0
-        ? new Matrix(currentX).transpose().mmul(new Matrix(currentX)).add(Matrix.eye(currentX[0].length).mul(lambda))
-        : new Matrix([]);
-    const y_final = Matrix.columnVector(finalY);
-
-    const Xt_y_final = new Matrix(currentX).transpose().mmul(y_final);
-
-    try {
-        // Use LU Decomposition to solve
-        const lu = new LuDecomposition(XtX_final);
-        const coeffs = lu.solve(Xt_y_final).to1DArray();
-        coefficients = coeffs;
-    } catch (error) {
-        // If LU solve fails, attempt to solve with the existing mechanism
-        coefficients = attemptToSolve(XtX_final, Xt_y_final, currentRules, metadata, warnings);
-        if (coefficients === null) {
-            const finalWarn = `Unable to solve the regression problem even after resolving dependencies.`;
-            logWarning(finalWarn, warnings);
-            throw new Error(`Regression solve failed: ${finalWarn}`);
-        }
     }
 
     // Map coefficients back to the original rule set with zeros for removed rules

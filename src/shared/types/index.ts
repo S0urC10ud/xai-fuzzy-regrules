@@ -21,6 +21,7 @@ export interface Metadata {
     only_whitelist?: boolean;
     remove_low_variance?: boolean;
     dependency_threshold: number;
+    significance_level: number;
 }
 
 export type Record = { [key: string]: string | number };

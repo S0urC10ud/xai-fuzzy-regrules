@@ -9,6 +9,8 @@
     "webpack-cli": "^5.1.4"
   },
   "dependencies": {
+    "@stdlib/stats": "^0.3.1",
+    "@stdlib/stats-base-dists-t-cdf": "^0.2.2",
     "canvas": "^2.11.2",
     "csv-parse": "^5.5.6",
     "express": "^4.21.0",
