@@ -53,32 +53,23 @@ export function prepareDefuzzification(
     const numOutputPoints = 100;
     const outputStep = (targetMax - targetMin) / (numOutputPoints - 1);
 
-    const outputFuzzySets = {
-        verylow: [] as number[],
-        low: [] as number[],
-        mediumlow: [] as number[],
-        medium: [] as number[],
-        mediumhigh: [] as number[],
-        high: [] as number[],
-        veryhigh: [] as number[],
-    };
+    const outputFuzzySets = metadata.numerical_defuzzification.reduce((acc, fuzzySet) => {
+        acc[fuzzySet] = [] as number[];
+        return acc;
+    }, {} as { [key: string]: number[] });
 
     for (let i = 0; i < numOutputPoints; i++) {
         const value = targetMin + i * outputStep;
         outputUniverse.push(value);
-        const degrees = computeMembershipDegrees(value, targetMin, targetMax);
-        outputFuzzySets.verylow.push(degrees.verylow);
-        outputFuzzySets.low.push(degrees.low);
-        outputFuzzySets.mediumlow.push(degrees.mediumlow);
-        outputFuzzySets.medium.push(degrees.medium);
-        outputFuzzySets.mediumhigh.push(degrees.mediumhigh);
-        outputFuzzySets.high.push(degrees.high);
-        outputFuzzySets.veryhigh.push(degrees.veryhigh);
+        const degrees = computeMembershipDegrees(value, targetMin, targetMax, metadata.numerical_defuzzification);
+        metadata.numerical_defuzzification.forEach(fuzzySet => {
+            outputFuzzySets[fuzzySet].push(degrees[fuzzySet]);
+        });
     }
 
     records.forEach(record => {
         const targetValue = parseFloat(record[metadata.target_var] as string);
-        const degrees = computeMembershipDegrees(targetValue, targetMin, targetMax);
+        const degrees = computeMembershipDegrees(targetValue, targetMin, targetMax, metadata.numerical_defuzzification);
         Object.entries(degrees).forEach(([fuzzySet, degree]) => {
             if (degree > 0) {
                 outputFuzzySetNonEmpty[fuzzySet] = true;
@@ -86,5 +77,5 @@ export function prepareDefuzzification(
         });
     });
 
-    return {outputUniverse, variableFuzzySets, inputFuzzySetNonEmpty, outputFuzzySetNonEmpty, outputFuzzySets}
+    return { outputUniverse, variableFuzzySets, inputFuzzySetNonEmpty, outputFuzzySetNonEmpty, outputFuzzySets };
 }

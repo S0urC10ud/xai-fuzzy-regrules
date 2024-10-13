@@ -3,6 +3,22 @@ import { parseRuleString } from './ruleParser';
 import { serializeRule } from './ruleSerializer';
 import { logWarning } from '../utils/logger';
 
+function validateRule(metadata:any, rule: Rule, ruleType: 'whitelist' | 'blacklist', targetVar: string): void {
+    for (const antecedent of rule.antecedents) {
+        if (!metadata.numerical_fuzzification.includes(antecedent.fuzzySet)) {
+            throw new Error(
+                `Invalid antecedent "${antecedent}" in ${ruleType} rule "${serializeRule(rule, targetVar)}". It must be one of the numerical_fuzzification parameters.`
+            );
+        }
+    }
+
+    if (!metadata.numerical_defuzzification.includes(rule.outputFuzzySet)) {
+        throw new Error(
+            `Invalid consequent "${rule.outputFuzzySet}" in ${ruleType} rule "${serializeRule(rule, targetVar)}". It must be one of the numerical_defuzzification parameters.`
+        );
+    }
+}
+
 export function applyWhitelistBlacklist(
     allRules: Rule[],
     metadata: any,
@@ -16,6 +32,7 @@ export function applyWhitelistBlacklist(
         whitelist.forEach((ruleStr: string) => {
             const parsedRule = parseRuleString(ruleStr, targetVar, true);
             if (parsedRule) {
+                validateRule(metadata, parsedRule, 'whitelist', targetVar);
                 parsedWhitelistRules.push(parsedRule);
             } else {
                 logWarning(`Failed to parse whitelist rule: "${ruleStr}". It will be ignored.`, warnings);
@@ -33,6 +50,7 @@ export function applyWhitelistBlacklist(
             whitelist.forEach((ruleStr: string) => {
                 const parsedRule = parseRuleString(ruleStr, targetVar, true);
                 if (parsedRule) {
+                    validateRule(metadata, parsedRule, 'whitelist', targetVar);
                     parsedWhitelistRules.push(parsedRule);
                 } else {
                     logWarning(`Failed to parse whitelist rule: "${ruleStr}". It will be ignored.`, warnings);
@@ -60,6 +78,7 @@ export function applyWhitelistBlacklist(
             blacklist.forEach((ruleStr: string) => {
                 const parsedRule = parseRuleString(ruleStr, targetVar, false);
                 if (parsedRule) {
+                    validateRule(metadata, parsedRule, 'blacklist', targetVar);
                     parsedBlacklistRules.push(parsedRule);
                 } else {
                     logWarning(`Failed to parse blacklist rule: "${ruleStr}". It will be ignored.`, warnings);

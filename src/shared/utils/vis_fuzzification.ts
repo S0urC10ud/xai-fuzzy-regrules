@@ -7,7 +7,8 @@ export function generateFuzzificationChart(
     values: number[],
     min: number,
     max: number,
-    key: string
+    key: string,
+    fuzzy_classes: string[]
 ) {
     const width = 800,
         height = 600;
@@ -93,8 +94,6 @@ export function generateFuzzificationChart(
 
     // Draw fuzzy sets
     fuzzySets.forEach((fuzzySet, index) => {
-        const degrees = computeMembershipDegrees(points[index], min, max);
-
         // Define the shape based on membership degrees
         ctx.strokeStyle = fuzzySet.color;
         ctx.fillStyle = fuzzySet.color.replace('0.7', '0.5'); // Darker fill
@@ -128,7 +127,7 @@ export function generateFuzzificationChart(
         if (value < min || value > max) return;
 
         // Get the membership degrees
-        const degrees = computeMembershipDegrees(value, min, max);
+        const degrees = computeMembershipDegrees(value, min, max, fuzzy_classes);
 
         // Generate the color by mixing colors based on the membership degrees
         // Here, we assign colors based on the highest membership degree

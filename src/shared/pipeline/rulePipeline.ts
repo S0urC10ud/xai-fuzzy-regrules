@@ -10,7 +10,7 @@ export function executeRulePipeline(
     variableFuzzySets: { [variable: string]: string[] },
     inputFuzzySetNonEmpty: { [variable: string]: { [fuzzySet: string]: boolean } },
     outputFuzzySetNonEmpty: { [fuzzySet: string]: boolean },
-    outputFuzzySets: { [x: string]: number[]; verylow: number[]; low: number[]; mediumlow: number[]; medium: number[]; mediumhigh: number[]; high: number[]; veryhigh: number[]; },
+    outputFuzzySets: { [x: string]: number[] } & { verylow?: number[]; low?: number[]; mediumlow?: number[]; medium?: number[]; mediumhigh?: number[]; high?: number[]; veryhigh?: number[]; },
     warnings: any[]
 ) {
     let allRules: Rule[] = generateAllPossibleRules(
@@ -29,7 +29,7 @@ export function executeRulePipeline(
 
     const ruleOutputFuzzySetDegreesMap: { [ruleIndex: number]: number[]; } = {};
     allRules.forEach((rule, ruleIndex) => {
-        ruleOutputFuzzySetDegreesMap[ruleIndex] = outputFuzzySets[rule.outputFuzzySet];
+        ruleOutputFuzzySetDegreesMap[ruleIndex] = outputFuzzySets[rule.outputFuzzySet] || [];
     });
 
     return {allRules, ruleOutputFuzzySetDegreesMap};

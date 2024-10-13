@@ -1,23 +1,31 @@
-export function computeMembershipDegrees(x: number, min: number, max: number): {
-    verylow: number,
-    low: number,
-    mediumlow: number,
-    medium: number,
-    mediumhigh: number,
-    high: number,
-    veryhigh: number
-} {
+type MembershipDegrees = {
+    [key: string]: number;
+};
+
+export function computeMembershipDegrees(
+    x: number,
+    min: number,
+    max: number,
+    classes: string[]
+): MembershipDegrees {
+    const numClasses = classes.length;
+    if (![3, 5, 7].includes(numClasses)) {
+        throw new Error("Number of classes must be either 3, 5, or 7.");
+    }
+
     const range = max - min;
-    const step = range / 6; // 6 equal parts for 7 classes
+    const step = range / (numClasses - 1);
 
-    const p0 = min;
-    const p1 = min + step;
-    const p2 = min + 2 * step;
-    const p3 = min + 3 * step;
-    const p4 = min + 4 * step;
-    const p5 = min + 5 * step;
-    const p6 = max;
+    const peaks = Array.from({ length: numClasses }, (_, i) => min + i * step);
 
+    // Define triangular membership functions
+    const triangles = peaks.map((peak, i) => {
+        const left = i === 0 ? min : peaks[i - 1];
+        const right = i === numClasses - 1 ? max : peaks[i + 1];
+        return { left, peak, right };
+    });
+
+    // Helper function for triangular membership
     const triangle = (x: number, left: number, peak: number, right: number): number => {
         if (x === peak) return 1;
         if (x < left || x > right) return 0;
@@ -28,23 +36,24 @@ export function computeMembershipDegrees(x: number, min: number, max: number): {
         }
     };
 
-    // Compute membership degrees
-    const verylow = x <= p1 ? (p1 - x) / step : 0;
-    const low = triangle(x, p0, p1, p2);
-    const mediumlow = triangle(x, p1, p2, p3);
-    const medium = triangle(x, p2, p3, p4);
-    const mediumhigh = triangle(x, p3, p4, p5);
-    const high = triangle(x, p4, p5, p6);
-    const veryhigh = x >= p5 ? (x - p5) / step : 0;
+    // Compute raw membership degrees
+    const rawDegrees: number[] = triangles.map(({ left, peak, right }) => triangle(x, left, peak, right));
 
-    const clamp = (value: number) => Math.max(0, Math.min(1, value));
-    return {
-        verylow: clamp(verylow),
-        low: clamp(low),
-        mediumlow: clamp(mediumlow),
-        medium: clamp(medium),
-        mediumhigh: clamp(mediumhigh),
-        high: clamp(high),
-        veryhigh: clamp(veryhigh)
-    };
+    // Handle edge cases for the first and last classes to ensure they peak at min and max
+    if (numClasses >= 1) {
+        rawDegrees[0] = x <= min ? 1 : rawDegrees[0];
+        rawDegrees[numClasses - 1] = x >= max ? 1 : rawDegrees[numClasses - 1];
+    }
+
+    // Normalize the degrees so that their sum is 1
+    const sumDegrees = rawDegrees.reduce((sum, degree) => sum + degree, 0);
+    const normalizedDegrees = sumDegrees === 0 ? rawDegrees.map(() => 0) : rawDegrees.map(degree => degree / sumDegrees);
+
+    // Construct the membership degrees object
+    const membershipDegrees: MembershipDegrees = {};
+    classes.forEach((cls, idx) => {
+        membershipDegrees[cls] = parseFloat(normalizedDegrees[idx].toFixed(4)); // Rounded for readability
+    });
+
+    return membershipDegrees;
 }
