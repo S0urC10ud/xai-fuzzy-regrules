@@ -1,7 +1,6 @@
 import { Record, Metadata } from '../types';
 import { computeMembershipDegrees } from '../utils/fuzzy';
 import { generateFuzzificationChart } from '../utils/vis_fuzzification';
-import { logWarning } from '../utils/logger';
 
 export function fuzzifyNumericalData(
     records: Record[],

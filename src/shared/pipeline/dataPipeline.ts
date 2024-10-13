@@ -2,7 +2,6 @@ import { Record, Metadata } from '../types';
 import { parseCSV } from '../dataProcessing/csvParser';
 import { removeOutliers } from '../dataProcessing/outlierRemoval';
 import { filterLowVarianceColumns } from '../dataProcessing/varianceFilter';
-import { logWarning } from '../utils/logger';
 
 export function executeDataPipeline(
     data: string,

@@ -1,5 +1,4 @@
 import { Record, Metadata } from '../types';
-import { logWarning } from '../utils/logger';
 
 function quantile(arr: number[], q: number): number {
     const sorted = arr.slice().sort((a, b) => a - b);

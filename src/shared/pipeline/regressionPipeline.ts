@@ -1,7 +1,6 @@
 import { Rule, Metadata } from '../types';
 import { performRegression } from '../regression/regressionPipeline';
 import { removeDuplicateRows, removeDuplicateColumns } from '../featureEngineering/duplicateRemoval';
-import { logWarning } from '../utils/logger';
 
 export function executeRegressionPipeline(
     X: number[][],
