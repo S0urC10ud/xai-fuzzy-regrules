@@ -21,7 +21,7 @@ export function main(metadata: Metadata, data: string): EvaluationMetrics {
 
     const { categoricalFuzzySets } = executeFeaturePipeline(records, numericalKeys, categoricalKeys, metadata, variableBounds, warnings);
 
-    const { outputUniverse, variableFuzzySets, inputFuzzySetNonEmpty, outputFuzzySetNonEmpty, outputFuzzySets }  = prepareDefuzzification(
+    const { outputUniverse, variableFuzzySets, inputFuzzySetNonEmpty, outputFuzzySetNonEmpty, outputFuzzySets } = prepareDefuzzification(
         numericalKeys,
         categoricalKeys,
         categoricalFuzzySets,
@@ -56,16 +56,18 @@ export function main(metadata: Metadata, data: string): EvaluationMetrics {
         warnings
     );
 
-    const ruleCoefficients = filteredRules.map((rule, index) => {
-        const antecedentStr = rule.antecedents
-            .map(ant => `If ${ant.variable} is ${ant.fuzzySet}`)
-            .join(' AND ');
-        return {
-            rule: `${antecedentStr} then ${metadata.target_var} is ${rule.outputFuzzySet}`,
-            coefficient: coeffsArray ? coeffsArray[index] : 0,
-            isWhitelist: rule.isWhitelist,
-        };
-    });
+    const ruleCoefficients = filteredRules
+        .map((rule, index) => {
+            const antecedentStr = rule.antecedents
+                .map(ant => `If ${ant.variable} is ${ant.fuzzySet}`)
+                .join(' AND ');
+            return {
+                rule: `${antecedentStr} then ${metadata.target_var} is ${rule.outputFuzzySet}`,
+                coefficient: coeffsArray ? coeffsArray[index] : 0,
+                isWhitelist: rule.isWhitelist,
+            };
+        })
+        .filter(rule => rule.coefficient !== 0);
 
     const sortedRules = ruleCoefficients.sort((a, b) => b.coefficient - a.coefficient);
 

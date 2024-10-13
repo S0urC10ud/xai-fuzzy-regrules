@@ -20,6 +20,7 @@ export interface Metadata {
     blacklist?: string[];
     only_whitelist?: boolean;
     remove_low_variance?: boolean;
+    dependency_threshold: number;
 }
 
 export type Record = { [key: string]: string | number };
@@ -46,11 +47,11 @@ export class Rule {
         this.isWhitelist = isWhitelist;
     }
 
-    toString(): string {
+    toString(target_var: string): string {
         const antecedentStr = this.antecedents
             .map((ant) => `If ${ant.variable} is ${ant.fuzzySet}`)
             .join(' AND ');
-        return `${antecedentStr} then target is ${this.outputFuzzySet}`;
+        return `${antecedentStr} then ${target_var} is ${this.outputFuzzySet}`;
     }
 }
 

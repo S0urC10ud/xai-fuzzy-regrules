@@ -56,21 +56,21 @@ export function applyWhitelistBlacklist(
                     logWarning(`Failed to parse whitelist rule: "${ruleStr}". It will be ignored.`, warnings);
                 }
             });
-
+            
             parsedWhitelistRules.forEach((whitelistRule) => {
                 const serializedWhitelistRule = serializeRule(whitelistRule, targetVar);
                 const isDuplicate = allRules.some(
                     (rule) => serializeRule(rule, targetVar) === serializedWhitelistRule
                 );
                 if (!isDuplicate) {
-                    allRules.push(whitelistRule);
+                    allRules.unshift(whitelistRule); // Add to the start instead of the end
                 }
             });
-
+            
             logWarning(
                 `Added ${parsedWhitelistRules.length} whitelist rules to the rule set.`,
                 warnings
-            );
+            );            
         }
 
         if (blacklist && blacklist.length > 0) {

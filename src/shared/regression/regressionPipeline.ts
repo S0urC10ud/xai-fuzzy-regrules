@@ -3,6 +3,13 @@ import { Rule } from '../types';
 import { attemptToSolve } from './solver';
 import { logWarning } from '../utils/logger';
 
+function getTopThreeIndices(arr: number[]) {
+    const indexedArr = arr.map((value: any, index: number) => ({ value, index }));
+    indexedArr.sort((a: any, b: any) => b.value - a.value);
+    const topThree = indexedArr.slice(0, 3).map(item => item.index);
+    return topThree;
+}
+
 /**
  * Performs regression with linear dependency handling using Cholesky and LU decomposition.
  *
@@ -20,11 +27,11 @@ export function performRegression(
     metadata: any,
     warnings: any[]
 ): number[] {
-    // Initialize variables
     let currentX = finalX.slice(); // Clone the design matrix
+    allRules = allRules.map(rule => new Rule(rule.antecedents, rule.outputFuzzySet, rule.isWhitelist));
     let currentRules = allRules.slice(); // Clone the rules
     const lambda = metadata.regularization || 0; // Default to 0 if undefined
-    const dependencyThreshold = 1; // Threshold for diagonal absolute value
+    const dependencyThreshold = metadata.dependencyThreshold; // Threshold for diagonal absolute value
 
     let coefficients: number[] | null = null;
     let attempts = 0;
@@ -36,13 +43,7 @@ export function performRegression(
         const identityMatrix = Matrix.eye(XtX.rows).mul(lambda);
         const XtX_reg = XtX.add(identityMatrix); // Regularized X^T X
 
-        let chol: CholeskyDecomposition | null = null;
-        try {
-            chol = new CholeskyDecomposition(XtX_reg);
-        } catch (error) {
-            // Cholesky failed, possibly due to dependencies
-            chol = null;
-        }
+        let chol: CholeskyDecomposition | null = new CholeskyDecomposition(XtX_reg);
 
         if (chol) {
             // Validate the diagonal elements
@@ -70,12 +71,19 @@ export function performRegression(
                         const newRow = row.slice();
                         newRow.splice(index, 1);
                         return newRow;
-                    });
+                    });              
 
-                    const warnMsg = `Removed rule "${ruleToRemove.toString()}" due to small diagonal value (${diagElements[index].toExponential()}).`;
+                    const warnMsg = {
+                        "log": `Removed rule "${ruleToRemove.toString(metadata.target_var)}" due to linear dependence (small Cholesky diagonal value) ${diagElements[index].toExponential()}.`,
+                        "top3LinearDependentRules": getTopThreeIndices(cholMatrix.getRow(index)).map((item_id: number) => {return {
+                            "rule": allRules[item_id].toString(metadata.target_var),
+                            "coefficient": cholMatrix.getRow(index)[item_id]
+                        }})
+                    }
+
                     logWarning(warnMsg, warnings);
                     attempts++;
-                }
+                }   
             });
 
             continue; // Retry with the reduced set of rules
@@ -86,14 +94,14 @@ export function performRegression(
         const ruleToRemove = currentRules.pop();
         if (ruleToRemove) {
             currentX = currentX.map(row => row.slice(0, -1));
-            const warnMsg = `Removed rule "${ruleToRemove.toString()}" due to Cholesky decomposition failure.`;
+            const warnMsg = `Removed rule "${ruleToRemove.toString(metadata.target_var)}" due to Cholesky decomposition failure.`;
             logWarning(warnMsg, warnings);
             attempts++;
             continue;
         }
 
         // If no rules left to remove, throw an error
-        const finalWarn = `Unable to resolve linear dependencies with current threshold (${dependencyThreshold}).`;
+        const finalWarn = `Unable to resolve linear dependencies with current threshold ${dependencyThreshold}.`;
         logWarning(finalWarn, warnings);
         throw new Error(`Regression solve failed: ${finalWarn}`);
     }
