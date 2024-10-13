@@ -31,11 +31,28 @@ export type Antecedent = {
 
 export type FuzzySet = 'verylow' | 'low' | 'mediumlow' | 'medium' | 'mediumhigh' | 'high' | 'veryhigh';
 
-export type Rule = {
-    antecedents: Antecedent[];
-    outputFuzzySet: FuzzySet;
+export class Rule {
+    antecedents: { variable: string; fuzzySet: string }[];
+    outputFuzzySet: string;
     isWhitelist: boolean;
-};
+
+    constructor(
+        antecedents: { variable: string; fuzzySet: string }[],
+        outputFuzzySet: string,
+        isWhitelist: boolean
+    ) {
+        this.antecedents = antecedents;
+        this.outputFuzzySet = outputFuzzySet;
+        this.isWhitelist = isWhitelist;
+    }
+
+    toString(): string {
+        const antecedentStr = this.antecedents
+            .map((ant) => `If ${ant.variable} is ${ant.fuzzySet}`)
+            .join(' AND ');
+        return `${antecedentStr} then target is ${this.outputFuzzySet}`;
+    }
+}
 
 export type EvaluationMetrics = {
     sorted_rules: { rule: string; coefficient: number }[];
