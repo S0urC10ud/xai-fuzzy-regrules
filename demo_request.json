@@ -31,6 +31,7 @@
         "If DIS is high AND If LSTAT is high then MEDV is veryhigh"
     ],
     "only_whitelist":false,
-    "dependencyThreshold":1,
-    "significance_level":0.05
+    "dependency_threshold":1,
+    "significance_level":0.05,
+    "remove_insignificant_rules": false
 }

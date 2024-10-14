@@ -1,6 +1,5 @@
 import { Matrix, CholeskyDecomposition, LuDecomposition } from 'ml-matrix';
 import { Rule } from '../types';
-import { attemptToSolve } from './solver';
 import { logWarning } from '../utils/logger';
 import tCDF from '@stdlib/stats-base-dists-t-cdf';
 
@@ -27,24 +26,23 @@ export function performRegression(
     allRules: Rule[],
     metadata: any,
     warnings: any[]
-): number[] {
+): {coeff: number|null; pValue:number|null}[] {
     let currentX = finalX.slice(); // Clone the design matrix
     allRules = allRules.map(rule => new Rule(rule.antecedents, rule.outputFuzzySet, rule.isWhitelist));
     let currentRules = allRules.slice(); // Clone the rules
     const lambda = metadata.regularization || 0; // Default to 0 if undefined
     const dependencyThreshold = metadata.dependency_threshold; // Threshold for diagonal absolute value
     const significanceLevel = metadata.significance_level || 0.05; // Default significance level
-
+    const remove_insignificant_rules = metadata.remove_insignificant_rules || false;
     let coefficients: number[] | null = null;
     let attempts = 0;
     const maxAttempts = allRules.length; // Prevent infinite loops
-
+    let pValues: number[] = [];
     while (attempts < maxAttempts) {
         const X_matrix = new Matrix(currentX); // Current design matrix
         const XtX = X_matrix.transpose().mmul(X_matrix);
         const identityMatrix = Matrix.eye(XtX.rows).mul(lambda);
         const XtX_reg = XtX.add(identityMatrix); // Regularized X^T X
-
         let chol: CholeskyDecomposition | null;
         try {
             chol = new CholeskyDecomposition(XtX_reg);
@@ -82,14 +80,14 @@ export function performRegression(
 
                 // Compute covariance matrix of coefficients
                 const XtX_inv = chol.solve(Matrix.eye(XtX_reg.rows));
-                const covarianceMatrix = XtX_inv.mul(sigmaSquared);
+                const covarianceMatrix = XtX_inv.mul(sigmaSquared); // coefficient-vector covariance matrix
 
                 // Compute standard errors
                 const standardErrors = covarianceMatrix.diagonal().map(Math.sqrt);
 
                 // Compute t-statistics and p-values
                 const tStatistics = coefficients.map((coef, idx) => coef / standardErrors[idx]);
-                const pValues = tStatistics.map(tStat =>
+                pValues = tStatistics.map(tStat =>
                     2 * (1 - tCDF(Math.abs(tStat), degreesOfFreedom))                
                 );
 
@@ -99,7 +97,7 @@ export function performRegression(
                     .filter(({ pValue }) => pValue > significanceLevel)
                     .map(({ index }) => index);
 
-                if (insignificantIndices.length === 0) {
+                if (!remove_insignificant_rules || insignificantIndices.length === 0) {
                     // All variables are significant; exit the loop
                     break;
                 }
@@ -196,10 +194,10 @@ export function performRegression(
     }
 
     // Map coefficients back to the original rule set with zeros for removed rules
-    const fullCoefficients = allRules.map(rule => {
+    const fullParams = allRules.map(rule => {
         const index = currentRules.findIndex(r => r === rule);
-        return index !== -1 ? coefficients![index] : 0;
+        return index !== -1 ? {coeff: coefficients![index], pValue: pValues[index]} : {coeff: null, pValue: null};
     });
 
-    return fullCoefficients;
+    return fullParams;
 }

@@ -15,7 +15,8 @@ export function fuzzifyNumericalData(
         const { min, max } = variableBounds[key];
 
         if (key !== targetVar) {
-            generateFuzzificationChart(values, min, max, key, metadata["numerical_fuzzification"]);
+            if(metadata.generate_fuzzification_chart)
+                generateFuzzificationChart(values, min, max, key, metadata["numerical_fuzzification"]);
 
             records.forEach(record => {
                 const x = parseFloat(record[key] as string);

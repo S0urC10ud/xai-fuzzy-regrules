@@ -22,6 +22,8 @@ export interface Metadata {
     remove_low_variance?: boolean;
     dependency_threshold: number;
     significance_level: number;
+    remove_insignificant_rules: boolean;
+    generate_fuzzification_chart: boolean;
 }
 
 export type Record = { [key: string]: string | number };

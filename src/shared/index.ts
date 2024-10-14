@@ -48,7 +48,7 @@ export function main(metadata: Metadata, data: string): EvaluationMetrics {
 
     performInference(records, allRules, ruleOutputFuzzySetDegreesMap, outputUniverse, X);
 
-    const { coeffsArray, finalX, finalY, filteredRules } = executeRegressionPipeline(
+    const { fullParams, finalX, finalY, filteredRules } = executeRegressionPipeline(
         X,
         y,
         allRules,
@@ -63,7 +63,8 @@ export function main(metadata: Metadata, data: string): EvaluationMetrics {
                 .join(' AND ');
             return {
                 rule: `${antecedentStr} then ${metadata.target_var} is ${rule.outputFuzzySet}`,
-                coefficient: coeffsArray ? coeffsArray[index] : 0,
+                coefficient: fullParams[index].coeff ? fullParams[index].coeff : 0,
+                pValue: fullParams[index].pValue ? fullParams[index].pValue : 0,
                 isWhitelist: rule.isWhitelist,
             };
         })
@@ -72,7 +73,7 @@ export function main(metadata: Metadata, data: string): EvaluationMetrics {
     const sortedRules = ruleCoefficients.sort((a, b) => b.coefficient - a.coefficient);
 
     const y_pred = finalX.map(row => {
-        return row.reduce((sum, val, idx) => sum + val * (coeffsArray ? coeffsArray[idx] : 0), 0);
+        return row.reduce((sum, val, idx) => sum + val * (fullParams[idx].coeff ? fullParams[idx].coeff : 0), 0);
     });
 
     const metrics = executeEvaluationPipeline(finalY, y_pred);
@@ -83,6 +84,7 @@ export function main(metadata: Metadata, data: string): EvaluationMetrics {
         sorted_rules: sortedRules.map(rule => ({
             rule: rule.rule,
             coefficient: rule.coefficient,
+            pValue: rule.pValue
         })),
     };
 }

@@ -16,7 +16,6 @@ app.use(express.json());
 // Set up multer for file handling
 const upload = multer({ storage: multer.memoryStorage() });
 
-
 app.post('/api/upload', upload.single('csvFile'), (req: CustomRequest, res: Response): void => {
     const csvFile = req.file;
     const metadata = req.body.metadata;
@@ -33,6 +32,14 @@ app.post('/api/upload', upload.single('csvFile'), (req: CustomRequest, res: Resp
     
     res.status(200).json(main(JSON.parse(metadata), csvFile.buffer.toString()));
 });
+
+// Shutdown endpoint for flamegraph profiling
+if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'debug') {
+    app.post('/api/shutdown', (req: Request, res: Response) => {
+        res.status(200).json({ message: 'Server is shutting down...' });
+        process.exit(0);
+    });
+}
 
 // Start the server
 app.listen(PORT, () => {

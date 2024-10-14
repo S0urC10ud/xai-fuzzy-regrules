@@ -8,7 +8,7 @@ export function executeRegressionPipeline(
     allRules: Rule[],
     metadata: Metadata,
     warnings: any[]
-): { coeffsArray: number[]; finalX: number[][]; finalY: number[]; filteredRules: Rule[]} {
+): { fullParams: {coeff: number|null; pValue:number|null}[]; finalX: number[][]; finalY: number[]; filteredRules: Rule[]} {
     const { finalX, finalY } = removeDuplicateRows(X, y, metadata.l1_row_threshold, warnings);
 
     const { finalX: uniqueX, filteredRules } = removeDuplicateColumns(
@@ -19,7 +19,7 @@ export function executeRegressionPipeline(
         warnings
     );
 
-    const coeffsArray = performRegression(uniqueX, finalY, filteredRules, metadata, warnings);
+    const fullParams = performRegression(uniqueX, finalY, filteredRules, metadata, warnings);
 
-    return { coeffsArray, finalX: uniqueX, finalY, filteredRules };
+    return { fullParams, finalX: uniqueX, finalY, filteredRules };
 }
