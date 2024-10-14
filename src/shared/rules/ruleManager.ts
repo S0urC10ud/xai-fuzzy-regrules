@@ -57,14 +57,17 @@ export function applyWhitelistBlacklist(
                 }
             });
             
-            parsedWhitelistRules.forEach((whitelistRule) => {
+            parsedWhitelistRules.reverse().forEach((whitelistRule) => {
                 const serializedWhitelistRule = serializeRule(whitelistRule, targetVar);
-                const isDuplicate = allRules.some(
+                const existingRuleIndex = allRules.findIndex(
                     (rule) => serializeRule(rule, targetVar) === serializedWhitelistRule
                 );
-                if (!isDuplicate) {
-                    allRules.unshift(whitelistRule); // Add to the start instead of the end
+            
+                if (existingRuleIndex !== -1) {
+                    allRules.splice(existingRuleIndex, 1);
                 }
+
+                allRules.unshift(whitelistRule);
             });
             
             logWarning(
