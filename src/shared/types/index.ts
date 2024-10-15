@@ -24,6 +24,12 @@ export interface Metadata {
     significance_level: number;
     remove_insignificant_rules: boolean;
     generate_fuzzification_chart: boolean;
+    rule_priority_weights?: {
+        support_weight?:number;
+        leverage_weight?:number;
+        num_antecedents_weight?: number;
+        whitelist_boolean_weight?: number;
+    };
 }
 
 export type Record = { [key: string]: string | number };
@@ -39,6 +45,9 @@ export class Rule {
     antecedents: { variable: string; fuzzySet: string }[];
     outputFuzzySet: string;
     isWhitelist: boolean;
+    support: number = 0;
+    leverage: number = 0;
+    priority: number = 0;
 
     constructor(
         antecedents: { variable: string; fuzzySet: string }[],
@@ -57,6 +66,7 @@ export class Rule {
         return `${antecedentStr} then ${target_var} is ${this.outputFuzzySet}`;
     }
 }
+
 
 export type EvaluationMetrics = {
     sorted_rules: { rule: string; coefficient: number }[];

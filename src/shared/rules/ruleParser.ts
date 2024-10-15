@@ -29,9 +29,5 @@ export function parseRuleString(
     }
     const outputFuzzySet = outputFuzzySetStr as FuzzySet;
     
-    return {
-        antecedents,
-        outputFuzzySet,
-        isWhitelist,
-    };
+    return new Rule(antecedents, outputFuzzySet, isWhitelist);
 }

@@ -34,11 +34,7 @@ export function generateAllPossibleRules(
                     );
 
                     if (antecedentsNonEmpty && outputFuzzySetNonEmpty[outputSet]) {
-                        const rule: Rule = {
-                            antecedents,
-                            outputFuzzySet: outputSet,
-                            isWhitelist: false,
-                        };
+                        const rule: Rule = new Rule(antecedents, outputSet, false);
                         allRules.push(rule);
                     }
                 });

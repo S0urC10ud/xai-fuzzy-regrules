@@ -33,5 +33,11 @@
     "only_whitelist":false,
     "dependency_threshold":1,
     "significance_level":0.05,
-    "remove_insignificant_rules": false
+    "remove_insignificant_rules": false,
+    "rule_priority_weights":{
+        "support_weight": 2,
+        "leverage_weight": 10,
+        "num_antecedents_weight": 1,
+        "whitelist_boolean_weight": 100
+    }
 }

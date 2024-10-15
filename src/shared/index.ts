@@ -31,7 +31,7 @@ export function main(metadata: Metadata, data: string): EvaluationMetrics {
         warnings
     );
 
-    const {allRules,ruleOutputFuzzySetDegreesMap} = executeRulePipeline(
+    const {allRules, ruleOutputFuzzySetDegreesMap} = executeRulePipeline(
         numericalKeys,
         categoricalKeys,
         metadata.target_var,
@@ -40,6 +40,7 @@ export function main(metadata: Metadata, data: string): EvaluationMetrics {
         inputFuzzySetNonEmpty,
         outputFuzzySetNonEmpty,
         outputFuzzySets,
+        records,
         warnings
     );
     
@@ -66,6 +67,9 @@ export function main(metadata: Metadata, data: string): EvaluationMetrics {
                 coefficient: fullParams[index].coeff ? fullParams[index].coeff : 0,
                 pValue: fullParams[index].pValue ? fullParams[index].pValue : 0,
                 isWhitelist: rule.isWhitelist,
+                support: rule.support,
+                leverage: rule.leverage,
+                priority: rule.priority
             };
         })
         .filter(rule => rule.coefficient !== 0);
@@ -84,7 +88,11 @@ export function main(metadata: Metadata, data: string): EvaluationMetrics {
         sorted_rules: sortedRules.map(rule => ({
             rule: rule.rule,
             coefficient: rule.coefficient,
-            pValue: rule.pValue
+            pValue: rule.pValue,
+            isWhitelist: rule.isWhitelist,
+            support: rule.support,
+            leverage: rule.leverage,
+            priority: rule.priority
         })),
     };
 }

@@ -155,7 +155,7 @@ export function removeDuplicateColumns(
         } else {
             // Fallback warning if no detailed groups are found
             logWarning(
-                `Duplicate columns detected and removed based on L1-Norm < ${columnThreshold}: ${duplicateColumnCount}`,
+                `0 Duplicate columns detected and removed based on L1-Norm < ${columnThreshold}: ${duplicateColumnCount}`,
                 warnings
             );
         }
