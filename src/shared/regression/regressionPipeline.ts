@@ -1,14 +1,54 @@
-import { Matrix, CholeskyDecomposition, LuDecomposition } from 'ml-matrix';
+import { Matrix, CholeskyDecomposition } from 'ml-matrix';
 import { Rule } from '../types';
 import { logWarning } from '../utils/logger';
 import tCDF from '@stdlib/stats-base-dists-t-cdf';
-import { log } from 'mathjs';
 
-function getTopThreeIndices(arr: number[]) {
-    const indexedArr = arr.map((value: any, index: number) => ({ value, index }));
-    indexedArr.sort((a: any, b: any) => b.value - a.value);
-    const topThree = indexedArr.slice(0, 3).map(item => item.index);
-    return topThree;
+/**
+ * Retrieves top3 in linear runtime
+ *
+ * @param arr - The input array of numbers.
+ * @returns An array containing the indices of the top three values.
+ */
+function getTopThreeIndices(arr: number[]): number[] {
+    const topIndices: number[] = [];
+    const topValues: number[] = [];
+
+    for (let i = 0; i < arr.length; i++) {
+        const value = arr[i];
+        if (topIndices.length < 3) {
+            topIndices.push(i);
+            topValues.push(value);
+            if (topIndices.length === 3) {
+                // Sort the top three in descending order
+                for (let j = 0; j < 2; j++) {
+                    for (let k = j + 1; k < 3; k++) {
+                        if (topValues[j] < topValues[k]) {
+                            [topValues[j], topValues[k]] = [topValues[k], topValues[j]];
+                            [topIndices[j], topIndices[k]] = [topIndices[k], topIndices[j]];
+                        }
+                    }
+                }
+            }
+            continue;
+        }
+
+        if (value > topValues[2]) {
+            topValues[2] = value;
+            topIndices[2] = i;
+
+            // Bubble up the new value to maintain order
+            if (topValues[2] > topValues[1]) {
+                [topValues[1], topValues[2]] = [topValues[2], topValues[1]];
+                [topIndices[1], topIndices[2]] = [topIndices[2], topIndices[1]];
+            }
+            if (topValues[1] > topValues[0]) {
+                [topValues[0], topValues[1]] = [topValues[1], topValues[0]];
+                [topIndices[0], topIndices[1]] = [topIndices[1], topIndices[0]];
+            }
+        }
+    }
+
+    return topIndices;
 }
 
 /**
@@ -27,62 +67,64 @@ export function performRegression(
     allRules: Rule[],
     metadata: any,
     warnings: any[]
-) {
-    let currentX = finalX.slice(); // Clone the design matrix
-    let currentRules = allRules.slice(); // Clone the rules
-    const lambda = metadata.regularization || 0; // Default to 0 if undefined
-    const dependencyThreshold = metadata.dependency_threshold; // Threshold for diagonal absolute value
-    const significanceLevel = metadata.significance_level || 0.05; // Default significance level
-    const remove_insignificant_rules = metadata.remove_insignificant_rules || false;
-    let coefficients: number[] | null = null;
+): void {
+    let activeIndices: number[] = allRules.map((_, index) => index);
     let attempts = 0;
-    const maxAttempts = allRules.length; // Prevent infinite loops
+    const maxAttempts = allRules.length;
+    const lambda = metadata.regularization || 0;
+    const dependencyThreshold = metadata.dependency_threshold;
+    const significanceLevel = metadata.significance_level || 0.05;
+    const removeInsignificantRules = metadata.remove_insignificant_rules || false;
+    let coefficients: number[] | null = null;
     let pValues: number[] = [];
+    const yVector = Matrix.columnVector(finalY);
+
     while (attempts < maxAttempts) {
-        const X_matrix = new Matrix(currentX); // Current design matrix
-        const XtX = X_matrix.transpose().mmul(X_matrix);
+        const subMatrixData: number[][] = finalX.map(row => activeIndices.map(col => row[col]));
+        const XMatrix = new Matrix(subMatrixData);
+        const Xt = XMatrix.transpose();
+        const XtX = Xt.mmul(XMatrix);
         const identityMatrix = Matrix.eye(XtX.rows).mul(lambda);
-        const XtX_reg = XtX.add(identityMatrix); // Regularized X^T X
-        let chol: CholeskyDecomposition | null;
+        const XtXReg = XtX.add(identityMatrix);
+
+        let chol: CholeskyDecomposition | null = null;
         try {
-            chol = new CholeskyDecomposition(XtX_reg);
-        } catch (error) {
+            chol = new CholeskyDecomposition(XtXReg);
+        } catch {
+            // Cholesky decomposition failed
             chol = null;
         }
 
         if (chol) {
-            // Validate the diagonal elements
+            // Check diagonal elements for dependency threshold
             const cholMatrix = chol.lowerTriangularMatrix;
             const diagElements = cholMatrix.diagonal();
 
-            // Find indices where the absolute diagonal value is less than the threshold
-            const problematicIndices = diagElements
-                .map((value, index) => ({ value, index }))
-                .filter(({ value }) => Math.abs(value) < dependencyThreshold)
-                .map(({ index }) => index);
+            const problematicIndices: number[] = [];
+            diagElements.forEach((value, index) => {
+                if (Math.abs(value) < dependencyThreshold) {
+                    problematicIndices.push(index);
+                }
+            });
 
             if (problematicIndices.length === 0) {
-                // Decomposition is successful and all diagonals are valid
-                // Proceed to solve the regression
-                const y_vector = Matrix.columnVector(finalY);
-                const Xt_y = X_matrix.transpose().mmul(y_vector);
-
-                // Solve for coefficients
-                const coeffs = chol.solve(Xt_y).to1DArray();
+                // Successful decomposition and valid diagonals
+                const XtY = Xt.mmul(yVector);
+                const coeffs = chol.solve(XtY).to1DArray();
                 coefficients = coeffs;
 
                 // Compute residuals
-                const predictedY = X_matrix.mmul(Matrix.columnVector(coefficients));
-                const residuals = y_vector.sub(predictedY);
+                const predictedY = XMatrix.mmul(Matrix.columnVector(coefficients));
+                const residuals = yVector.sub(predictedY);
                 const residualSumOfSquares = residuals.transpose().mmul(residuals).get(0, 0);
-                const degreesOfFreedom = currentX.length - currentX[0].length;
+                const degreesOfFreedom = finalX.length - activeIndices.length;
                 logWarning(`Degrees of freedom: ${degreesOfFreedom}`, warnings);
 
                 const sigmaSquared = residualSumOfSquares / degreesOfFreedom;
 
-                // Compute covariance matrix of coefficients
-                const XtX_inv = chol.solve(Matrix.eye(XtX_reg.rows));
-                const covarianceMatrix = XtX_inv.mul(sigmaSquared); // coefficient-vector covariance matrix
+                // Compute covariance matrix
+                const XtXInv = chol.solve(Matrix.eye(XtXReg.rows));
+                const covarianceMatrix = XtXInv.mul(sigmaSquared);
 
                 // Compute standard errors
                 const standardErrors = covarianceMatrix.diagonal().map(Math.sqrt);
@@ -90,119 +132,112 @@ export function performRegression(
                 // Compute t-statistics and p-values
                 const tStatistics = coefficients.map((coef, idx) => coef / standardErrors[idx]);
                 pValues = tStatistics.map(tStat =>
-                    2 * (1 - tCDF(Math.abs(tStat), degreesOfFreedom))                
+                    2 * (1 - tCDF(Math.abs(tStat), degreesOfFreedom))
                 );
 
-                // Find indices of insignificant variables
-                const insignificantIndices = pValues
-                    .map((pValue, index) => ({ pValue, index }))
-                    .filter(({ pValue }) => pValue > significanceLevel)
-                    .map(({ index }) => index);
+                // Identify insignificant variables
+                const insignificantIndices: number[] = [];
+                pValues.forEach((pValue, idx) => {
+                    if (pValue > significanceLevel) {
+                        insignificantIndices.push(idx);
+                    }
+                });
 
-                if (!remove_insignificant_rules || insignificantIndices.length === 0) {
+                if (!removeInsignificantRules || insignificantIndices.length === 0) {
                     // All variables are significant; exit the loop
                     break;
                 }
 
-                // Remove insignificant variables
-                // Iterate from highest index to avoid shifting issues
-                insignificantIndices
-                    .sort((a, b) => b - a)
-                    .forEach(index => {
-                        const ruleToRemove = currentRules[index];
-                        if (ruleToRemove) {
-                            currentRules.splice(index, 1); // Remove at index
-                            currentX = currentX.map(row => {
-                                const newRow = row.slice();
-                                newRow.splice(index, 1);
-                                return newRow;
-                            });
+                // Collect rules to remove
+                const rulesToRemove: number[] = insignificantIndices.map(idx => activeIndices[idx]);
 
-                            const warnMsg = {
-                                log: `Removed rule "${ruleToRemove.toString(
-                                    metadata.target_var
-                                )}" due to insignificance (p-value: ${pValues[index].toFixed(4)}).`,
-                            };
+                // Log warnings in batch
+                const warnMessages = rulesToRemove.map(ruleIdx => {
+                    const rule = allRules[ruleIdx];
+                    return {
+                        log: `Removed rule "${rule.toString(metadata.target_var)}" due to insignificance (p-value: ${pValues[activeIndices.indexOf(ruleIdx)].toFixed(4)}).`,
+                    };
+                });
+                if (warnMessages.length > 0) {
+                    logWarning(warnMessages, warnings);
+                }
 
-                            logWarning(warnMsg, warnings);
-                            attempts++;
-                        }
-                    });
-
+                // Remove insignificant rules from activeIndices
+                activeIndices = activeIndices.filter(idx => !rulesToRemove.includes(idx));
+                attempts += rulesToRemove.length;
                 continue; // Retry with the reduced set of rules
             }
 
-            // Remove rules corresponding to problematic indices
-            // Iterate from highest index to avoid shifting issues
-            const warn_messages: any[] = [];
-            
-            problematicIndices
-                .sort((a, b) => b - a)
-                .forEach(index => {
-                    const ruleToRemove = currentRules[index];
-                    if (ruleToRemove) {
-                        currentRules.splice(index, 1); // Remove at index
-                        currentX = currentX.map(row => {
-                            const newRow = row.slice();
-                            newRow.splice(index, 1);
-                            return newRow;
-                        });
+            // Handle problematic indices due to linear dependencies
+            const rulesToRemove: number[] = [];
+            const warnMessages: any[] = [];
 
-                        const warnMsg = {
-                            log: `Removed rule "${ruleToRemove.toString(
-                                metadata.target_var
-                            )}" due to linear dependence (small Cholesky diagonal value ${diagElements[
-                                index
-                            ].toExponential()}).`,
-                            top3LinearDependentRules: getTopThreeIndices(
-                                cholMatrix.getRow(index)
-                            ).map((item_id: number) => {
-                                return {
-                                    rule: allRules[item_id].toString(metadata.target_var),
-                                    coefficient: cholMatrix.getRow(index)[item_id],
-                                };
-                            }),
-                        };
-                        warn_messages.push(warnMsg);
-                        attempts++;
-                    }
+            problematicIndices.forEach(depIdx => {
+                const ruleIdx = activeIndices[depIdx];
+                const rule = allRules[ruleIdx];
+                rulesToRemove.push(ruleIdx);
+
+                // Get top three dependent rules
+                const row = cholMatrix.getRow(depIdx);
+                const top3Indices = getTopThreeIndices(row);
+                const top3Rules = top3Indices.map(itemId => ({
+                    rule: allRules[activeIndices[itemId]].toString(metadata.target_var),
+                    coefficient: row[activeIndices[itemId]],
+                }));
+
+                warnMessages.push({
+                    log: `Removed rule "${rule.toString(metadata.target_var)}" due to linear dependence (small Cholesky diagonal value ${diagElements[depIdx].toExponential()}).`,
+                    top3LinearDependentRules: top3Rules,
                 });
-            
-            if (warn_messages.length > 0) {
-                logWarning(warn_messages, warnings);
-            }
-            continue; // Retry with the reduced set of rules
-        }
+            });
 
-        // If Cholesky decomposition failed without a valid decomposition
-        // Remove the last rule and retry
-        const ruleToRemove = currentRules.pop();
-        if (ruleToRemove) {
-            currentX = currentX.map(row => row.slice(0, -1));
-            const warnMsg = `Removed rule "${ruleToRemove.toString(
-                metadata.target_var
-            )}" due to Cholesky decomposition failure.`;
+            if (rulesToRemove.length > 0) {
+                // Remove problematic rules from activeIndices
+                activeIndices = activeIndices.filter(idx => !rulesToRemove.includes(idx));
+                attempts += rulesToRemove.length;
+                logWarning(warnMessages, warnings);
+                continue; // Retry with the reduced set of rules
+            }
+        } else {
+            // Cholesky decomposition failed without a valid decomposition
+            if (activeIndices.length === 0) {
+                const finalWarn = `Unable to resolve linear dependencies with current threshold ${dependencyThreshold}.`;
+                logWarning(finalWarn, warnings);
+                throw new Error(`Regression solve failed: ${finalWarn}`);
+            }
+
+            // Remove the last rule
+            const ruleIdx = activeIndices.pop()!;
+            const rule = allRules[ruleIdx];
+            const warnMsg = `Removed rule "${rule.toString(metadata.target_var)}" due to Cholesky decomposition failure.`;
             logWarning(warnMsg, warnings);
             attempts++;
             continue;
         }
-
-        // If no rules left to remove, throw an error
-        const finalWarn = `Unable to resolve linear dependencies with current threshold ${dependencyThreshold}.`;
-        logWarning(finalWarn, warnings);
-        throw new Error(`Regression solve failed: ${finalWarn}`);
     }
 
-    if (attempts === maxAttempts) {
+    if (attempts >= maxAttempts) {
         const finalWarn = `Unable to resolve linear dependencies after removing ${attempts} rules.`;
         logWarning(finalWarn, warnings);
         throw new Error(`Regression solve failed: ${finalWarn}`);
     }
 
-    // Map coefficients back to the original rule set with zeros for removed rules
+    if (coefficients === null) {
+        const finalWarn = `Regression coefficients could not be computed.`;
+        logWarning(finalWarn, warnings);
+        throw new Error(`Regression solve failed: ${finalWarn}`);
+    }
+
+    // Initialize all coefficients and p-values to zero and one respectively
     allRules.forEach(rule => {
-        const index = currentRules.findIndex(r => r === rule);
-        rule.coefficient = index !== -1 ? coefficients![index] : 0;
-        rule.pValue = index !== -1 ? pValues[index] : 1;
+        rule.coefficient = 0;
+        rule.pValue = 1;
+    });
+
+    // Assign computed coefficients and p-values to the corresponding rules
+    activeIndices.forEach((ruleIdx, idx) => {
+        const rule = allRules[ruleIdx];
+        rule.coefficient = coefficients![idx];
+        rule.pValue = pValues[idx];
     });
 }
