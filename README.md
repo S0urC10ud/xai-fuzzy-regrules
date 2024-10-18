@@ -133,6 +133,172 @@ Example request metadata:
 }
 ```
 
+Example response/result for the boston housing dataset:
+
+```json
+{
+    "mean_absolute_error": 0.8471479103019413,
+    "root_mean_squared_error": 1.1770638617902667,
+    "r_squared": 0.9835212780078919,
+    "mean_absolute_percentage_error": 4.445211660386882,
+    "sorted_rules": [
+        {
+            "title": "Intercept",
+            "coefficient": 10.48345290204791,
+            "isWhitelist": true,
+            "support": 0,
+            "leverage": 0,
+            "priority": 0,
+            "pValue": 0.8698225598608367
+        },
+        {
+            "title": "If CRIM is high then MEDV is verylow",
+            "coefficient": 22.158245498984996,
+            "isWhitelist": false,
+            "support": 0.005988023952095809,
+            "leverage": 0.004649383866996546,
+            "priority": 1.058469886574157,
+            "pValue": 0.014328487105502719
+        },
+        {
+            "title": "If NOX is low then MEDV is veryhigh",
+            "coefficient": 12.332376652806392,
+            "isWhitelist": false,
+            "support": 0.029940119760479042,
+            "leverage": 0.004442213377635947,
+            "priority": 1.1043023732973176,
+            "pValue": 0.00007447071149968565
+        },
+        {
+            "title": "If AGE is medium then MEDV is veryhigh",
+            "coefficient": 6.888549572472112,
+            "isWhitelist": false,
+            "support": 0.023952095808383235,
+            "leverage": -0.0006533838510603511,
+            "priority": 1.0413703531061629,
+            "pValue": 0.005897984894014829
+        },
+        {
+            "title": "If PTRATIO is low then MEDV is veryhigh",
+            "coefficient": 6.310368076764203,
+            "isWhitelist": false,
+            "support": 0.033932135728542916,
+            "leverage": 0.02653774287751842,
+            "priority": 1.33324170023227,
+            "pValue": 0.5002152617430908
+        },
+        {
+            "title": "If INDUS is high AND If TAX is medium then MEDV is verylow",
+            "coefficient": 6.085750330758465,
+            "isWhitelist": false,
+            "support": 0.031936127744510975,
+            "leverage": 0.011856526468022037,
+            "priority": 0.6824375201692423,
+            "pValue": 0.12692183753826303
+        },
+        {
+            "title": "If RM is high then MEDV is veryhigh",
+            "coefficient": 6.006023886928234,
+            "isWhitelist": true,
+            "support": 0.04790419161676647,
+            "leverage": 0.044334484723168435,
+            "priority": 101.53915323046522,
+            "pValue": 0.08148015949236465
+        },
+        {
+            "title": "If INDUS is low AND If B is high then MEDV is veryhigh",
+            "coefficient": 5.508659764757984,
+            "isWhitelist": false,
+            "support": 0.043912175648702596,
+            "leverage": 0.02019912271265852,
+            "priority": 0.7898155784239904,
+            "pValue": 0.18740070573307377
+        },
+        {
+            "title": "If CRIM is medium then MEDV is verylow",
+            "coefficient": 5.270527930879079,
+            "isWhitelist": false,
+            "support": 0.021956087824351298,
+            "leverage": 0.01660152748395425,
+            "priority": 1.2099274504882451,
+            "pValue": 0.332045349875171
+        },
+        {
+            "title": "If INDUS is medium AND If B is medium then MEDV is verylow",
+            "coefficient": 4.8219518293336145,
+            "isWhitelist": false,
+            "support": 0.017964071856287425,
+            "leverage": 0.011270871430791113,
+            "priority": 0.648636858020486,
+            "pValue": 0.12391492013406036
+        },
+        
+        ...
+
+        {
+            "title": "If NOX is medium then MEDV is verylow",
+            "coefficient": -12.136961933387964,
+            "isWhitelist": false,
+            "support": 0.1996007984031936,
+            "leverage": 0.07599969721236172,
+            "priority": 2.1591985689300044,
+            "pValue": 0.0001328508728710709
+        },
+        {
+            "title": "If RAD is low AND If PTRATIO is low then MEDV is veryhigh",
+            "coefficient": -13.864127070210554,
+            "isWhitelist": false,
+            "support": 0.033932135728542916,
+            "leverage": 0.02653774287751842,
+            "priority": 0.8332417002322701,
+            "pValue": 0.242828874317786
+        },
+        {
+            "title": "If CRIM is high AND If PTRATIO is high then MEDV is verylow",
+            "coefficient": -19.82549134359085,
+            "isWhitelist": true,
+            "support": 0.005988023952095809,
+            "leverage": 0.004649383866996546,
+            "priority": 100.55846988657416,
+            "pValue": 0.026240505075683096
+        }
+    ],
+    "warnings": [
+        "Removed 5 rows due to outlier filter on TAX",
+        "Added 4 whitelist rules to the rule set.",
+        "Removed 2 rules based on the blacklist.",
+        [
+            {
+                "primary": "If PTRATIO is medium then MEDV is medium",
+                "secondary": [
+                    "If RAD is low then MEDV is medium",
+                    "If B is high then MEDV is medium",
+                    ...]
+            }
+        ]
+        [
+            {
+                "log": "Removed rule \"If PTRATIO is medium then MEDV is medium\" due to linear dependence (small Cholesky diagonal value 8.699286175064224e-1).",
+                "top3LinearDependentRules": [
+                    {
+                        "rule": "Intercept",
+                        "coefficient": 615.5326910502068
+                    },
+                    {
+                        "rule": "If PTRATIO is medium then MEDV is medium",
+                        "coefficient": 0.8699286175064224
+                    },
+                    {
+                        "rule": "If CRIM is high AND If PTRATIO is high then MEDV is verylow",
+                        "coefficient": 0.020747847416468724
+                    }
+                ]
+            },...],
+        "Degrees of freedom: 165"
+    ]
+}
+```
+
 # Licencse
 This project is licensed under the GNU GPL v3.
 
