@@ -8,7 +8,20 @@ export function executeRegressionPipeline(
     allRules: Rule[],
     metadata: Metadata,
     warnings: any[]
-): { fullParams: {coeff: number|null; pValue:number|null}[]; finalX: number[][]; finalY: number[]; filteredRules: Rule[]} {
+): Rule[] {
+    X = X.map((row) => [1.0, ...row]); // Add intercept column
+
+    let i=1;
+    allRules = [new Rule([], "veryhigh", true, 0, true) , ...allRules.map(rule => new Rule(
+        rule.antecedents,
+        rule.outputFuzzySet,
+        rule.isWhitelist,
+        i++,
+        false,
+        rule.support,
+        rule.leverage,
+        rule.priority))];
+
     const { finalX, finalY } = removeDuplicateRows(X, y, metadata.l1_row_threshold, warnings);
 
     const { finalX: uniqueX, filteredRules } = removeDuplicateColumns(
@@ -19,7 +32,7 @@ export function executeRegressionPipeline(
         warnings
     );
 
-    const fullParams = performRegression(uniqueX, finalY, filteredRules, metadata, warnings);
+    performRegression(uniqueX, finalY, filteredRules, metadata, warnings);
 
-    return { fullParams, finalX: uniqueX, finalY, filteredRules };
+    return allRules;
 }

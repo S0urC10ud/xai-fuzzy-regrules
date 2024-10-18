@@ -49,7 +49,7 @@ export function main(metadata: Metadata, data: string): EvaluationMetrics {
 
     performInference(records, allRules, ruleOutputFuzzySetDegreesMap, outputUniverse, X);
 
-    const { fullParams, finalX, finalY, filteredRules } = executeRegressionPipeline(
+    const finalRules = executeRegressionPipeline(
         X,
         y,
         allRules,
@@ -57,42 +57,34 @@ export function main(metadata: Metadata, data: string): EvaluationMetrics {
         warnings
     );
 
-    const ruleCoefficients = filteredRules
-        .map((rule, index) => {
-            const antecedentStr = rule.antecedents
-                .map(ant => `If ${ant.variable} is ${ant.fuzzySet}`)
-                .join(' AND ');
-            return {
-                rule: `${antecedentStr} then ${metadata.target_var} is ${rule.outputFuzzySet}`,
-                coefficient: fullParams[index].coeff ? fullParams[index].coeff : 0,
-                pValue: fullParams[index].pValue ? fullParams[index].pValue : 0,
-                isWhitelist: rule.isWhitelist,
-                support: rule.support,
-                leverage: rule.leverage,
-                priority: rule.priority
-            };
-        })
-        .filter(rule => rule.coefficient !== 0);
+    const interestingRules = finalRules.filter(rule => rule.coefficient !== 0 && rule.coefficient !== null && rule.coefficient != undefined);
 
-    const sortedRules = ruleCoefficients.sort((a, b) => b.coefficient - a.coefficient);
+    const sortedRules = interestingRules.filter(r=>!r.isIntercept).sort((a, b) => {
+        if(b.coefficient === null || a.coefficient === null)
+            throw new Error("Coefficient is null");
+        return b.coefficient - a.coefficient
+    }) as Rule[];
+    const intercept = interestingRules.find(r=>r.isIntercept) as Rule;
 
-    const y_pred = finalX.map(row => {
-        return row.reduce((sum, val, idx) => sum + val * (fullParams[idx].coeff ? fullParams[idx].coeff : 0), 0);
-    });
+    // Independent full double-check evaluation
+    const y_pred = [];
+    const regressionX = X.map(row => [1., ...row]);
+    for (let i = 0; i < regressionX.length; i++)
+        y_pred.push(finalRules.reduce((sum, rule, idx) => sum + regressionX[i][rule.columnIndex] * (rule.coefficient ? rule.coefficient : 0), 0));
 
-    const metrics = executeEvaluationPipeline(finalY, y_pred);
+    const metrics = executeEvaluationPipeline(y, y_pred);
 
     return {
         ...metrics,
         warnings,
-        sorted_rules: sortedRules.map(rule => ({
-            rule: rule.rule,
-            coefficient: rule.coefficient,
-            pValue: rule.pValue,
-            isWhitelist: rule.isWhitelist,
-            support: rule.support,
-            leverage: rule.leverage,
-            priority: rule.priority
-        })),
+        sorted_rules: [intercept, ...sortedRules].map(r=>{return {
+            title: r.toString(metadata.target_var),
+            coefficient: r.coefficient,
+            isWhitelist: r.isWhitelist,
+            support: r.support,
+            leverage: r.leverage,
+            priority: r.priority,
+            pValue: r.pValue
+        }})
     };
 }

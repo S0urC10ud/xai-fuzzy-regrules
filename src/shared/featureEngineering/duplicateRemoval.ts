@@ -113,15 +113,8 @@ export function removeDuplicateColumns(
                 const primaryRule = allRules[keptColumns[existingIndex]];
                 const duplicateRule = allRules[col];
                 if (primaryRule && duplicateRule) {
-                    const primaryAntecedents = primaryRule.antecedents
-                        .map(ant => `If ${ant.variable} is ${ant.fuzzySet}`)
-                        .join(' AND ');
-                    const duplicateAntecedents = duplicateRule.antecedents
-                        .map(ant => `If ${ant.variable} is ${ant.fuzzySet}`)
-                        .join(' AND ');
-
-                    const primaryRuleStr = `${primaryAntecedents} then ${targetVar} is ${primaryRule.outputFuzzySet}`;
-                    const duplicateRuleStr = `${duplicateAntecedents} then ${targetVar} is ${duplicateRule.outputFuzzySet}`;
+                    const primaryRuleStr = primaryRule.toString(targetVar);
+                    const duplicateRuleStr = duplicateRule.toString(targetVar);
 
                     // Check if a group for this primary already exists
                     const existingGroup = duplicateColumnGroups.find(

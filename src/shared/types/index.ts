@@ -48,28 +48,55 @@ export class Rule {
     support: number = 0;
     leverage: number = 0;
     priority: number = 0;
+    isIntercept: boolean;
+    columnIndex: number = -1;
+    coefficient: number | null = null;
+    pValue: number | null = null;
 
     constructor(
         antecedents: { variable: string; fuzzySet: string }[],
         outputFuzzySet: string,
-        isWhitelist: boolean
+        isWhitelist: boolean,
+        columnIndex: number = -1,
+        isIntercept: boolean = false,
+        support = 0,
+        leverage = 0,
+        priority = 0
     ) {
         this.antecedents = antecedents;
         this.outputFuzzySet = outputFuzzySet;
         this.isWhitelist = isWhitelist;
+        this.isIntercept = isIntercept;
+        this.columnIndex = columnIndex;
+        this.support = support;
+        this.leverage = leverage;
+        this.priority = priority;
     }
 
     toString(target_var: string): string {
+        //remove all special characters for output security
+        target_var = target_var.replace(/[^a-zA-Z0-9]/g, '');
+        if (this.isIntercept)
+            return "Intercept";
+
         const antecedentStr = this.antecedents
-            .map((ant) => `If ${ant.variable} is ${ant.fuzzySet}`)
+            .map((ant) => `If ${ant.variable.replace(/[^a-zA-Z0-9]/g, '')} is ${ant.fuzzySet.replace(/[^a-zA-Z0-9]/g, '')}`)
             .join(' AND ');
-        return `${antecedentStr} then ${target_var} is ${this.outputFuzzySet}`;
+        return `${antecedentStr} then ${target_var} is ${this.outputFuzzySet.replace(/[^a-zA-Z0-9]/g, '')}`;
     }
 }
 
 
 export type EvaluationMetrics = {
-    sorted_rules: { rule: string; coefficient: number }[];
+    sorted_rules:{
+        title: string;
+        coefficient: number|null;
+        pValue: number|null;
+        isWhitelist: boolean;
+        support: number;
+        leverage: number;
+        priority: number;
+    }[];
     mean_absolute_error: number;
     root_mean_squared_error: number;
     r_squared: number;

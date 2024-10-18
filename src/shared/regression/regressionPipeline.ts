@@ -2,6 +2,7 @@ import { Matrix, CholeskyDecomposition, LuDecomposition } from 'ml-matrix';
 import { Rule } from '../types';
 import { logWarning } from '../utils/logger';
 import tCDF from '@stdlib/stats-base-dists-t-cdf';
+import { log } from 'mathjs';
 
 function getTopThreeIndices(arr: number[]) {
     const indexedArr = arr.map((value: any, index: number) => ({ value, index }));
@@ -26,9 +27,8 @@ export function performRegression(
     allRules: Rule[],
     metadata: any,
     warnings: any[]
-): {coeff: number|null; pValue:number|null}[] {
+) {
     let currentX = finalX.slice(); // Clone the design matrix
-    allRules = allRules.map(rule => new Rule(rule.antecedents, rule.outputFuzzySet, rule.isWhitelist));
     let currentRules = allRules.slice(); // Clone the rules
     const lambda = metadata.regularization || 0; // Default to 0 if undefined
     const dependencyThreshold = metadata.dependency_threshold; // Threshold for diagonal absolute value
@@ -76,6 +76,8 @@ export function performRegression(
                 const residuals = y_vector.sub(predictedY);
                 const residualSumOfSquares = residuals.transpose().mmul(residuals).get(0, 0);
                 const degreesOfFreedom = currentX.length - currentX[0].length;
+                logWarning(`Degrees of freedom: ${degreesOfFreedom}`, warnings);
+
                 const sigmaSquared = residualSumOfSquares / degreesOfFreedom;
 
                 // Compute covariance matrix of coefficients
@@ -132,6 +134,8 @@ export function performRegression(
 
             // Remove rules corresponding to problematic indices
             // Iterate from highest index to avoid shifting issues
+            const warn_messages: any[] = [];
+            
             problematicIndices
                 .sort((a, b) => b - a)
                 .forEach(index => {
@@ -159,12 +163,14 @@ export function performRegression(
                                 };
                             }),
                         };
-
-                        logWarning(warnMsg, warnings);
+                        warn_messages.push(warnMsg);
                         attempts++;
                     }
                 });
-
+            
+            if (warn_messages.length > 0) {
+                logWarning(warn_messages, warnings);
+            }
             continue; // Retry with the reduced set of rules
         }
 
@@ -194,10 +200,9 @@ export function performRegression(
     }
 
     // Map coefficients back to the original rule set with zeros for removed rules
-    const fullParams = allRules.map(rule => {
+    allRules.forEach(rule => {
         const index = currentRules.findIndex(r => r === rule);
-        return index !== -1 ? {coeff: coefficients![index], pValue: pValues[index]} : {coeff: null, pValue: null};
+        rule.coefficient = index !== -1 ? coefficients![index] : 0;
+        rule.pValue = index !== -1 ? pValues[index] : 1;
     });
-
-    return fullParams;
 }
