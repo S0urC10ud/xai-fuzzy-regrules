@@ -52,6 +52,7 @@ export class Rule {
     columnIndex: number = -1;
     coefficient: number | null = null;
     pValue: number | null = null;
+    secondaryRules: string[] = [];
 
     constructor(
         antecedents: { variable: string; fuzzySet: string }[],

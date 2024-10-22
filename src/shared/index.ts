@@ -76,7 +76,6 @@ export function main(metadata: Metadata, data: string): EvaluationMetrics {
 
     return {
         ...metrics,
-        warnings,
         sorted_rules: [intercept, ...sortedRules].map(r=>{return {
             title: r.toString(metadata.target_var),
             coefficient: r.coefficient,
@@ -84,7 +83,9 @@ export function main(metadata: Metadata, data: string): EvaluationMetrics {
             support: r.support,
             leverage: r.leverage,
             priority: r.priority,
-            pValue: r.pValue
-        }})
+            pValue: r.pValue,
+            secondaryRules: r.secondaryRules
+        }}),
+        warnings
     };
 }

@@ -121,6 +121,8 @@ export function removeDuplicateColumns(
                         group => group.primary === primaryRuleStr
                     );
 
+                    primaryRule.secondaryRules.push(duplicateRuleStr);
+
                     if (existingGroup) {
                         existingGroup.secondary.push(duplicateRuleStr);
                     } else {
