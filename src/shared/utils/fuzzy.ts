@@ -18,14 +18,12 @@ export function computeMembershipDegrees(
 
     const peaks = Array.from({ length: numClasses }, (_, i) => min + i * step);
 
-    // Define triangular membership functions
     const triangles = peaks.map((peak, i) => {
         const left = i === 0 ? min : peaks[i - 1];
         const right = i === numClasses - 1 ? max : peaks[i + 1];
         return { left, peak, right };
     });
 
-    // Helper function for triangular membership
     const triangle = (x: number, left: number, peak: number, right: number): number => {
         if (x === peak) return 1;
         if (x < left || x > right) return 0;
@@ -39,7 +37,7 @@ export function computeMembershipDegrees(
     // Compute raw membership degrees
     const rawDegrees: number[] = triangles.map(({ left, peak, right }) => triangle(x, left, peak, right));
 
-    // Handle edge cases for the first and last classes to ensure they peak at min and max
+    // ensure first and lass class peak at min and max
     if (numClasses >= 1) {
         rawDegrees[0] = x <= min ? 1 : rawDegrees[0];
         rawDegrees[numClasses - 1] = x >= max ? 1 : rawDegrees[numClasses - 1];
@@ -49,7 +47,6 @@ export function computeMembershipDegrees(
     const sumDegrees = rawDegrees.reduce((sum, degree) => sum + degree, 0);
     const normalizedDegrees = sumDegrees === 0 ? rawDegrees.map(() => 0) : rawDegrees.map(degree => degree / sumDegrees);
 
-    // Construct the membership degrees object
     const membershipDegrees: MembershipDegrees = {};
     classes.forEach((cls, idx) => {
         membershipDegrees[cls] = parseFloat(normalizedDegrees[idx].toFixed(4)); // Rounded for readability
