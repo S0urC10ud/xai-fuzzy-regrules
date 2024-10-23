@@ -100,6 +100,7 @@ Example request metadata:
   "numerical_fuzzification": ["low", "medium", "high"], // defines the fuzzy sets - possible values to be chosen: verylow, low, mediumlow, medium, mediumhigh, high, veryhigh
   "numerical_defuzzification": ["verylow", "medium", "veryhigh"], // same as above
   "variance_threshold": 1e-5, // Columns with a variance smaller than this value can be removed, set to 0 to disable
+  "remove_low_variance": false, // Defaults to false, toggles only warn vs. actually remove columns below variance threshold
   "include_intercept": true, // Determines, whether at absolute 0 the model should be forced to go to 0 or if an intercept can be used to offset it
   "outlier_filtering": {
     "AGE": { // column name
