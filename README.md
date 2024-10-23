@@ -100,6 +100,7 @@ Example request metadata:
   "numerical_fuzzification": ["low", "medium", "high"], // defines the fuzzy sets - possible values to be chosen: verylow, low, mediumlow, medium, mediumhigh, high, veryhigh
   "numerical_defuzzification": ["verylow", "medium", "veryhigh"], // same as above
   "variance_threshold": 1e-5, // Columns with a variance smaller than this value can be removed, set to 0 to disable
+  "include_intercept": true, // Determines, whether at absolute 0 the model should be forced to go to 0 or if an intercept can be used to offset it
   "outlier_filtering": {
     "AGE": { // column name
       "method": "VariableBounds",
@@ -149,7 +150,8 @@ Example response/result for the boston housing dataset:
             "support": 0,
             "leverage": 0,
             "priority": 0,
-            "pValue": 0.8698225598608367
+            "pValue": 0.8698225598608367,
+            "secondaryRules": []
         },
         {
             "title": "If CRIM is high then MEDV is verylow",
@@ -158,7 +160,13 @@ Example response/result for the boston housing dataset:
             "support": 0.005988023952095809,
             "leverage": 0.004649383866996546,
             "priority": 1.058469886574157,
-            "pValue": 0.014328487105502719
+            "pValue": 0.014328487105502719,
+            "secondaryRules": [
+                "If CRIM is high AND If ZN is low then MEDV is verylow",
+                "If CRIM is high AND If CHAS is low then MEDV is verylow",
+                "If CRIM is high AND If RAD is high then MEDV is verylow",
+                "If CRIM is high AND If TAX is high then MEDV is verylow"
+            ]
         },
         {
             "title": "If NOX is low then MEDV is veryhigh",
@@ -167,7 +175,8 @@ Example response/result for the boston housing dataset:
             "support": 0.029940119760479042,
             "leverage": 0.004442213377635947,
             "priority": 1.1043023732973176,
-            "pValue": 0.00007447071149968565
+            "pValue": 0.00007447071149968565,
+            "secondaryRules": []
         },
         {
             "title": "If AGE is medium then MEDV is veryhigh",
@@ -176,7 +185,8 @@ Example response/result for the boston housing dataset:
             "support": 0.023952095808383235,
             "leverage": -0.0006533838510603511,
             "priority": 1.0413703531061629,
-            "pValue": 0.005897984894014829
+            "pValue": 0.005897984894014829,
+            "secondaryRules": []
         },
         {
             "title": "If PTRATIO is low then MEDV is veryhigh",
@@ -185,7 +195,10 @@ Example response/result for the boston housing dataset:
             "support": 0.033932135728542916,
             "leverage": 0.02653774287751842,
             "priority": 1.33324170023227,
-            "pValue": 0.5002152617430908
+            "pValue": 0.5002152617430908,
+            "secondaryRules": [
+                "If CRIM is low AND If PTRATIO is low then MEDV is veryhigh"
+            ]
         },
         {
             "title": "If INDUS is high AND If TAX is medium then MEDV is verylow",
@@ -194,7 +207,8 @@ Example response/result for the boston housing dataset:
             "support": 0.031936127744510975,
             "leverage": 0.011856526468022037,
             "priority": 0.6824375201692423,
-            "pValue": 0.12692183753826303
+            "pValue": 0.12692183753826303,
+            "secondaryRules": []
         },
         {
             "title": "If RM is high then MEDV is veryhigh",
@@ -203,7 +217,8 @@ Example response/result for the boston housing dataset:
             "support": 0.04790419161676647,
             "leverage": 0.044334484723168435,
             "priority": 101.53915323046522,
-            "pValue": 0.08148015949236465
+            "pValue": 0.08148015949236465,
+            "secondaryRules": []
         },
         {
             "title": "If INDUS is low AND If B is high then MEDV is veryhigh",
@@ -212,7 +227,8 @@ Example response/result for the boston housing dataset:
             "support": 0.043912175648702596,
             "leverage": 0.02019912271265852,
             "priority": 0.7898155784239904,
-            "pValue": 0.18740070573307377
+            "pValue": 0.18740070573307377,
+            "secondaryRules": []
         },
         {
             "title": "If CRIM is medium then MEDV is verylow",
@@ -221,20 +237,10 @@ Example response/result for the boston housing dataset:
             "support": 0.021956087824351298,
             "leverage": 0.01660152748395425,
             "priority": 1.2099274504882451,
-            "pValue": 0.332045349875171
+            "pValue": 0.332045349875171,
+            "secondaryRules": []
         },
-        {
-            "title": "If INDUS is medium AND If B is medium then MEDV is verylow",
-            "coefficient": 4.8219518293336145,
-            "isWhitelist": false,
-            "support": 0.017964071856287425,
-            "leverage": 0.011270871430791113,
-            "priority": 0.648636858020486,
-            "pValue": 0.12391492013406036
-        },
-        
         ...
-
         {
             "title": "If NOX is medium then MEDV is verylow",
             "coefficient": -12.136961933387964,
@@ -242,7 +248,8 @@ Example response/result for the boston housing dataset:
             "support": 0.1996007984031936,
             "leverage": 0.07599969721236172,
             "priority": 2.1591985689300044,
-            "pValue": 0.0001328508728710709
+            "pValue": 0.0001328508728710709,
+            "secondaryRules": []
         },
         {
             "title": "If RAD is low AND If PTRATIO is low then MEDV is veryhigh",
@@ -251,7 +258,8 @@ Example response/result for the boston housing dataset:
             "support": 0.033932135728542916,
             "leverage": 0.02653774287751842,
             "priority": 0.8332417002322701,
-            "pValue": 0.242828874317786
+            "pValue": 0.242828874317786,
+            "secondaryRules": []
         },
         {
             "title": "If CRIM is high AND If PTRATIO is high then MEDV is verylow",
@@ -260,22 +268,14 @@ Example response/result for the boston housing dataset:
             "support": 0.005988023952095809,
             "leverage": 0.004649383866996546,
             "priority": 100.55846988657416,
-            "pValue": 0.026240505075683096
+            "pValue": 0.026240505075683096,
+            "secondaryRules": []
         }
     ],
     "warnings": [
         "Removed 5 rows due to outlier filter on TAX",
         "Added 4 whitelist rules to the rule set.",
         "Removed 2 rules based on the blacklist.",
-        [
-            {
-                "primary": "If PTRATIO is medium then MEDV is medium",
-                "secondary": [
-                    "If RAD is low then MEDV is medium",
-                    "If B is high then MEDV is medium",
-                    ...]
-            }
-        ]
         [
             {
                 "log": "Removed rule \"If PTRATIO is medium then MEDV is medium\" due to linear dependence (small Cholesky diagonal value 8.699286175064224e-1).",

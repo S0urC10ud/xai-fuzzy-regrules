@@ -86,7 +86,6 @@ export function removeDuplicateColumns(
 ): { finalX: number[][]; filteredRules: Rule[] } {
     const keptColumns: number[] = [];
     const columnHashes = new Map<string, number>();
-    const duplicateColumnGroups: DuplicateDetail[] = [];
 
     for (let col = 0; col < X[0].length; col++) {
         const currentColumn = X.map(row => row[col]);
@@ -113,24 +112,8 @@ export function removeDuplicateColumns(
                 const primaryRule = allRules[keptColumns[existingIndex]];
                 const duplicateRule = allRules[col];
                 if (primaryRule && duplicateRule) {
-                    const primaryRuleStr = primaryRule.toString(targetVar);
                     const duplicateRuleStr = duplicateRule.toString(targetVar);
-
-                    // Check if a group for this primary already exists
-                    const existingGroup = duplicateColumnGroups.find(
-                        group => group.primary === primaryRuleStr
-                    );
-
                     primaryRule.secondaryRules.push(duplicateRuleStr);
-
-                    if (existingGroup) {
-                        existingGroup.secondary.push(duplicateRuleStr);
-                    } else {
-                        duplicateColumnGroups.push({
-                            primary: primaryRuleStr,
-                            secondary: [duplicateRuleStr],
-                        });
-                    }
                 }
             } else {
                 columnHashes.set(currentHash, keptColumns.length);
@@ -141,25 +124,13 @@ export function removeDuplicateColumns(
 
     const duplicateColumnCount = X[0].length - keptColumns.length;
 
-    if (duplicateColumnCount > 0) {
-        if (duplicateColumnGroups.length > 0) {
-            logWarning(
-                duplicateColumnGroups,
-                warnings
-            );
-        } else {
-            // Fallback warning if no detailed groups are found
-            logWarning(
-                `0 Duplicate columns detected and removed based on L1-Norm < ${columnThreshold}: ${duplicateColumnCount}`,
-                warnings
-            );
-        }
+    logWarning(
+        `${duplicateColumnCount} Duplicate columns detected and removed based on L1-Norm < ${columnThreshold}: ${duplicateColumnCount}`,
+        warnings
+    );
 
-        const uniqueXUpdated = X.map(row => keptColumns.map(colIndex => row[colIndex]));
-        const filteredRules = keptColumns.map(colIndex => allRules[colIndex]).filter(rule => rule !== null) as Rule[];
+    const uniqueXUpdated = X.map(row => keptColumns.map(colIndex => row[colIndex]));
+    const filteredRules = keptColumns.map(colIndex => allRules[colIndex]).filter(rule => rule !== null) as Rule[];
 
-        return { finalX: uniqueXUpdated, filteredRules };
-    }
-
-    return { finalX: X, filteredRules: allRules };
+    return { finalX: uniqueXUpdated, filteredRules };
 }

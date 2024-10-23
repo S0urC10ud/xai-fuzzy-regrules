@@ -24,6 +24,7 @@ export interface Metadata {
     significance_level: number;
     remove_insignificant_rules: boolean;
     generate_fuzzification_chart: boolean;
+    include_intercept: boolean;
     rule_priority_weights?: {
         support_weight?:number;
         leverage_weight?:number;

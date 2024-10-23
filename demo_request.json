@@ -39,5 +39,6 @@
         "leverage_weight": 10,
         "num_antecedents_weight": 1,
         "whitelist_boolean_weight": 100
-    }
+    },
+    "include_intercept": true
 }
