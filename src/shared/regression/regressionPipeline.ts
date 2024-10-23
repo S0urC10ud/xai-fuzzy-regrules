@@ -78,6 +78,12 @@ export function performRegression(
     let coefficients: number[] | null = null;
     let pValues: number[] = [];
     const yVector = Matrix.columnVector(finalY);
+    let removedLinearities = false;
+    if(metadata.only_one_round_of_linearity_removal === undefined)
+        metadata.only_one_round_of_linearity_removal = true;
+    let removedByStatProperties = false;
+    if(metadata.only_one_round_of_statistical_removal === undefined)
+        metadata.only_one_round_of_statistical_removal = true;
 
     while (attempts < maxAttempts) {
         const subMatrixData: number[][] = finalX.map(row => activeIndices.map(col => row[col]));
@@ -85,7 +91,7 @@ export function performRegression(
         const Xt = XMatrix.transpose();
         const XtX = Xt.mmul(XMatrix);
         const identityMatrix = Matrix.eye(XtX.rows).mul(lambda);
-        const XtXReg = XtX.add(identityMatrix);
+        const XtXReg = XtX.clone().add(identityMatrix);
 
         let chol: CholeskyDecomposition | null = null;
         try {
@@ -107,7 +113,7 @@ export function performRegression(
                 }
             });
 
-            if (problematicIndices.length === 0) {
+            if (problematicIndices.length === 0 || removedLinearities) {
                 // Successful decomposition and valid diagonals
                 const XtY = Xt.mmul(yVector);
                 const coeffs = chol.solve(XtY).to1DArray();
@@ -115,7 +121,7 @@ export function performRegression(
 
                 // Compute residuals
                 const predictedY = XMatrix.mmul(Matrix.columnVector(coefficients));
-                const residuals = yVector.sub(predictedY);
+                const residuals = yVector.clone().sub(predictedY); //clone necessary because otherwise yVector is modified
                 const residualSumOfSquares = residuals.transpose().mmul(residuals).get(0, 0);
                 const degreesOfFreedom = finalX.length - activeIndices.length;
                 logWarning(`Degrees of freedom: ${degreesOfFreedom}`, warnings);
@@ -143,7 +149,7 @@ export function performRegression(
                     }
                 });
 
-                if (!removeInsignificantRules || insignificantIndices.length === 0) {
+                if (removedByStatProperties || !removeInsignificantRules || insignificantIndices.length === 0) {
                     // All variables are significant; exit the loop
                     break;
                 }
@@ -159,12 +165,13 @@ export function performRegression(
                     };
                 });
                 if (warnMessages.length > 0) {
-                    logWarning(warnMessages, warnings);
+                    logWarning(warnMessages, warnings); //TODO: fix in one batch
                 }
 
                 // Remove insignificant rules from activeIndices
                 activeIndices = activeIndices.filter(idx => !rulesToRemove.includes(idx));
                 attempts += rulesToRemove.length;
+                removedByStatProperties = true && metadata.only_one_round_of_statistical_removal;
                 continue; // Retry with the reduced set of rules
             }
 
@@ -182,7 +189,7 @@ export function performRegression(
                 const top3Indices = getTopThreeIndices(row);
                 const top3Rules = top3Indices.map(itemId => ({
                     rule: allRules[activeIndices[itemId]].toString(metadata.target_var),
-                    coefficient: row[activeIndices[itemId]],
+                    coefficient: row[itemId]
                 }));
 
                 warnMessages.push({
@@ -196,6 +203,7 @@ export function performRegression(
                 activeIndices = activeIndices.filter(idx => !rulesToRemove.includes(idx));
                 attempts += rulesToRemove.length;
                 logWarning(warnMessages, warnings);
+                removedLinearities = true && metadata.only_one_round_of_linearity_removal;
                 continue; // Retry with the reduced set of rules
             }
         } else {

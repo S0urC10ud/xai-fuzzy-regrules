@@ -25,6 +25,8 @@ export interface Metadata {
     remove_insignificant_rules: boolean;
     generate_fuzzification_chart: boolean;
     include_intercept: boolean;
+    only_one_round_of_statistical_removal?: boolean;
+    only_one_round_of_linearity_removal?: boolean;
     rule_priority_weights?: {
         support_weight?:number;
         leverage_weight?:number;

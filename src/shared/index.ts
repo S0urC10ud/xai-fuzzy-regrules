@@ -74,9 +74,14 @@ export function main(metadata: Metadata, data: string): EvaluationMetrics {
 
     const metrics = executeEvaluationPipeline(y, y_pred);
 
+    const outputRules = [];
+    if(intercept!==undefined)
+        outputRules.push(intercept);
+    outputRules.push(...sortedRules);
+
     return {
         ...metrics,
-        sorted_rules: [intercept, ...sortedRules].map(r=>{return {
+        sorted_rules: outputRules.map(r=>{return {
             title: r.toString(metadata.target_var),
             coefficient: r.coefficient,
             isWhitelist: r.isWhitelist,

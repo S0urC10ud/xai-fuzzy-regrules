@@ -130,7 +130,9 @@ Example request metadata:
     "leverage_weight": 10, //  leverage_weight * rule.leverage (see association rule mining theory) +
     "num_antecedents_weight": 1, // num_antecedents_weight * (1 / numAntecedents) + 
     "whitelist_boolean_weight": 100 // + whitelist_boolean_weight if the rule is a whitelisted rule
-  }
+  },
+  "only_one_round_of_statistical_removal": false, // true is default - tradeoff runtime duration and how many rules get filtered
+  "only_one_round_of_linearity_removal": false // true is default - tradeoff runtime duration and how many rules get filtered
 }
 ```
 

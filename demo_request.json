@@ -40,5 +40,7 @@
         "num_antecedents_weight": 1,
         "whitelist_boolean_weight": 100
     },
-    "include_intercept": true
+    "include_intercept": true,
+    "only_one_round_of_statistical_removal": false,
+    "only_one_round_of_linearity_removal": false
 }

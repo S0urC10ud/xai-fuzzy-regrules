@@ -46,3 +46,5 @@ package-lock.json
 big_response_boston_housing.json
 
 performanceAnalysis/**
+.Rproj.user
+tmp/**
