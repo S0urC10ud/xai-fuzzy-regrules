@@ -22,12 +22,15 @@ Install dependencies with `npm install`.
 ## Usage
 One can either choose to serve this project in an API or to compile it and import it in the browser.
 
-### Running as API Server
-Build the project:
-```
+First, clone the repo and get the necessary dependencies:
+```bash
+git clone https://github.com/S0urC10ud/xai-fuzzy-regrules
+cd xai-fuzzy-regrules
+npm i
 npm run build
 ```
 
+### Running as API Server
 Start the server:
 ```
 npm start
