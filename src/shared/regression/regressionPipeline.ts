@@ -85,6 +85,7 @@ export function performRegression(
     if(metadata.only_one_round_of_statistical_removal === undefined)
         metadata.only_one_round_of_statistical_removal = true;
 
+    const warnCollector: any[] = [];
     while (attempts < maxAttempts) {
         const subMatrixData: number[][] = finalX.map(row => activeIndices.map(col => row[col]));
         const XMatrix = new Matrix(subMatrixData);
@@ -109,6 +110,10 @@ export function performRegression(
             const problematicIndices: number[] = [];
             diagElements.forEach((value, index) => {
                 if (Math.abs(value) < dependencyThreshold) {
+                    if (metadata.include_intercept && index === 0) {
+                        // Skip the intercept column
+                        return;
+                    }
                     problematicIndices.push(index);
                 }
             });
@@ -145,28 +150,28 @@ export function performRegression(
                 const insignificantIndices: number[] = [];
                 pValues.forEach((pValue, idx) => {
                     if (pValue > significanceLevel) {
+                        if (metadata.include_intercept && idx === 0) {
+                            // Skip the intercept column
+                            return;
+                        }
                         insignificantIndices.push(idx);
                     }
                 });
 
                 if (removedByStatProperties || !removeInsignificantRules || insignificantIndices.length === 0) {
-                    // All variables are significant; exit the loop
                     break;
                 }
 
-                // Collect rules to remove
                 const rulesToRemove: number[] = insignificantIndices.map(idx => activeIndices[idx]);
 
-                // Log warnings in batch
                 const warnMessages = rulesToRemove.map(ruleIdx => {
                     const rule = allRules[ruleIdx];
                     return {
                         log: `Removed rule "${rule.toString(metadata.target_var)}" due to insignificance (p-value: ${pValues[activeIndices.indexOf(ruleIdx)].toFixed(4)}).`,
                     };
                 });
-                if (warnMessages.length > 0) {
-                    logWarning(warnMessages, warnings); //TODO: fix in one batch
-                }
+
+                warnCollector.push(warnMessages)
 
                 // Remove insignificant rules from activeIndices
                 activeIndices = activeIndices.filter(idx => !rulesToRemove.includes(idx));
@@ -248,4 +253,6 @@ export function performRegression(
         rule.coefficient = coefficients![idx];
         rule.pValue = pValues[idx];
     });
+
+    logWarning(warnCollector, warnings);
 }
