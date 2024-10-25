@@ -9,7 +9,7 @@ export function executeRegressionPipeline(
     metadata: Metadata,
     warnings: any[]
 ): Rule[] {
-    if(metadata.include_intercept) {
+    if(metadata.include_intercept !== false) {
         X = X.map((row) => [1.0, ...row]); // Add intercept column
         let i=1;
         allRules = [new Rule([], "veryhigh", true, 0, true) , ...allRules.map(rule => new Rule(

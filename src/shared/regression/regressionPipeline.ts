@@ -110,7 +110,7 @@ export function performRegression(
             const problematicIndices: number[] = [];
             diagElements.forEach((value, index) => {
                 if (Math.abs(value) < dependencyThreshold) {
-                    if (metadata.include_intercept && index === 0) {
+                    if (metadata.include_intercept !== false && index === 0) {
                         // Skip the intercept column
                         return;
                     }
@@ -150,7 +150,7 @@ export function performRegression(
                 const insignificantIndices: number[] = [];
                 pValues.forEach((pValue, idx) => {
                     if (pValue > significanceLevel) {
-                        if (metadata.include_intercept && idx === 0) {
+                        if (metadata.include_intercept !== false && idx === 0) {
                             // Skip the intercept column
                             return;
                         }

@@ -10,6 +10,10 @@ import { executeRulePipeline } from './pipeline/rulePipeline';
 export function main(metadata: Metadata, data: string): EvaluationMetrics {
     const warnings: any[] = [];
 
+    if(metadata.dependency_threshold > 0.001)
+        warnings.push("High dependency threshold detected, consider setting this value to < 0.001 for better results.");
+        
+
     const { records, numericalKeys, categoricalKeys } = executeDataPipeline(data, metadata, warnings);
     const variableBounds: { [key: string]: { min: number; max: number } } = {};
     numericalKeys.forEach(key => {

@@ -104,7 +104,7 @@ Example request metadata:
   "numerical_defuzzification": ["verylow", "medium", "veryhigh"], // same as above
   "variance_threshold": 1e-5, // Columns with a variance smaller than this value can be removed, set to 0 to disable
   "remove_low_variance": false, // Defaults to false, toggles only warn vs. actually remove columns below variance threshold
-  "include_intercept": true, // Determines, whether at absolute 0 the model should be forced to go to 0 or if an intercept can be used to offset it - this parameter cannot be removed from colinearities or the significance-test
+  "include_intercept": true, // Defaults to true; Determines, whether at absolute 0 the model should be forced to go to 0 or if an intercept can be used to offset it - this parameter cannot be removed from colinearities or the significance-test
   "outlier_filtering": {
     "AGE": { // column name
       "method": "VariableBounds",
@@ -126,7 +126,7 @@ Example request metadata:
     "If DIS is high AND If LSTAT is high then MEDV is veryhigh"
   ],
   "only_whitelist": false, // disables the rule generation and forces the system only to use the specified whitelist-rules
-  "dependency_threshold": 1, // if the diagonal of the Cholesky-Decomposition for this rule is less than this value, we assume it can be explained by other rules (linear combination) 
+  "dependency_threshold": 0.00001, // if the diagonal of the Cholesky-Decomposition for this rule is less than this value, we assume it can be explained by other rules (linear combination) 
   "significance_level": 0.05, // for the t-test with H0 that the coefficient Beta=0
   "remove_insignificant_rules": false,
   "rule_priority_weights": { // weigthing for ordering the rules - the order is important for the linear dependency threshold removal; rule.priority =   
