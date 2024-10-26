@@ -92,12 +92,14 @@ Body:
 - csvFile: The CSV file to be uploaded.
 - metadata: JSON string containing configuration parameters.
 
+Warning: If you use regularization, the t-Test results (pValue) cannot be considered entirely correct!
+
 Example request metadata:
 ```json
 {
   "split_char": ";", // split character for the CSV-file
   "target_var": "MEDV", // target column from csv file to explain
-  "regularization": 0.001, // to avoid a singular matrix for inversion (equiv. to regularization)
+  "regularization": 0.00001, // to avoid a singular matrix for inversion - should not be necessary when correctly removing linear dependencies
   "l1_row_threshold": 0.1, // row/(2*threshold) will be serialized to a string and checked for duplicates
   "l1_column_threshold": 0.1, // same as l1_row_threshold but column-wise 
   "numerical_fuzzification": ["low", "medium", "high"], // defines the fuzzy sets - possible values to be chosen: verylow, low, mediumlow, medium, mediumhigh, high, veryhigh
@@ -126,7 +128,7 @@ Example request metadata:
     "If DIS is high AND If LSTAT is high then MEDV is veryhigh"
   ],
   "only_whitelist": false, // disables the rule generation and forces the system only to use the specified whitelist-rules
-  "dependency_threshold": 0.00001, // if the diagonal of the Cholesky-Decomposition for this rule is less than this value, we assume it can be explained by other rules (linear combination) 
+  "dependency_threshold": 0.02, // if the diagonal of the Cholesky-Decomposition for this rule is less than this value, we assume it can be explained by other rules (linear combination) 
   "significance_level": 0.05, // for the t-test with H0 that the coefficient Beta=0
   "remove_insignificant_rules": false,
   "rule_priority_weights": { // weigthing for ordering the rules - the order is important for the linear dependency threshold removal; rule.priority =   

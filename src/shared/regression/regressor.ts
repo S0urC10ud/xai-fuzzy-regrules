@@ -71,7 +71,7 @@ export function performRegression(
     let activeIndices: number[] = allRules.map((_, index) => index);
     let attempts = 0;
     const maxAttempts = allRules.length;
-    const lambda = metadata.regularization || 0;
+    let lambda = metadata.regularization || 0;
     const dependencyThreshold = metadata.dependency_threshold;
     const significanceLevel = metadata.significance_level || 0.05;
     const removeInsignificantRules = metadata.remove_insignificant_rules || false;
@@ -102,6 +102,10 @@ export function performRegression(
             chol = null;
         }
 
+        if(!chol?.isPositiveDefinite()){
+            throw new Error(`Cholesky decomposition failed, consider increasing the regularization`);
+        }
+
         if (chol) {
             // Check diagonal elements for dependency threshold
             const cholMatrix = chol.lowerTriangularMatrix;
@@ -130,6 +134,12 @@ export function performRegression(
                 const residualSumOfSquares = residuals.transpose().mmul(residuals).get(0, 0);
                 const degreesOfFreedom = finalX.length - activeIndices.length;
                 logWarning(`Degrees of freedom: ${degreesOfFreedom}`, warnings);
+
+                if(degreesOfFreedom <= 0) {
+                    const finalWarn = `Degrees of freedom is less than or equal to zero, choose a higher dependency threshold, less rules or a bigger dataset! Current diagonal values of Cholesky decomposition: ${diagElements.toString()}.`;
+                    logWarning(finalWarn, warnings);
+                    throw new Error(`Regression solve failed: ${finalWarn}`);
+                }
 
                 const sigmaSquared = residualSumOfSquares / degreesOfFreedom;
 
@@ -196,6 +206,9 @@ export function performRegression(
                     rule: allRules[activeIndices[itemId]].toString(metadata.target_var),
                     coefficient: row[itemId]
                 }));
+
+                if(Array.from(top3Rules).some(r => r.coefficient == null))
+                    throw new Error("Coefficient is null");
 
                 warnMessages.push({
                     log: `Removed rule "${rule.toString(metadata.target_var)}" due to linear dependence (small Cholesky diagonal value ${diagElements[depIdx].toExponential()}).`,

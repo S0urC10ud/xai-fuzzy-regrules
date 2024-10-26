@@ -1,5 +1,5 @@
 import { Rule, Metadata } from '../types';
-import { performRegression } from '../regression/regressionPipeline';
+import { performRegression } from '../regression/regressor';
 import { removeDuplicateRows, removeDuplicateColumns } from '../featureEngineering/duplicateRemoval';
 
 export function executeRegressionPipeline(
