@@ -132,10 +132,10 @@ Example request metadata:
   "significance_level": 0.05, // for the t-test with H0 that the coefficient Beta=0
   "remove_insignificant_rules": false,
   "rule_priority_weights": { // weigthing for ordering the rules - the order is important for the linear dependency threshold removal; rule.priority =   
-    "support_weight": 2, // support_weight * rule.support (see association rule mining theory) +
+    "support_weight": 1, // support_weight * rule.support (see association rule mining theory) +
     "leverage_weight": 10, //  leverage_weight * rule.leverage (see association rule mining theory) +
     "num_antecedents_weight": 1, // num_antecedents_weight * (1 / numAntecedents) + 
-    "whitelist_boolean_weight": 100 // + whitelist_boolean_weight if the rule is a whitelisted rule
+    "whitelist_boolean_weight": 1000 // + whitelist_boolean_weight if the rule is a whitelisted rule
   },
   "only_one_round_of_statistical_removal": false, // true is default - tradeoff runtime duration and how many rules get filtered
   "only_one_round_of_linearity_removal": false // true is default - tradeoff runtime duration and how many rules get filtered

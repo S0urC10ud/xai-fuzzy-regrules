@@ -1,4 +1,4 @@
-import { Matrix, CholeskyDecomposition } from 'ml-matrix';
+import { Matrix, QrDecomposition, inverse } from 'ml-matrix';
 import { Rule } from '../types';
 import { logWarning } from '../utils/logger';
 import tCDF from '@stdlib/stats-base-dists-t-cdf';
@@ -79,40 +79,30 @@ export function performRegression(
     let pValues: number[] = [];
     const yVector = Matrix.columnVector(finalY);
     let removedLinearities = false;
-    if(metadata.only_one_round_of_linearity_removal === undefined)
+    if (metadata.only_one_round_of_linearity_removal === undefined)
         metadata.only_one_round_of_linearity_removal = true;
     let removedByStatProperties = false;
-    if(metadata.only_one_round_of_statistical_removal === undefined)
+    if (metadata.only_one_round_of_statistical_removal === undefined)
         metadata.only_one_round_of_statistical_removal = true;
 
     const warnCollector: any[] = [];
     while (attempts < maxAttempts) {
         const subMatrixData: number[][] = finalX.map(row => activeIndices.map(col => row[col]));
         const XMatrix = new Matrix(subMatrixData);
-        const Xt = XMatrix.transpose();
-        const XtX = Xt.mmul(XMatrix);
-        const identityMatrix = Matrix.eye(XtX.rows).mul(lambda);
-        const XtXReg = XtX.clone().add(identityMatrix);
+        //TODO: think about regularization
+        const p = activeIndices.length;
+        let qr = new QrDecomposition(XMatrix);
 
-        let chol: CholeskyDecomposition | null = null;
-        try {
-            chol = new CholeskyDecomposition(XtXReg);
-        } catch {
-            // Cholesky decomposition failed
-            chol = null;
-        }
-
-        if(!chol?.isPositiveDefinite()){
-            throw new Error(`Cholesky decomposition failed, consider increasing the regularization`);
-        }
-
-        if (chol) {
-            // Check diagonal elements for dependency threshold
-            const cholMatrix = chol.lowerTriangularMatrix;
-            const diagElements = cholMatrix.diagonal();
+        if (qr) {
+            // Check diagonal elements of R for dependency
+            const R = qr.upperTriangularMatrix;
+            const diagElements = R.diagonal();
 
             const problematicIndices: number[] = [];
-            diagElements.forEach((value, index) => {
+            diagElements.forEach((value:any, index:number) => {
+                if (value == null || isNaN(value))
+                    throw new Error("QR decomposition failed, consider increasing the regularization - diagonal value is null or NaN");
+
                 if (Math.abs(value) < dependencyThreshold) {
                     if (metadata.include_intercept !== false && index === 0) {
                         // Skip the intercept column
@@ -124,9 +114,17 @@ export function performRegression(
 
             if (problematicIndices.length === 0 || removedLinearities) {
                 // Successful decomposition and valid diagonals
-                const XtY = Xt.mmul(yVector);
-                const coeffs = chol.solve(XtY).to1DArray();
-                coefficients = coeffs;
+                let beta: number[];
+                try {
+                    const betaMatrix = qr.solve(yVector);
+                    beta = betaMatrix.to1DArray().slice(0, p); // Extracting coefficients
+                } catch (error) {
+                    const finalWarn = `QR solve failed, possibly due to numerical issues.`;
+                    logWarning(finalWarn, warnings);
+                    throw new Error(`Regression solve failed: ${finalWarn}`);
+                }
+
+                coefficients = beta;
 
                 // Compute residuals
                 const predictedY = XMatrix.mmul(Matrix.columnVector(coefficients));
@@ -135,8 +133,8 @@ export function performRegression(
                 const degreesOfFreedom = finalX.length - activeIndices.length;
                 logWarning(`Degrees of freedom: ${degreesOfFreedom}`, warnings);
 
-                if(degreesOfFreedom <= 0) {
-                    const finalWarn = `Degrees of freedom is less than or equal to zero, choose a higher dependency threshold, less rules or a bigger dataset! Current diagonal values of Cholesky decomposition: ${diagElements.toString()}.`;
+                if (degreesOfFreedom <= 0) {
+                    const finalWarn = `Degrees of freedom is less than or equal to zero, choose a higher dependency threshold, fewer rules, or a bigger dataset! Current diagonal values of QR decomposition: ${diagElements.toString()}.`;
                     logWarning(finalWarn, warnings);
                     throw new Error(`Regression solve failed: ${finalWarn}`);
                 }
@@ -144,7 +142,15 @@ export function performRegression(
                 const sigmaSquared = residualSumOfSquares / degreesOfFreedom;
 
                 // Compute covariance matrix
-                const XtXInv = chol.solve(Matrix.eye(XtXReg.rows));
+                let RInv: Matrix;
+                try {
+                    RInv = inverse(R);
+                } catch (error) {
+                    const finalWarn = `Failed to invert R matrix from QR decomposition. Consider increasing regularization.`;
+                    logWarning(finalWarn, warnings);
+                    throw new Error(`Regression solve failed: ${finalWarn}`);
+                }
+                const XtXInv = RInv.mul(RInv.transpose());
                 const covarianceMatrix = XtXInv.mul(sigmaSquared);
 
                 // Compute standard errors
@@ -181,12 +187,12 @@ export function performRegression(
                     };
                 });
 
-                warnCollector.push(warnMessages)
+                warnCollector.push(...warnMessages);
 
                 // Remove insignificant rules from activeIndices
                 activeIndices = activeIndices.filter(idx => !rulesToRemove.includes(idx));
                 attempts += rulesToRemove.length;
-                removedByStatProperties = true && metadata.only_one_round_of_statistical_removal;
+                removedByStatProperties = metadata.only_one_round_of_statistical_removal;
                 continue; // Retry with the reduced set of rules
             }
 
@@ -200,18 +206,18 @@ export function performRegression(
                 rulesToRemove.push(ruleIdx);
 
                 // Get top three dependent rules
-                const row = cholMatrix.getRow(depIdx);
+                const row = R.getRow(depIdx);
                 const top3Indices = getTopThreeIndices(row);
                 const top3Rules = top3Indices.map(itemId => ({
                     rule: allRules[activeIndices[itemId]].toString(metadata.target_var),
                     coefficient: row[itemId]
                 }));
 
-                if(Array.from(top3Rules).some(r => r.coefficient == null))
+                if (top3Rules.some(r => r.coefficient == null))
                     throw new Error("Coefficient is null");
 
                 warnMessages.push({
-                    log: `Removed rule "${rule.toString(metadata.target_var)}" due to linear dependence (small Cholesky diagonal value ${diagElements[depIdx].toExponential()}).`,
+                    log: `Removed rule "${rule.toString(metadata.target_var)}" due to linear dependence (small QR R diagonal value ${diagElements[depIdx].toExponential()}).`,
                     top3LinearDependentRules: top3Rules,
                 });
             });
@@ -221,11 +227,11 @@ export function performRegression(
                 activeIndices = activeIndices.filter(idx => !rulesToRemove.includes(idx));
                 attempts += rulesToRemove.length;
                 logWarning(warnMessages, warnings);
-                removedLinearities = true && metadata.only_one_round_of_linearity_removal;
+                removedLinearities = metadata.only_one_round_of_linearity_removal;
                 continue; // Retry with the reduced set of rules
             }
         } else {
-            // Cholesky decomposition failed without a valid decomposition
+            // QR decomposition failed without a valid decomposition
             if (activeIndices.length === 0) {
                 const finalWarn = `Unable to resolve linear dependencies with current threshold ${dependencyThreshold}.`;
                 logWarning(finalWarn, warnings);
@@ -235,7 +241,7 @@ export function performRegression(
             // Remove the last rule
             const ruleIdx = activeIndices.pop()!;
             const rule = allRules[ruleIdx];
-            const warnMsg = `Removed rule "${rule.toString(metadata.target_var)}" due to Cholesky decomposition failure.`;
+            const warnMsg = `Removed rule "${rule.toString(metadata.target_var)}" due to QR decomposition failure.`;
             logWarning(warnMsg, warnings);
             attempts++;
             continue;
