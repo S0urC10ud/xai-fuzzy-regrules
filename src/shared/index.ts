@@ -16,6 +16,7 @@ export function main(metadata: Metadata, data: string): EvaluationMetrics {
 
     const { records, numericalKeys, categoricalKeys } = executeDataPipeline(data, metadata, warnings);
     const variableBounds: { [key: string]: { min: number; max: number } } = {};
+
     numericalKeys.forEach(key => {
         const values: number[] = records.map(record => parseFloat(record[key] as string));
         const min = Math.min(...values);
@@ -72,7 +73,12 @@ export function main(metadata: Metadata, data: string): EvaluationMetrics {
 
     // Independent full double-check evaluation
     const y_pred = [];
-    const regressionX = X.map(row => [1., ...row]);
+    let regressionX: number[][];
+    if (metadata.include_intercept)
+         regressionX = X.map(row => [1., ...row]);
+    else
+        regressionX = X;
+    
     for (let i = 0; i < regressionX.length; i++)
         y_pred.push(finalRules.reduce((sum, rule, idx) => sum + regressionX[i][rule.columnIndex] * (rule.coefficient ? rule.coefficient : 0), 0));
 

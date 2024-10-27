@@ -9,8 +9,8 @@ export function computeMembershipDegrees(
     classes: string[]
 ): MembershipDegrees {
     const numClasses = classes.length;
-    if (![3, 5, 7].includes(numClasses)) {
-        throw new Error("Number of classes must be either 3, 5, or 7.");
+    if (![3, 5, 6, 7].includes(numClasses)) {
+        throw new Error("Number of classes must be either 3, 5, 6, or 7.");
     }
 
     const range = max - min;

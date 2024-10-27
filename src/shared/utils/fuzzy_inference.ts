@@ -1,6 +1,5 @@
 import { Record, Rule } from '../types';
 
-
 export function performInference(records: Record[], allRules: Rule[], ruleOutputFuzzySetDegreesMap: { [ruleIndex: number]: number[]; }, outputUniverse: number[], X: number[][]) {
     records.forEach(record => {
         const featureVector: number[] = [];
@@ -42,7 +41,7 @@ export function performInference(records: Record[], allRules: Rule[], ruleOutput
             const outputValuesAtMax = indicesAtMax.map(i => outputUniverse[i]);
             const crispOutput = outputValuesAtMax.reduce((sum, val) => sum + val, 0) / outputValuesAtMax.length;
 
-            featureVector.push(crispOutput);
+            featureVector.push(crispOutput*firingStrength); // Weighted output value, changed defuzzification, since otherwise the antecedent would not matter and the middle would almost always be the same
         });
 
         X.push(featureVector);
