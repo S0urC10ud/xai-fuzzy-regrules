@@ -128,7 +128,7 @@ Example request metadata:
     "If DIS is high AND If LSTAT is high then MEDV is veryhigh"
   ],
   "only_whitelist": false, // disables the rule generation and forces the system only to use the specified whitelist-rules
-  "dependency_threshold": 0.02, // if the diagonal of the Cholesky-Decomposition for this rule is less than this value, we assume it can be explained by other rules (linear combination) 
+  "dependency_threshold": 0.02, // if the residual from the Gram-Schmidt orthogonalization has a norm lower than this value, the vector is considered being linearly dependent
   "significance_level": 0.05, // for the t-test with H0 that the coefficient Beta=0
   "remove_insignificant_rules": false,
   "rule_priority_weights": { // weigthing for ordering the rules - the order is important for the linear dependency threshold removal; rule.priority =   

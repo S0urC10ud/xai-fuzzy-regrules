@@ -2,6 +2,8 @@
   "devDependencies": {
     "@types/express": "^5.0.0",
     "@types/multer": "^1.4.12",
+    "@types/ndarray": "^1.0.14",
+    "@types/ndarray-scratch": "^1.2.4",
     "ts-loader": "^9.5.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.6.2",

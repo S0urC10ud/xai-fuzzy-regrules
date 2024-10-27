@@ -1,11 +1,11 @@
 {
     "split_char":";",
     "target_var": "Salary",
-    "regularization": 0.00001,
-    "l1_row_threshold":0.1,
-    "l1_column_threshold":0.1,
-    "numerical_fuzzification": ["low", "medium", "high"],
-    "numerical_defuzzification": ["verylow",  "medium", "veryhigh"],
+    "regularization": 0,
+    "l1_row_threshold":50,
+    "l1_column_threshold":50,
+    "numerical_fuzzification": ["high", "medium", "low"],
+    "numerical_defuzzification": ["veryhigh", "high", "medium", "low", "verylow"],
     "variance_threshold": 1e-5,
     "remove_low_variance": false,
     "outlier_filtering":{
@@ -15,13 +15,13 @@
     "blacklist":
     [],
     "only_whitelist":false,
-    "dependency_threshold":0.01,
+    "dependency_threshold":0,
     "significance_level":0.05,
     "remove_insignificant_rules": false,
     "rule_priority_weights":{
         "support_weight": 1,
-        "leverage_weight": 10,
-        "num_antecedents_weight": 1,
+        "leverage_weight": 1000,
+        "num_antecedents_weight": 50,
         "whitelist_boolean_weight": 1000
     },
     "include_intercept": true,

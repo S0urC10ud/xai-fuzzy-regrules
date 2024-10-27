@@ -23,7 +23,7 @@ export function executeRegressionPipeline(
             rule.priority))];
     } else {
         let i=0;
-        allRules = allRules.map((rule, i) => new Rule(
+        allRules = allRules.map((rule) => new Rule(
             rule.antecedents,
             rule.outputFuzzySet,
             rule.isWhitelist,
