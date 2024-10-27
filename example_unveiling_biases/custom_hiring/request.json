@@ -1,30 +1,35 @@
 {
-    "split_char":";",
     "target_var": "Salary",
+    "outlier_filtering": {},
+    "split_char": ";",
     "regularization": 0,
-    "l1_row_threshold":50,
-    "l1_column_threshold":50,
-    "numerical_fuzzification": ["high", "medium", "low"],
+    "rule_filters": {
+        "l1_column_threshold": 0.01,
+        "l1_row_threshold": 0.1,
+        "dependency_threshold": 0,
+        "significance_level": 0.05,
+        "remove_insignificant_rules": false,
+        "only_whitelist": false,
+        "only_one_round_of_statistical_removal": true,
+        "only_one_round_of_linearity_removal": true,
+        "rule_priority_filtering": {
+           "enabled": false,
+           "min_priority": 50
+        }
+    },
+    "numerical_fuzzification": ["veryhigh", "high", "medium", "low", "verylow"],
     "numerical_defuzzification": ["veryhigh", "high", "medium", "low", "verylow"],
     "variance_threshold": 1e-5,
-    "remove_low_variance": false,
-    "outlier_filtering":{
-    },
     "num_vars": 2,
     "whitelist": [],
-    "blacklist":
-    [],
-    "only_whitelist":false,
-    "dependency_threshold":0,
-    "significance_level":0.05,
-    "remove_insignificant_rules": false,
-    "rule_priority_weights":{
-        "support_weight": 1,
+    "blacklist": [],
+    "remove_low_variance": false,
+    "generate_fuzzification_chart": false,
+    "include_intercept": true,
+    "rule_priority_weights": {
+        "support_weight": 1000,
         "leverage_weight": 1000,
         "num_antecedents_weight": 50,
         "whitelist_boolean_weight": 1000
-    },
-    "include_intercept": true,
-    "only_one_round_of_statistical_removal": true,
-    "only_one_round_of_linearity_removal": true
+    }
 }

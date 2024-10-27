@@ -111,7 +111,7 @@ Example request metadata:
     "only_one_round_of_linearity_removal": false, // tradeoff runtime duration and how many rules get filtered
     "rule_priority_filtering": {
         "enabled": true, // default: false,  filters for minimum rule priority (computation described in rule_priority_weights), 
-        "min_priority": 10 // all rules with a priority geq this value will survive - NOTE: Priorities can also be negative, because leverage may be negative
+        "min_priority": 10 // all rules with a priority geq this value will survive (but intercept is exempted) - NOTE: Priorities can also be negative, because leverage may be negative
     }
   },
   "numerical_fuzzification": ["low", "medium", "high"], // defines the fuzzy sets - possible values: verylow, low, mediumlow, medium, mediumhigh, high, veryhigh

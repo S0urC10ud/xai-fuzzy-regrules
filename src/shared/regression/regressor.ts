@@ -13,7 +13,7 @@ function selectVectors(vectors: number[][], allRules: Rule[], metadata: Metadata
     for (let i = 0; i < vectors.length; i++) {
         const currentVector = vectors[i];
         let residual = currentVector.slice(); // Clone the current vector
-        const rulingOutBasis: number[] = [];  // Track basis vectors that rule out this vector
+        const rulingOutBasis: number[] = []; 
 
         // Project the current vector onto the existing orthogonal basis
         for (let j = 0; j < orthogonalBasis.length; j++) {
@@ -39,7 +39,7 @@ function selectVectors(vectors: number[][], allRules: Rule[], metadata: Metadata
             const normalizedResidual = scalarMultiply(residual, 1 / residualNorm);
             orthogonalBasis.push(normalizedResidual);
         } else {
-            const ruleTitle = allRules[i].toString(metadata.target_var);  // Get the rule title
+            const ruleTitle = allRules[i].toString(metadata.target_var);
             ruledOutWarnings.push(`Rule "${ruleTitle}" ruled out due to linear dependency (Gram-Schmidt residual norm: ${residualNorm.toFixed(4)}).`);
         }
     }
@@ -94,7 +94,7 @@ export function performRegression(
 
     if (metadata.rule_filters.rule_priority_filtering?.enabled) {
         const minPriority = metadata.rule_filters.rule_priority_filtering.min_priority;
-        selectedRuleIndices = selectedRuleIndices.filter(idx => allRules[idx].priority >= minPriority);
+        selectedRuleIndices = selectedRuleIndices.filter(idx => idx == 0 || allRules[idx].priority >= minPriority);
 
         if (selectedRuleIndices.length === 0) {
             const finalWarn = `No rules selected after priority filtering with minimum priority ${minPriority}.`;
