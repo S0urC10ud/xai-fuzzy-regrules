@@ -10,23 +10,29 @@ export interface Metadata {
     };
     split_char: string;
     regularization: number;
-    l1_column_threshold: number;
-    l1_row_threshold: number;
+    rule_filters: {
+        l1_column_threshold: number;
+        l1_row_threshold: number;
+        dependency_threshold: number;
+        significance_level: number;
+        remove_insignificant_rules: boolean;
+        only_whitelist?: boolean;
+        only_one_round_of_statistical_removal?: boolean;
+        only_one_round_of_linearity_removal?: boolean;
+        rule_priority_filtering?: {
+            enabled: boolean;
+            min_priority: number;
+        }
+    };
     numerical_fuzzification: FuzzySet[];
     numerical_defuzzification: FuzzySet[];
     variance_threshold: number;
     num_vars: number;
     whitelist?: string[];
     blacklist?: string[];
-    only_whitelist?: boolean;
     remove_low_variance?: boolean;
-    dependency_threshold: number;
-    significance_level: number;
-    remove_insignificant_rules: boolean;
     generate_fuzzification_chart: boolean;
     include_intercept: boolean;
-    only_one_round_of_statistical_removal?: boolean;
-    only_one_round_of_linearity_removal?: boolean;
     rule_priority_weights?: {
         support_weight?:number;
         leverage_weight?:number;

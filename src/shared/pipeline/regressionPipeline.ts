@@ -34,12 +34,12 @@ export function executeRegressionPipeline(
             rule.priority));
     }
 
-    const { finalX, finalY } = removeDuplicateRows(X, y, metadata.l1_row_threshold, warnings);
+    const { finalX, finalY } = removeDuplicateRows(X, y, metadata.rule_filters.l1_row_threshold, warnings);
 
     const { finalX: uniqueX, filteredRules } = removeDuplicateColumns(
         finalX,
         allRules,
-        metadata.l1_column_threshold,
+        metadata.rule_filters.l1_column_threshold,
         metadata.target_var,
         warnings
     );

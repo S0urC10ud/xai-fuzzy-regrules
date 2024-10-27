@@ -100,9 +100,21 @@ Example request metadata:
   "split_char": ";", // split character for the CSV-file
   "target_var": "MEDV", // target column from csv file to explain
   "regularization": 0.00001, // to avoid a singular matrix for inversion - should not be necessary when correctly removing linear dependencies
-  "l1_row_threshold": 0.1, // row/(2*threshold) will be serialized to a string and checked for duplicates
-  "l1_column_threshold": 0.1, // same as l1_row_threshold but column-wise 
-  "numerical_fuzzification": ["low", "medium", "high"], // defines the fuzzy sets - possible values to be chosen: verylow, low, mediumlow, medium, mediumhigh, high, veryhigh
+  "rule_filters": {
+    "l1_row_threshold": 0.1, // row/(2*threshold) will be serialized to a string and checked for duplicates
+    "l1_column_threshold": 0.1, // same as l1_row_threshold but column-wise 
+    "dependency_threshold": 0.02, // if the residual from the Gram-Schmidt orthogonalization has a norm lower than this value, the vector is considered being linearly dependent - set to 0 to disable
+    "significance_level": 0.05, // for the t-test with H0 that the coefficient Beta=0
+    "remove_insignificant_rules": false, // remove rules that are not statistically significant
+    "only_whitelist": false, // disables the rule generation and forces the system only to use the specified whitelist-rules
+    "only_one_round_of_statistical_removal": false, // tradeoff runtime duration and how many rules get filtered
+    "only_one_round_of_linearity_removal": false, // tradeoff runtime duration and how many rules get filtered
+    "rule_priority_filtering": {
+        "enabled": true, // default: false,  filters for minimum rule priority (computation described in rule_priority_weights), 
+        "min_priority": 10 // all rules with a priority geq this value will survive
+    }
+  },
+  "numerical_fuzzification": ["low", "medium", "high"], // defines the fuzzy sets - possible values: verylow, low, mediumlow, medium, mediumhigh, high, veryhigh
   "numerical_defuzzification": ["verylow", "medium", "veryhigh"], // same as above
   "variance_threshold": 1e-5, // Columns with a variance smaller than this value can be removed, set to 0 to disable
   "remove_low_variance": false, // Defaults to false, toggles only warn vs. actually remove columns below variance threshold
@@ -121,24 +133,19 @@ Example request metadata:
   "num_vars": 2, // number of antecedents to combine - will scale compute quadratically
   "whitelist": [ // these rules will definitely be included
     "If CRIM is high AND If PTRATIO is high then MEDV is verylow",
-    "If DIS is low AND If INDUS is high then MEDV is verylow",
+    "If DIS is low AND If INDUS is high then MEDV is verylow"
   ],
   "blacklist": [ // these rules will be removed from the generation
     "If CRIM is high AND If RM is high then MEDV is verylow",
     "If DIS is high AND If LSTAT is high then MEDV is veryhigh"
   ],
-  "only_whitelist": false, // disables the rule generation and forces the system only to use the specified whitelist-rules
-  "dependency_threshold": 0.02, // if the residual from the Gram-Schmidt orthogonalization has a norm lower than this value, the vector is considered being linearly dependent
-  "significance_level": 0.05, // for the t-test with H0 that the coefficient Beta=0
-  "remove_insignificant_rules": false,
-  "rule_priority_weights": { // weigthing for ordering the rules - the order is important for the linear dependency threshold removal; rule.priority =   
+  "rule_priority_weights": { // weighting for ordering the rules - the order is important for the linear dependency threshold removal
     "support_weight": 1, // support_weight * rule.support (see association rule mining theory) +
     "leverage_weight": 10, //  leverage_weight * rule.leverage (see association rule mining theory) +
     "num_antecedents_weight": 1, // num_antecedents_weight * (1 / numAntecedents) + 
     "whitelist_boolean_weight": 1000 // + whitelist_boolean_weight if the rule is a whitelisted rule
   },
-  "only_one_round_of_statistical_removal": false, // true is default - tradeoff runtime duration and how many rules get filtered
-  "only_one_round_of_linearity_removal": false // true is default - tradeoff runtime duration and how many rules get filtered
+  "generate_fuzzification_chart": true // Generates a chart to visualize fuzzification if true
 }
 ```
 

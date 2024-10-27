@@ -2,8 +2,16 @@
     "split_char":";",
     "target_var": "MEDV",
     "regularization": 0.00001,
-    "l1_row_threshold":0.1,
-    "l1_column_threshold":0.1,
+    "rule_filters":{
+        "l1_row_threshold":0.1,
+        "l1_column_threshold":0.1,
+        "dependency_threshold":0.1,
+        "significance_level":0.05,    
+        "remove_insignificant_rules": false,
+        "only_whitelist":false,
+        "only_one_round_of_statistical_removal": false,
+        "only_one_round_of_linearity_removal": false
+    },
     "numerical_fuzzification": ["low", "medium", "high"],
     "numerical_defuzzification": ["verylow",  "medium", "veryhigh"],
     "variance_threshold": 1e-5,
@@ -31,10 +39,6 @@
         "If CRIM is high AND If RM is high then MEDV is verylow",
         "If DIS is high AND If LSTAT is high then MEDV is veryhigh"
     ],
-    "only_whitelist":false,
-    "dependency_threshold":0.1,
-    "significance_level":0.05,
-    "remove_insignificant_rules": false,
     "rule_priority_weights":{
         "support_weight": 1,
         "leverage_weight": 10,
@@ -42,6 +46,4 @@
         "whitelist_boolean_weight": 1000
     },
     "include_intercept": true,
-    "only_one_round_of_statistical_removal": false,
-    "only_one_round_of_linearity_removal": false
 }

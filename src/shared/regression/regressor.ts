@@ -4,7 +4,7 @@ import { logWarning } from '../utils/logger';
 import tCDF from '@stdlib/stats-base-dists-t-cdf';
 
 function selectVectors(vectors: number[][], allRules: Rule[], metadata: Metadata, warnings: any): number[] {
-    const threshold = metadata.dependency_threshold;
+    const threshold = metadata.rule_filters.dependency_threshold;
     const keptIndices: number[] = [];
     const orthogonalBasis: number[][] = [];
     const basisUsedToRuleOut: { [key: number]: number[] } = {};
@@ -77,39 +77,56 @@ export function performRegression(
     finalX: number[][],
     finalY: number[],
     allRules: Rule[],
-    metadata: any,
+    metadata: Metadata,
     warnings: any[]
 ): void {
     let selectedRuleIndices: number[] = [];
-    if(metadata.dependency_threshold !== undefined && metadata.dependency_threshold > 0) {
+    if(metadata.rule_filters.dependency_threshold !== undefined && metadata.rule_filters.dependency_threshold > 0) {
         selectedRuleIndices = selectVectors(new Matrix(finalX).transpose().to2DArray(), allRules, metadata, warnings);
     } else {
         selectedRuleIndices = Array.from({length: finalX[0].length}, (_, i) => i);
     }
     if (selectedRuleIndices.length === 0) {
-        const finalWarn = `No rules selected after vector selection with dependency threshold ${metadata.dependency_threshold}.`;
+        const finalWarn = `No rules selected after vector selection with dependency threshold ${metadata.rule_filters.dependency_threshold}.`;
         logWarning(finalWarn, warnings);
         throw new Error(`Regression solve failed: ${finalWarn}`);
     }
 
-    if (selectedRuleIndices.length > finalX.length) {
-        const finalWarn = `Too many rules selected after vector selection with dependency threshold ${metadata.dependency_threshold}, it should be increased.`;
-        logWarning(finalWarn, warnings);
-        throw new Error(`Regression solve failed: ${finalWarn}`);
+    if (metadata.rule_filters.rule_priority_filtering?.enabled) {
+        const minPriority = metadata.rule_filters.rule_priority_filtering.min_priority;
+        selectedRuleIndices = selectedRuleIndices.filter(idx => allRules[idx].priority >= minPriority);
+
+        if (selectedRuleIndices.length === 0) {
+            const finalWarn = `No rules selected after priority filtering with minimum priority ${minPriority}.`;
+            logWarning(finalWarn, warnings);
+            throw new Error(`Regression solve failed: ${finalWarn}`);
+        }
+
+        if (selectedRuleIndices.length > finalX.length) {
+            const finalWarn = `Too many rules selected after priority- and linearity-filtering with minimum priority ${minPriority}, it should be increased.`;
+            logWarning(finalWarn, warnings);
+            throw new Error(`Regression solve failed: ${finalWarn}`);
+        }
+    } else {
+        if (selectedRuleIndices.length > finalX.length) {
+            const finalWarn = `Too many rules selected after vector selection with dependency threshold ${metadata.rule_filters.dependency_threshold}, it should be increased.`;
+            logWarning(finalWarn, warnings);
+            throw new Error(`Regression solve failed: ${finalWarn}`);
+        }
     }
 
     let activeIndices: number[] = selectedRuleIndices;
     let attempts = 0;
     const maxAttempts = allRules.length;
     let lambda = metadata.regularization || 0;
-    const significanceLevel = metadata.significance_level || 0.05;
-    const removeInsignificantRules = metadata.remove_insignificant_rules || false;
+    const significanceLevel = metadata.rule_filters.significance_level || 0.05;
+    const removeInsignificantRules = metadata.rule_filters.remove_insignificant_rules || false;
     let coefficients: number[] | null = null;
     let pValues: number[] = [];
     const yVector = new Matrix(finalY.map(y => [y]));
     let removedByStatProperties = false;
-    if (metadata.only_one_round_of_statistical_removal === undefined)
-        metadata.only_one_round_of_statistical_removal = true;
+    if (metadata.rule_filters.only_one_round_of_statistical_removal === undefined)
+        metadata.rule_filters.only_one_round_of_statistical_removal = true;
 
     const warnCollector: any[] = [];
 
@@ -215,7 +232,7 @@ export function performRegression(
 
         activeIndices = activeIndices.filter(idx => !rulesToRemove.includes(idx));
         attempts += rulesToRemove.length;
-        removedByStatProperties = metadata.only_one_round_of_statistical_removal;
+        removedByStatProperties = metadata.rule_filters.only_one_round_of_statistical_removal;
     }
 
     if (attempts >= maxAttempts) {

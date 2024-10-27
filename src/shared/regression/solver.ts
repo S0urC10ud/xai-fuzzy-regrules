@@ -1,5 +1,5 @@
 import { Matrix, solve } from 'ml-matrix';
-import { Rule } from '../types';
+import { Metadata, Rule } from '../types';
 import { serializeRule } from '../rules/ruleSerializer';
 import { logWarning } from '../utils/logger';
 
@@ -7,7 +7,7 @@ export function attemptToSolve(
     XtX_reg: Matrix,
     Xt_y: Matrix,
     rules: Rule[],
-    metadata: any,
+    metadata: Metadata,
     warnings: any[]
 ): number[] | null {
     let currentRules = [...rules];

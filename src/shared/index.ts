@@ -10,7 +10,7 @@ import { executeRulePipeline } from './pipeline/rulePipeline';
 export function main(metadata: Metadata, data: string): EvaluationMetrics {
     const warnings: any[] = [];
 
-    if(metadata.dependency_threshold > 0.1)
+    if(metadata.rule_filters.dependency_threshold > 0.1)
         warnings.push("High dependency threshold detected, consider setting this value to < 0.1 for better results.");
         
 

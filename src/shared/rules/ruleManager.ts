@@ -1,18 +1,18 @@
-import { Rule } from '../types';
+import { FuzzySet, Metadata, Rule } from '../types';
 import { parseRuleString } from './ruleParser';
 import { serializeRule } from './ruleSerializer';
 import { logWarning } from '../utils/logger';
 
-function validateRule(metadata:any, rule: Rule, ruleType: 'whitelist' | 'blacklist', targetVar: string): void {
+function validateRule(metadata: Metadata, rule: Rule, ruleType: 'whitelist' | 'blacklist', targetVar: string): void {
     for (const antecedent of rule.antecedents) {
-        if (!metadata.numerical_fuzzification.includes(antecedent.fuzzySet)) {
+        if (!metadata.numerical_fuzzification.includes(antecedent.fuzzySet as FuzzySet)) {
             throw new Error(
                 `Invalid antecedent "${antecedent}" in ${ruleType} rule "${serializeRule(rule, targetVar)}". It must be one of the numerical_fuzzification parameters.`
             );
         }
     }
 
-    if (!metadata.numerical_defuzzification.includes(rule.outputFuzzySet)) {
+    if (!metadata.numerical_defuzzification.includes(rule.outputFuzzySet as FuzzySet)) {
         throw new Error(
             `Invalid consequent "${rule.outputFuzzySet}" in ${ruleType} rule "${serializeRule(rule, targetVar)}". It must be one of the numerical_defuzzification parameters.`
         );
@@ -21,13 +21,13 @@ function validateRule(metadata:any, rule: Rule, ruleType: 'whitelist' | 'blackli
 
 export function applyWhitelistBlacklist(
     allRules: Rule[],
-    metadata: any,
+    metadata: Metadata,
     targetVar: string,
     warnings: any[]
 ): Rule[] {
-    const { whitelist, blacklist, only_whitelist } = metadata;
+    const { whitelist, blacklist, rule_filters } = metadata;
 
-    if (only_whitelist && whitelist && whitelist.length > 0) {
+    if (rule_filters.only_whitelist && whitelist && whitelist.length > 0) {
         const parsedWhitelistRules: Rule[] = [];
         whitelist.forEach((ruleStr: string) => {
             const parsedRule = parseRuleString(ruleStr, targetVar, true);
