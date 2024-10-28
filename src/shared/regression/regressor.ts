@@ -141,9 +141,7 @@ function lassoCoordinateDescent(
 }
 
 /**
- * Performs regression with Lasso regularization to optimize for sparsity,
- * including p-value computations (approximate).
- *
+ * Performs regression with Lasso regularization to optimize for sparsity
  * @param finalX - The design matrix with samples as rows and rules as columns.
  * @param finalY - The target vector.
  * @param allRules - Array of all possible rules.
@@ -210,7 +208,7 @@ export function performRegression(
     }
 
     let activeIndices: number[] = selectedRuleIndices;
-    const lambda = metadata.regularization || 0;
+    const lambda = metadata.lasso.regularization || 0;
     const yVector = finalY;
 
     const warnCollector: any[] = [];
@@ -220,9 +218,11 @@ export function performRegression(
     const XMatrix = new Matrix(subMatrixData);
     const X = XMatrix.to2DArray();
 
-    const maxLassoIterations = metadata.max_lasso_iterations || 10000;
+    const maxLassoIterations = metadata.lasso.max_lasso_iterations || 10000;
+    const lassoConvergenceTolerance = metadata.lasso.lasso_convergance_tolerance || 1e-4;
+
     // Perform Lasso regression using coordinate descent
-    const coefficients = lassoCoordinateDescent(X, yVector, lambda, 1e-4, maxLassoIterations, warnings);
+    const coefficients = lassoCoordinateDescent(X, yVector, lambda, lassoConvergenceTolerance, maxLassoIterations, warnings);
 
     if (coefficients === null) {
         const finalWarn = `Regression coefficients could not be computed.`;

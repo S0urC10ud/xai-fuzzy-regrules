@@ -1,1 +1,1273 @@
-{"mean_absolute_error":0.015301170968207236,"root_mean_squared_error":0.021598422895473608,"r_squared":0.9995335081284282,"mean_absolute_percentage_error":1.56542524370572,"sorted_rules":[{"title":"If targetgenerator is mediumlow then target is mediumlow","coefficient":1.650061832352249,"isWhitelist":false,"support":0.11666666666666667,"leverage":0.08333333333333334,"priority":1.2,"pValue":0,"secondaryRules":[]},{"title":"If targetgenerator is mediumhigh then target is mediumhigh","coefficient":1.6500618323522467,"isWhitelist":false,"support":0.11666666666666667,"leverage":0.08333333333333334,"priority":1.2,"pValue":0,"secondaryRules":[]},{"title":"If targetgenerator is high then target is high","coefficient":1.138516292766174,"isWhitelist":false,"support":0.15,"leverage":0.11666666666666667,"priority":1.2666666666666666,"pValue":0,"secondaryRules":[]},{"title":"If targetgenerator is low then target is low","coefficient":1.1385162927661725,"isWhitelist":false,"support":0.15,"leverage":0.11666666666666667,"priority":1.2666666666666666,"pValue":0,"secondaryRules":[]},{"title":"If targetgenerator is verylow then target is verylow","coefficient":1.0372537160845834,"isWhitelist":false,"support":0.08333333333333333,"leverage":0.075,"priority":1.1583333333333332,"pValue":0,"secondaryRules":[]},{"title":"If targetgenerator is veryhigh then target is veryhigh","coefficient":1.037253716084583,"isWhitelist":false,"support":0.08333333333333333,"leverage":0.075,"priority":1.1583333333333332,"pValue":0,"secondaryRules":[]}],"warnings":["0 Duplicate columns detected and removed based on L1-Norm < 0.001: 0","Degrees of freedom: 2994",[]]}
+{
+    "mean_absolute_error": 0.005724721797503209,
+    "root_mean_squared_error": 0.008196325444358452,
+    "r_squared": 0.9999328202492102,
+    "mean_absolute_percentage_error": 0.0539922050044684,
+    "sorted_rules": [
+        {
+            "title": "Intercept",
+            "coefficient": 7.3280177248965375,
+            "isWhitelist": true,
+            "support": 0,
+            "leverage": 0,
+            "priority": 0,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If targetgenerator is veryhigh then target is veryhigh",
+            "coefficient": 0.37704037021690967,
+            "isWhitelist": false,
+            "support": 0.125,
+            "leverage": 0.109375,
+            "priority": 1.234375,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If targetgenerator is high then target is high",
+            "coefficient": 0.3260833499020758,
+            "isWhitelist": false,
+            "support": 0.25,
+            "leverage": 0.1875,
+            "priority": 1.4375,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If targetgenerator is medium then target is medium",
+            "coefficient": 0.2659462918205707,
+            "isWhitelist": false,
+            "support": 0.25,
+            "leverage": 0.1875,
+            "priority": 1.4375,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If targetgenerator is low then target is low",
+            "coefficient": 0.19705445251115372,
+            "isWhitelist": false,
+            "support": 0.25,
+            "leverage": 0.1875,
+            "priority": 1.4375,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If targetgenerator is verylow then target is veryhigh",
+            "coefficient": 0.05058371325517305,
+            "isWhitelist": false,
+            "support": 0,
+            "leverage": -0.015625,
+            "priority": 0.984375,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If targetgenerator is verylow then target is verylow",
+            "coefficient": 0.04068917347304107,
+            "isWhitelist": false,
+            "support": 0.125,
+            "leverage": 0.109375,
+            "priority": 1.234375,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM1 is high then target is veryhigh",
+            "coefficient": 0.0003333104619786932,
+            "isWhitelist": false,
+            "support": 0.03266666666666666,
+            "leverage": 0.0024999999999999953,
+            "priority": 1.0351666666666666,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM3 is high then target is veryhigh",
+            "coefficient": 0.0003183694211552533,
+            "isWhitelist": false,
+            "support": 0.033666666666666664,
+            "leverage": 0.002291666666666664,
+            "priority": 1.0359583333333333,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM1 is low then target is veryhigh",
+            "coefficient": 0.0003033580107538477,
+            "isWhitelist": false,
+            "support": 0.033666666666666664,
+            "leverage": -0.00033333333333333826,
+            "priority": 1.0333333333333334,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM4 is high then target is veryhigh",
+            "coefficient": 0.000265552047616256,
+            "isWhitelist": false,
+            "support": 0.03133333333333333,
+            "leverage": 0.0006666666666666661,
+            "priority": 1.032,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM3 is low then target is veryhigh",
+            "coefficient": 0.0002568573235972337,
+            "isWhitelist": false,
+            "support": 0.034,
+            "leverage": 0.0019583333333333328,
+            "priority": 1.0359583333333333,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM2 is low then target is veryhigh",
+            "coefficient": 0.0002130260204105391,
+            "isWhitelist": false,
+            "support": 0.03333333333333333,
+            "leverage": 0.0015833333333333324,
+            "priority": 1.0349166666666667,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM3 is medium then target is veryhigh",
+            "coefficient": 0.00018674865458661935,
+            "isWhitelist": false,
+            "support": 0.028666666666666667,
+            "leverage": -0.0028333333333333335,
+            "priority": 1.0258333333333334,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM4 is low then target is veryhigh",
+            "coefficient": 0.00018247508668878544,
+            "isWhitelist": false,
+            "support": 0.029666666666666668,
+            "leverage": -0.0002083333333333312,
+            "priority": 1.0294583333333334,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM4 is medium then target is veryhigh",
+            "coefficient": 0.00017788145425925173,
+            "isWhitelist": false,
+            "support": 0.030666666666666665,
+            "leverage": -0.0009583333333333353,
+            "priority": 1.0297083333333332,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM2 is high then target is veryhigh",
+            "coefficient": 0.00016261474165861237,
+            "isWhitelist": false,
+            "support": 0.03,
+            "leverage": -0.0004583333333333349,
+            "priority": 1.0295416666666668,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM1 is medium then target is veryhigh",
+            "coefficient": 0.00010414838174584112,
+            "isWhitelist": false,
+            "support": 0.030333333333333334,
+            "leverage": -0.00020833333333333467,
+            "priority": 1.030125,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM3 is veryhigh then target is veryhigh",
+            "coefficient": 0.000059389311118072037,
+            "isWhitelist": false,
+            "support": 0.015333333333333332,
+            "leverage": 0.00008333333333333283,
+            "priority": 1.0154166666666669,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM2 is medium then target is veryhigh",
+            "coefficient": 0.00005243940827805415,
+            "isWhitelist": false,
+            "support": 0.03166666666666667,
+            "leverage": 0.0008333333333333352,
+            "priority": 1.0325,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM1 is low then target is high",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.07533333333333334,
+            "leverage": 0.007333333333333331,
+            "priority": 1.0826666666666667,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM1 is low then target is medium",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.07333333333333333,
+            "leverage": 0.005333333333333329,
+            "priority": 1.0786666666666667,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM2 is high then target is medium",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.06966666666666667,
+            "leverage": 0.00875,
+            "priority": 1.0784166666666668,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM1 is high then target is low",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.066,
+            "leverage": 0.005666666666666667,
+            "priority": 1.0716666666666668,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM3 is low then target is low",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.06766666666666667,
+            "leverage": 0.0035833333333333273,
+            "priority": 1.07125,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM4 is high then target is medium",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.066,
+            "leverage": 0.004666666666666673,
+            "priority": 1.0706666666666667,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM4 is low then target is low",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.06466666666666666,
+            "leverage": 0.004916666666666666,
+            "priority": 1.0695833333333333,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM1 is medium then target is low",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.065,
+            "leverage": 0.0039166666666666655,
+            "priority": 1.0689166666666665,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM4 is medium then target is high",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.066,
+            "leverage": 0.0027500000000000024,
+            "priority": 1.06875,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM3 is medium then target is low",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.06566666666666666,
+            "leverage": 0.0026666666666666644,
+            "priority": 1.0683333333333334,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM3 is high then target is medium",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.06466666666666666,
+            "leverage": 0.0019166666666666637,
+            "priority": 1.0665833333333332,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM4 is medium then target is low",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.06466666666666666,
+            "leverage": 0.0014166666666666633,
+            "priority": 1.0660833333333333,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM2 is medium then target is high",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.063,
+            "leverage": 0.0013333333333333322,
+            "priority": 1.0643333333333334,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM3 is high then target is low",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.06333333333333334,
+            "leverage": 0.0005833333333333385,
+            "priority": 1.0639166666666666,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM2 is medium then target is low",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.06233333333333333,
+            "leverage": 0.0006666666666666626,
+            "priority": 1.063,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM3 is medium then target is high",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.063,
+            "leverage": 0,
+            "priority": 1.063,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM2 is low then target is low",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.062,
+            "leverage": -0.0015000000000000013,
+            "priority": 1.0605,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM3 is low then target is high",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.062,
+            "leverage": -0.00208333333333334,
+            "priority": 1.0599166666666666,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM4 is medium then target is medium",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.06133333333333333,
+            "leverage": -0.0019166666666666707,
+            "priority": 1.0594166666666667,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM4 is high then target is low",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.060333333333333336,
+            "leverage": -0.000999999999999994,
+            "priority": 1.0593333333333335,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM2 is low then target is medium",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.06133333333333333,
+            "leverage": -0.002166666666666671,
+            "priority": 1.0591666666666666,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM1 is high then target is high",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.059333333333333335,
+            "leverage": -0.0010000000000000009,
+            "priority": 1.0583333333333331,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM3 is low then target is medium",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.06066666666666667,
+            "leverage": -0.003416666666666672,
+            "priority": 1.05725,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM2 is low then target is high",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.060333333333333336,
+            "leverage": -0.003166666666666665,
+            "priority": 1.0571666666666666,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM2 is high then target is low",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.059,
+            "leverage": -0.0019166666666666707,
+            "priority": 1.0570833333333334,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM4 is high then target is high",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.058666666666666666,
+            "leverage": -0.0026666666666666644,
+            "priority": 1.056,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM3 is medium then target is medium",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.059333333333333335,
+            "leverage": -0.0036666666666666653,
+            "priority": 1.0556666666666665,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM4 is low then target is medium",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.057666666666666665,
+            "leverage": -0.002083333333333333,
+            "priority": 1.0555833333333333,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM1 is medium then target is high",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.057666666666666665,
+            "leverage": -0.003416666666666672,
+            "priority": 1.0542500000000001,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM1 is medium then target is medium",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.05733333333333333,
+            "leverage": -0.0037500000000000033,
+            "priority": 1.0535833333333333,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM1 is high then target is medium",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.05633333333333333,
+            "leverage": -0.0040000000000000036,
+            "priority": 1.0523333333333333,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM4 is low then target is high",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.05566666666666667,
+            "leverage": -0.004083333333333328,
+            "priority": 1.0515833333333333,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM2 is medium then target is medium",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.056,
+            "leverage": -0.005666666666666667,
+            "priority": 1.0503333333333333,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM1 is low then target is low",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.059,
+            "leverage": -0.009000000000000008,
+            "priority": 1.0499999999999998,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM3 is high then target is high",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.05633333333333333,
+            "leverage": -0.006416666666666668,
+            "priority": 1.0499166666666666,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM2 is high then target is high",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.05466666666666667,
+            "leverage": -0.006249999999999999,
+            "priority": 1.0484166666666666,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM2 is verylow then target is high",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.03766666666666667,
+            "leverage": 0.004916666666666666,
+            "priority": 1.0425833333333334,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM2 is low then target is verylow",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.037,
+            "leverage": 0.005249999999999998,
+            "priority": 1.04225,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM3 is veryhigh then target is medium",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.035666666666666666,
+            "leverage": 0.005166666666666667,
+            "priority": 1.0408333333333335,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM4 is verylow then target is high",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.036,
+            "leverage": 0.004499999999999997,
+            "priority": 1.0405,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM3 is verylow then target is high",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.035,
+            "leverage": 0.005333333333333336,
+            "priority": 1.0403333333333333,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM3 is medium then target is verylow",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.035333333333333335,
+            "leverage": 0.0038333333333333344,
+            "priority": 1.0391666666666668,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM4 is veryhigh then target is low",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.03666666666666667,
+            "leverage": 0.0025000000000000022,
+            "priority": 1.0391666666666666,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM2 is veryhigh then target is high",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.034333333333333334,
+            "leverage": 0.0031666666666666683,
+            "priority": 1.0375,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM1 is medium then target is verylow",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.034,
+            "leverage": 0.003458333333333334,
+            "priority": 1.0374583333333334,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM3 is veryhigh then target is high",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.033666666666666664,
+            "leverage": 0.003166666666666665,
+            "priority": 1.0368333333333335,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM2 is veryhigh then target is low",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.034,
+            "leverage": 0.002833333333333337,
+            "priority": 1.0368333333333333,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM2 is medium then target is verylow",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.033666666666666664,
+            "leverage": 0.00283333333333333,
+            "priority": 1.0365,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM1 is veryhigh then target is medium",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.033666666666666664,
+            "leverage": 0.002416666666666664,
+            "priority": 1.0360833333333335,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM1 is veryhigh then target is low",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.03333333333333333,
+            "leverage": 0.002083333333333333,
+            "priority": 1.0354166666666669,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM3 is high then target is verylow",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.033,
+            "leverage": 0.0016250000000000014,
+            "priority": 1.034625,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM2 is verylow then target is medium",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.03333333333333333,
+            "leverage": 0.0005833333333333315,
+            "priority": 1.0339166666666668,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM1 is verylow then target is high",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.03133333333333333,
+            "leverage": 0.0019999999999999983,
+            "priority": 1.0333333333333334,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM4 is veryhigh then target is high",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.033666666666666664,
+            "leverage": -0.0005000000000000004,
+            "priority": 1.0331666666666668,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM4 is verylow then target is medium",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.03233333333333333,
+            "leverage": 0.0008333333333333318,
+            "priority": 1.0331666666666666,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM4 is low then target is verylow",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.03133333333333333,
+            "leverage": 0.0014583333333333323,
+            "priority": 1.0327916666666668,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM2 is verylow then target is low",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.03266666666666666,
+            "leverage": -0.00008333333333333803,
+            "priority": 1.0325833333333332,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM3 is low then target is verylow",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.032,
+            "leverage": -0.00004166666666666902,
+            "priority": 1.0319583333333333,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM4 is veryhigh then target is medium",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.03266666666666666,
+            "leverage": -0.0015000000000000013,
+            "priority": 1.0311666666666666,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM2 is high then target is verylow",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.030333333333333334,
+            "leverage": -0.0001250000000000001,
+            "priority": 1.0302083333333334,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM3 is verylow then target is medium",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.029666666666666668,
+            "leverage": 0,
+            "priority": 1.0296666666666667,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM1 is verylow then target is medium",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.029333333333333333,
+            "leverage": 0,
+            "priority": 1.0293333333333334,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM4 is medium then target is verylow",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.030333333333333334,
+            "leverage": -0.0012916666666666667,
+            "priority": 1.0290416666666666,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM3 is verylow then target is low",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.029333333333333333,
+            "leverage": -0.0003333333333333348,
+            "priority": 1.0290000000000001,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM2 is veryhigh then target is medium",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.029666666666666668,
+            "leverage": -0.0014999999999999979,
+            "priority": 1.0281666666666667,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM1 is low then target is verylow",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.030666666666666665,
+            "leverage": -0.0033333333333333375,
+            "priority": 1.0273333333333332,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM4 is high then target is verylow",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.029,
+            "leverage": -0.0016666666666666635,
+            "priority": 1.0273333333333332,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM1 is verylow then target is low",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.02666666666666667,
+            "leverage": -0.0026666666666666644,
+            "priority": 1.024,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM1 is high then target is verylow",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.027,
+            "leverage": -0.0031666666666666683,
+            "priority": 1.0238333333333332,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM1 is veryhigh then target is high",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.026333333333333334,
+            "leverage": -0.004916666666666666,
+            "priority": 1.0214166666666666,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM4 is verylow then target is verylow",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.018333333333333333,
+            "leverage": 0.0025833333333333333,
+            "priority": 1.0209166666666667,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM1 is veryhigh then target is verylow",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.018,
+            "leverage": 0.0023749999999999986,
+            "priority": 1.020375,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM4 is veryhigh then target is veryhigh",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.017666666666666667,
+            "leverage": 0.000583333333333335,
+            "priority": 1.01825,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM3 is veryhigh then target is low",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.024,
+            "leverage": -0.006499999999999999,
+            "priority": 1.0175,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM1 is verylow then target is verylow",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.015333333333333332,
+            "leverage": 0.0006666666666666661,
+            "priority": 1.016,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM4 is verylow then target is low",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.023666666666666666,
+            "leverage": -0.007833333333333335,
+            "priority": 1.0158333333333334,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM4 is verylow then target is veryhigh",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.015666666666666666,
+            "leverage": -0.00008333333333333456,
+            "priority": 1.0155833333333333,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM4 is veryhigh then target is verylow",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.016,
+            "leverage": -0.001083333333333332,
+            "priority": 1.0149166666666667,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM1 is verylow then target is veryhigh",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.014666666666666666,
+            "leverage": 0,
+            "priority": 1.0146666666666666,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM2 is veryhigh then target is veryhigh",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.015,
+            "leverage": -0.0005833333333333333,
+            "priority": 1.0144166666666665,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM2 is verylow then target is veryhigh",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.015,
+            "leverage": -0.0013750000000000012,
+            "priority": 1.013625,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM3 is verylow then target is veryhigh",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.013333333333333334,
+            "leverage": -0.0014999999999999996,
+            "priority": 1.0118333333333334,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM1 is veryhigh then target is veryhigh",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.013666666666666667,
+            "leverage": -0.0019583333333333328,
+            "priority": 1.0117083333333334,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM3 is veryhigh then target is verylow",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.013333333333333334,
+            "leverage": -0.0019166666666666655,
+            "priority": 1.0114166666666669,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM2 is verylow then target is verylow",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.012333333333333333,
+            "leverage": -0.004041666666666667,
+            "priority": 1.0082916666666666,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM3 is verylow then target is verylow",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.011333333333333334,
+            "leverage": -0.0034999999999999996,
+            "priority": 1.0078333333333334,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If RANDOM2 is veryhigh then target is verylow",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0.011666666666666667,
+            "leverage": -0.0039166666666666655,
+            "priority": 1.0077500000000001,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If targetgenerator is veryhigh then target is verylow",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0,
+            "leverage": -0.015625,
+            "priority": 0.984375,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If targetgenerator is verylow then target is low",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0,
+            "leverage": -0.03125,
+            "priority": 0.96875,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If targetgenerator is verylow then target is medium",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0,
+            "leverage": -0.03125,
+            "priority": 0.96875,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If targetgenerator is verylow then target is high",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0,
+            "leverage": -0.03125,
+            "priority": 0.96875,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If targetgenerator is low then target is verylow",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0,
+            "leverage": -0.03125,
+            "priority": 0.96875,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If targetgenerator is low then target is veryhigh",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0,
+            "leverage": -0.03125,
+            "priority": 0.96875,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If targetgenerator is medium then target is verylow",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0,
+            "leverage": -0.03125,
+            "priority": 0.96875,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If targetgenerator is medium then target is veryhigh",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0,
+            "leverage": -0.03125,
+            "priority": 0.96875,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If targetgenerator is high then target is verylow",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0,
+            "leverage": -0.03125,
+            "priority": 0.96875,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If targetgenerator is high then target is veryhigh",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0,
+            "leverage": -0.03125,
+            "priority": 0.96875,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If targetgenerator is veryhigh then target is low",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0,
+            "leverage": -0.03125,
+            "priority": 0.96875,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If targetgenerator is veryhigh then target is medium",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0,
+            "leverage": -0.03125,
+            "priority": 0.96875,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If targetgenerator is veryhigh then target is high",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0,
+            "leverage": -0.03125,
+            "priority": 0.96875,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If targetgenerator is low then target is medium",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0,
+            "leverage": -0.0625,
+            "priority": 0.9375,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If targetgenerator is low then target is high",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0,
+            "leverage": -0.0625,
+            "priority": 0.9375,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If targetgenerator is medium then target is low",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0,
+            "leverage": -0.0625,
+            "priority": 0.9375,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If targetgenerator is medium then target is high",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0,
+            "leverage": -0.0625,
+            "priority": 0.9375,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If targetgenerator is high then target is low",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0,
+            "leverage": -0.0625,
+            "priority": 0.9375,
+            "pValue": null,
+            "secondaryRules": []
+        },
+        {
+            "title": "If targetgenerator is high then target is medium",
+            "coefficient": 0,
+            "isWhitelist": false,
+            "support": 0,
+            "leverage": -0.0625,
+            "priority": 0.9375,
+            "pValue": null,
+            "secondaryRules": []
+        }
+    ],
+    "warnings": [
+        "0 Duplicate columns detected and removed based on L1-Norm < 0.001: 0",
+        "Lasso did not converge after 1000 iterations - maximum difference: 0.002088112480699067",
+        []
+    ]
+}

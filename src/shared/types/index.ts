@@ -9,7 +9,11 @@ export interface Metadata {
         };
     };
     split_char: string;
-    regularization: number;
+    lasso: {
+        regularization: number;
+        max_lasso_iterations?: number;
+        lasso_convergance_tolerance?: number;
+    }
     rule_filters: {
         l1_column_threshold: number;
         l1_row_threshold: number;
@@ -33,7 +37,6 @@ export interface Metadata {
     remove_low_variance?: boolean;
     generate_fuzzification_chart: boolean;
     include_intercept: boolean;
-    max_lasso_iterations: number;
     rule_priority_weights?: {
         support_weight?:number;
         leverage_weight?:number;

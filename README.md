@@ -99,7 +99,11 @@ Example request metadata:
 {
   "split_char": ";", // split character for the CSV-file
   "target_var": "MEDV", // target column from csv file to explain
-  "regularization": 0.00001, // to avoid a singular matrix for inversion - should not be necessary when correctly removing linear dependencies
+  "lasso": {
+    "regularization": 0.00001, // to avoid a singular matrix for inversion - should not be necessary when correctly removing linear dependencies
+    "max_lasso_iterations": 10000, // default is 10000 - lasso is applied iteratively until convergence or until this max-iterations-counter is hit
+    "lasso_convergance_tolerance" // default is 1e-4, this is the threshold for the absolute value of difference between beta[i-1] and beta[i] until we say it converged
+  },
   "rule_filters": {
     "l1_row_threshold": 0.1, // row/(2*threshold) will be serialized to a string and checked for duplicates
     "l1_column_threshold": 0.1, // same as l1_row_threshold but column-wise 
@@ -145,7 +149,6 @@ Example request metadata:
     "num_antecedents_weight": 1, // num_antecedents_weight * (1 / numAntecedents) + 
     "whitelist_boolean_weight": 1000 // + whitelist_boolean_weight if the rule is a whitelisted rule
   },
-  "max_lasso_iterations": 10000, // default is 10000 - lasso is applied iteratively until convergence or until this max-iterations-counter is hit
   "generate_fuzzification_chart": true // Generates a chart to visualize fuzzification if true
 }
 ```
@@ -319,4 +322,4 @@ Example response/result for the boston housing dataset:
 This project is licensed under the GNU GPL v3.
 
 # Contact
-For any questions or suggestions, please contact Martin Dallinger at [martin.dallinger@outlook.com](martin.dallinger@outlook.com).
+For any questions or suggestions, please contact me at [martin.dallinger@outlook.com](martin.dallinger@outlook.com).

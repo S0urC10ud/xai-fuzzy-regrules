@@ -1,7 +1,11 @@
 {
     "split_char": ";",
     "target_var": "target",
-    "regularization": 0,
+    "lasso":{
+        "regularization": 10,
+        "max_lasso_iterations": 1000,
+        "convergence_threshold": 1e-4
+    },
     "rule_filters": {
         "l1_row_threshold": 0.001,
         "l1_column_threshold": 0.001,
@@ -12,15 +16,15 @@
         "only_one_round_of_statistical_removal": true,
         "only_one_round_of_linearity_removal": true,
         "rule_priority_filtering": {
-          "enabled":true,
-          "min_priority": 1.15
+          "enabled":false,
+          "min_priority": 0
         }
     },
-    "numerical_fuzzification": ["verylow","low","mediumlow", "medium", "mediumhigh","high","veryhigh"],
-    "numerical_defuzzification": ["verylow","low","mediumlow","mediumhigh","high","veryhigh"],
+    "numerical_fuzzification": ["verylow","low", "medium", "high", "veryhigh"],
+    "numerical_defuzzification": ["verylow","low","medium","high", "veryhigh"],
     "variance_threshold": 1e-5,
     "remove_low_variance": false,
-    "include_intercept": false,
+    "include_intercept": true,
     "outlier_filtering": {
         "AGE": {
             "method": "VariableBounds",
