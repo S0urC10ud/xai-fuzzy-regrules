@@ -62,7 +62,7 @@ export function main(metadata: Metadata, data: string): EvaluationMetrics {
         warnings
     );
 
-    const interestingRules = finalRules.filter(rule => rule.coefficient !== 0 && rule.coefficient !== null && rule.coefficient != undefined);
+    const interestingRules = finalRules.filter(rule => rule.coefficient !== null && rule.coefficient != undefined);
 
     const sortedRules = interestingRules.filter(r=>!r.isIntercept).sort((a, b) => {
         if(b.coefficient === null || a.coefficient === null)
@@ -78,7 +78,7 @@ export function main(metadata: Metadata, data: string): EvaluationMetrics {
          regressionX = X.map(row => [1., ...row]);
     else
         regressionX = X;
-    
+
     for (let i = 0; i < regressionX.length; i++)
         y_pred.push(finalRules.reduce((sum, rule, idx) => sum + regressionX[i][rule.columnIndex] * (rule.coefficient ? rule.coefficient : 0), 0));
 

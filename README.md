@@ -145,6 +145,7 @@ Example request metadata:
     "num_antecedents_weight": 1, // num_antecedents_weight * (1 / numAntecedents) + 
     "whitelist_boolean_weight": 1000 // + whitelist_boolean_weight if the rule is a whitelisted rule
   },
+  "max_lasso_iterations": 10000, // default is 10000 - lasso is applied iteratively until convergence or until this max-iterations-counter is hit
   "generate_fuzzification_chart": true // Generates a chart to visualize fuzzification if true
 }
 ```

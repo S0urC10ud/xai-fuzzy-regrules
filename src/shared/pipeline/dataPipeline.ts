@@ -19,7 +19,7 @@ export function executeDataPipeline(
         targetValues.reduce((a, b) => a + (b - target_mean) ** 2, 0) / targetValues.length
     );
     records = records.map(record => {
-        record[metadata.target_var] = (
+        record[metadata.target_var] = (10 + 
             (parseFloat(record[metadata.target_var] as string) - target_mean) /
             target_std
         ).toString();

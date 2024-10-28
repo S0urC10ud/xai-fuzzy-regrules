@@ -33,6 +33,7 @@ export interface Metadata {
     remove_low_variance?: boolean;
     generate_fuzzification_chart: boolean;
     include_intercept: boolean;
+    max_lasso_iterations: number;
     rule_priority_weights?: {
         support_weight?:number;
         leverage_weight?:number;

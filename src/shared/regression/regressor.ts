@@ -1,9 +1,14 @@
-import { Matrix, QrDecomposition, SVD, inverse, solve } from 'ml-matrix';
+import { Matrix, inverse } from 'ml-matrix';
 import { Metadata, Rule } from '../types';
 import { logWarning } from '../utils/logger';
 import tCDF from '@stdlib/stats-base-dists-t-cdf';
 
-function selectVectors(vectors: number[][], allRules: Rule[], metadata: Metadata, warnings: any): number[] {
+function selectVectors(
+    vectors: number[][],
+    allRules: Rule[],
+    metadata: Metadata,
+    warnings: any
+): number[] {
     const threshold = metadata.rule_filters.dependency_threshold;
     const keptIndices: number[] = [];
     const orthogonalBasis: number[][] = [];
@@ -13,17 +18,18 @@ function selectVectors(vectors: number[][], allRules: Rule[], metadata: Metadata
     for (let i = 0; i < vectors.length; i++) {
         const currentVector = vectors[i];
         let residual = currentVector.slice(); // Clone the current vector
-        const rulingOutBasis: number[] = []; 
+        const rulingOutBasis: number[] = [];
 
         // Project the current vector onto the existing orthogonal basis
         for (let j = 0; j < orthogonalBasis.length; j++) {
             const basisVector = orthogonalBasis[j];
-            const projectionCoefficient = dotProduct(residual, basisVector) / dotProduct(basisVector, basisVector);
+            const projectionCoefficient =
+                dotProduct(residual, basisVector) / dotProduct(basisVector, basisVector);
             const projection = scalarMultiply(basisVector, projectionCoefficient);
             residual = vectorSubtract(residual, projection);
 
             if (norm(residual) <= threshold) {
-                rulingOutBasis.push(keptIndices[j]);  // Record basis vector index that contributed
+                rulingOutBasis.push(keptIndices[j]); // Record basis vector index that contributed
             }
         }
 
@@ -40,7 +46,11 @@ function selectVectors(vectors: number[][], allRules: Rule[], metadata: Metadata
             orthogonalBasis.push(normalizedResidual);
         } else {
             const ruleTitle = allRules[i].toString(metadata.target_var);
-            ruledOutWarnings.push(`Rule "${ruleTitle}" ruled out due to linear dependency (Gram-Schmidt residual norm: ${residualNorm.toFixed(4)}).`);
+            ruledOutWarnings.push(
+                `Rule "${ruleTitle}" ruled out due to linear dependency (Gram-Schmidt residual norm: ${residualNorm.toFixed(
+                    4
+                )}).`
+            );
         }
     }
     logWarning(ruledOutWarnings, warnings);
@@ -63,8 +73,76 @@ function scalarMultiply(v: number[], scalar: number): number[] {
     return v.map(val => val * scalar);
 }
 
+function softThresholding(value: number, lambda: number): number {
+    if (value > lambda) {
+        return value - lambda;
+    } else if (value < -lambda) {
+        return value + lambda;
+    } else {
+        return 0;
+    }
+}
+
+function lassoCoordinateDescent(
+    X: number[][],
+    y: number[],
+    lambda: number,
+    tol = 1e-4,
+    maxIter = 10000,
+    warnings: any[] = []
+): number[] {
+    const p = X[0].length;
+    let beta = new Array(p).fill(0);
+    let betaOld = new Array(p).fill(0);
+    const XMatrix = new Matrix(X);
+    const yVector = new Matrix(y.map(v => [v]));
+
+    // Precompute X^T X and X^T y
+    const XtX = XMatrix.transpose().mmul(XMatrix).to2DArray();
+    const Xty = XMatrix.transpose().mmul(yVector).getColumn(0);
+
+    let converged = false;
+    let iter = 0;
+    let maxDiff = 0;
+    while (!converged && iter < maxIter) {
+        iter++;
+        for (let j = 0; j < p; j++) {
+            let residual = Xty[j];
+            for (let k = 0; k < p; k++) {
+                if (k !== j) {
+                    residual -= XtX[j][k] * beta[k];
+                }
+            }
+            const z = XtX[j][j];
+
+            // Update beta_j using the soft-thresholding operator
+            beta[j] = softThresholding(residual, lambda) / z;
+        }
+
+        // Check convergence
+        maxDiff = 0;
+        for (let j = 0; j < p; j++) {
+            const diff = Math.abs(beta[j] - betaOld[j]);
+            if (diff > maxDiff) {
+                maxDiff = diff;
+            }
+            betaOld[j] = beta[j];
+        }
+
+        if (maxDiff < tol) {
+            converged = true;
+        }
+    }
+
+    if (iter === maxIter)
+        logWarning(`Lasso did not converge after ${maxIter} iterations - maximum difference: ${maxDiff}`, warnings);
+    
+    return beta;
+}
+
 /**
- * Performs regression with likelihood ratio test to decide if a rule is needed.
+ * Performs regression with Lasso regularization to optimize for sparsity,
+ * including p-value computations (approximate).
  *
  * @param finalX - The design matrix with samples as rows and rules as columns.
  * @param finalY - The target vector.
@@ -81,10 +159,18 @@ export function performRegression(
     warnings: any[]
 ): void {
     let selectedRuleIndices: number[] = [];
-    if(metadata.rule_filters.dependency_threshold !== undefined && metadata.rule_filters.dependency_threshold > 0) {
-        selectedRuleIndices = selectVectors(new Matrix(finalX).transpose().to2DArray(), allRules, metadata, warnings);
+    if (
+        metadata.rule_filters.dependency_threshold !== undefined &&
+        metadata.rule_filters.dependency_threshold > 0
+    ) {
+        selectedRuleIndices = selectVectors(
+            new Matrix(finalX).transpose().to2DArray(),
+            allRules,
+            metadata,
+            warnings
+        );
     } else {
-        selectedRuleIndices = Array.from({length: finalX[0].length}, (_, i) => i);
+        selectedRuleIndices = Array.from({ length: finalX[0].length }, (_, i) => i);
     }
     if (selectedRuleIndices.length === 0) {
         const finalWarn = `No rules selected after vector selection with dependency threshold ${metadata.rule_filters.dependency_threshold}.`;
@@ -94,7 +180,15 @@ export function performRegression(
 
     if (metadata.rule_filters.rule_priority_filtering?.enabled) {
         const minPriority = metadata.rule_filters.rule_priority_filtering.min_priority;
-        selectedRuleIndices = selectedRuleIndices.filter(idx => idx == 0 || allRules[idx].priority >= minPriority);
+        
+        // Add warnings for the removed rules
+        warnings.push({
+            "Removed Rules": selectedRuleIndices.filter(r => allRules[r].priority < minPriority).map(r => {allRules[r].toString(metadata.target_var)})
+        });
+        
+        selectedRuleIndices = selectedRuleIndices.filter(
+            idx => idx == 0 || allRules[idx].priority >= minPriority
+        );
 
         if (selectedRuleIndices.length === 0) {
             const finalWarn = `No rules selected after priority filtering with minimum priority ${minPriority}.`;
@@ -116,130 +210,19 @@ export function performRegression(
     }
 
     let activeIndices: number[] = selectedRuleIndices;
-    let attempts = 0;
-    const maxAttempts = allRules.length;
-    let lambda = metadata.regularization || 0;
-    const significanceLevel = metadata.rule_filters.significance_level || 0.05;
-    const removeInsignificantRules = metadata.rule_filters.remove_insignificant_rules || false;
-    let coefficients: number[] | null = null;
-    let pValues: number[] = [];
-    const yVector = new Matrix(finalY.map(y => [y]));
-    let removedByStatProperties = false;
-    if (metadata.rule_filters.only_one_round_of_statistical_removal === undefined)
-        metadata.rule_filters.only_one_round_of_statistical_removal = true;
+    const lambda = metadata.regularization || 0;
+    const yVector = finalY;
 
     const warnCollector: any[] = [];
 
-    while (attempts < maxAttempts) {
-        const subMatrixData: number[][] = finalX.map(row => activeIndices.map(col => row[col]));
-        const XMatrix = new Matrix(subMatrixData);
+    // Prepare the submatrix for the selected features
+    const subMatrixData: number[][] = finalX.map(row => activeIndices.map(col => row[col]));
+    const XMatrix = new Matrix(subMatrixData);
+    const X = XMatrix.to2DArray();
 
-        const Xt = XMatrix.transpose();
-        const XtX = Xt.mmul(XMatrix);
-        const identity = Matrix.eye(XtX.rows);
-        const XtXPlusLambdaI = XtX.clone().add(identity.mul(lambda));
-
-        const XtY = Xt.mmul(yVector);
-        let betaMatrix: Matrix;
-
-        // Attempt to solve using QR Decomposition
-        try {
-            const qr = new QrDecomposition(XtXPlusLambdaI);
-            betaMatrix = qr.solve(XtY);
-        } catch (qrError) {
-            logWarning(`QR Decomposition failed: ${qrError}. Attempting SVD-based solution.`, warnings);
-            // Fallback to SVD-based solution
-            try {
-                const svd = new SVD(XtXPlusLambdaI, { autoTranspose: true });
-                const pinv = svd.inverse();
-                betaMatrix = new Matrix(pinv.mmul(XtY));
-            } catch (svdError) {
-                const finalWarn = `Both QR and SVD-based solutions failed. Consider increasing regularization or removing more linearly dependent rules (dependencyThreshold).`;
-                logWarning(finalWarn, warnings);
-                throw new Error(`Regression solve failed: ${finalWarn}`);
-            }
-        }
-
-        coefficients = betaMatrix.to1DArray();
-
-        const predictedY = XMatrix.mmul(betaMatrix);
-        const residuals = yVector.clone().sub(predictedY);
-        const residualSumOfSquares = residuals.transpose().mmul(residuals).get(0, 0);
-        const degreesOfFreedom = finalX.length - activeIndices.length;
-        logWarning(`Degrees of freedom: ${degreesOfFreedom}`, warnings);
-
-        if (degreesOfFreedom <= 0) {
-            const finalWarn = `Degrees of freedom is less than or equal to zero. Consider choosing a higher dependency threshold, fewer rules, or a bigger dataset!`;
-            logWarning(finalWarn, warnings);
-            throw new Error(`Regression solve failed: ${finalWarn}`);
-        }
-
-        const sigmaSquared = residualSumOfSquares / degreesOfFreedom;
-
-        // Compute covariance matrix: (X^T X + lambda I)^-1 * sigmaSquared
-        let XtXPlusLambdaIInv: Matrix;
-        try {
-            // Attempt to compute inverse using the inverse function
-            XtXPlusLambdaIInv = inverse(XtXPlusLambdaI).mul(sigmaSquared);
-        } catch (invError) {
-            logWarning(`Matrix inversion failed using direct inversion: ${invError}. Attempting SVD-based inversion.`, warnings);
-            // Fallback to SVD-based inversion
-            try {
-                const svd = new SVD(XtXPlusLambdaI, { autoTranspose: true });
-                const pinv = svd.inverse();
-                XtXPlusLambdaIInv = pinv.mul(sigmaSquared);
-            } catch (svdError) {
-                const finalWarn = `Failed to invert (X^T X + lambda I) using both direct inversion and SVD. Consider increasing regularization.`;
-                logWarning(finalWarn, warnings);
-                throw new Error(`Regression solve failed: ${finalWarn}`);
-            }
-        }
-
-        // Compute standard errors
-        const covarianceDiagonal = XtXPlusLambdaIInv.diagonal();
-        const standardErrors = covarianceDiagonal.map(se => (se > 0 ? Math.sqrt(se) : 0));
-
-        const tStatistics = coefficients.map((coef, idx) => (standardErrors[idx] !== 0 ? coef / standardErrors[idx] : 0));
-        pValues = tStatistics.map(tStat =>
-            2 * (1 - tCDF(Math.abs(tStat), degreesOfFreedom))
-        );
-
-        const insignificantIndices: number[] = [];
-        pValues.forEach((pValue, idx) => {
-            if (pValue > significanceLevel) {
-                if (metadata.include_intercept !== false && idx === 0) {
-                    // Skip the intercept column
-                    return;
-                }
-                insignificantIndices.push(idx);
-            }
-        });
-
-        if (removedByStatProperties || !removeInsignificantRules || insignificantIndices.length === 0) {
-            break;
-        }
-
-        const rulesToRemove: number[] = insignificantIndices.map(idx => activeIndices[idx]);
-
-        const warnMessages = rulesToRemove.map(ruleIdx => {
-            const rule = allRules[ruleIdx];
-            return {
-                log: `Removed rule "${rule.toString(metadata.target_var)}" due to insignificance (p-value: ${pValues[activeIndices.indexOf(ruleIdx)].toFixed(4)}).`,
-            };
-        });
-
-        warnCollector.push(...warnMessages);
-
-        activeIndices = activeIndices.filter(idx => !rulesToRemove.includes(idx));
-        attempts += rulesToRemove.length;
-        removedByStatProperties = metadata.rule_filters.only_one_round_of_statistical_removal;
-    }
-
-    if (attempts >= maxAttempts) {
-        const finalWarn = `Unable to resolve insignificance after removing ${attempts} rules.`;
-        logWarning(finalWarn, warnings);
-        throw new Error(`Regression solve failed: ${finalWarn}`);
-    }
+    const maxLassoIterations = metadata.max_lasso_iterations || 10000;
+    // Perform Lasso regression using coordinate descent
+    const coefficients = lassoCoordinateDescent(X, yVector, lambda, 1e-4, maxLassoIterations, warnings);
 
     if (coefficients === null) {
         const finalWarn = `Regression coefficients could not be computed.`;
@@ -247,17 +230,58 @@ export function performRegression(
         throw new Error(`Regression solve failed: ${finalWarn}`);
     }
 
+    // Compute predicted y values
+    const predictedY = XMatrix.mmul(new Matrix([coefficients]).transpose());
+    const residuals = new Matrix(yVector.map(y => [y])).sub(predictedY);
+    const residualSumOfSquares = residuals.transpose().mmul(residuals).get(0, 0);
+    const degreesOfFreedom = yVector.length - coefficients.filter(coef => coef !== 0).length;
+
+    if (degreesOfFreedom <= 0) {
+        const finalWarn = `Degrees of freedom is less than or equal to zero. Consider choosing a higher dependency threshold, fewer rules, or a bigger dataset!`;
+        logWarning(finalWarn, warnings);
+        throw new Error(`Regression solve failed: ${finalWarn}`);
+    }
+
+    const sigmaSquared = residualSumOfSquares / degreesOfFreedom;
+
+    // Approximate covariance matrix (Note: This is not exact for Lasso - hence excluded for lasso)
+    let pValues: number[]|null = null;
+    if(lambda == 0) {
+        const XtX = XMatrix.transpose().mmul(XMatrix);
+        let XtXInv: Matrix;
+        try {
+            XtXInv = inverse(XtX);
+        } catch (error) {
+            // Regularization to make XtX invertible
+            const identity = Matrix.eye(XtX.rows);
+            XtXInv = inverse(XtX.add(identity.mul(1e-8)));
+        }
+
+        const covarianceMatrix = XtXInv.mul(sigmaSquared);
+
+        // Compute standard errors
+        const standardErrors = covarianceMatrix.diagonal().map(se => (se > 0 ? Math.sqrt(se) : 0));
+
+        // Compute t-statistics and p-values
+        const tStatistics = coefficients.map((coef, idx) =>
+            standardErrors[idx] !== 0 ? coef / standardErrors[idx] : 0
+        );
+        pValues = tStatistics.map(tStat =>
+            2 * (1 - tCDF(Math.abs(tStat), degreesOfFreedom))
+        );
+    }
+
     // Initialize all coefficients and p-values to zero and one respectively
     allRules.forEach(rule => {
         rule.coefficient = 0;
-        rule.pValue = 1;
     });
 
     // Assign computed coefficients and p-values to the corresponding rules
     activeIndices.forEach((ruleIdx, idx) => {
         const rule = allRules[ruleIdx];
-        rule.coefficient = coefficients![idx];
-        rule.pValue = pValues[idx];
+        rule.coefficient = coefficients[idx];
+        if (pValues !== null)
+            rule.pValue = pValues[idx];
     });
 
     logWarning(warnCollector, warnings);

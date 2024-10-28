@@ -23,6 +23,11 @@ export function performInference(records: Record[], allRules: Rule[], ruleOutput
                 })
             );
 
+            if (firingStrength == 0) {
+                featureVector.push(0);
+                return;
+            }
+
             const outputFuzzySetDegrees = ruleOutputFuzzySetDegreesMap[ruleIndex];
 
             if (!outputFuzzySetDegrees) {

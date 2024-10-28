@@ -6,7 +6,7 @@ np.random.seed(12)
 n_samples = 3000
 
 data = {
-    'target_generator': np.random.uniform(0, 1, n_samples)
+    'target_generator': np.linspace(0,5,n_samples)
 }
 
 for i in range(1, 5):
