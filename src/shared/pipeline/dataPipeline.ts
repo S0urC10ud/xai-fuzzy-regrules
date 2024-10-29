@@ -18,8 +18,10 @@ export function executeDataPipeline(
     target_std = Math.sqrt(
         targetValues.reduce((a, b) => a + (b - target_mean) ** 2, 0) / targetValues.length
     );
+
+    const offset = metadata.include_intercept ? 10 : 0;
     records = records.map(record => {
-        record[metadata.target_var] = (10 + 
+        record[metadata.target_var] = (offset + 
             (parseFloat(record[metadata.target_var] as string) - target_mean) /
             target_std
         ).toString();

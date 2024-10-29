@@ -46,14 +46,14 @@ function selectVectors(
             orthogonalBasis.push(normalizedResidual);
         } else {
             const ruleTitle = allRules[i].toString(metadata.target_var);
-            ruledOutWarnings.push(
-                `Rule "${ruleTitle}" ruled out due to linear dependency (Gram-Schmidt residual norm: ${residualNorm.toFixed(
-                    4
-                )}).`
+                ruledOutWarnings.push({
+                    "Rule": ruleTitle,
+                    "Residual Norm": parseFloat(residualNorm.toFixed(4))
+                }
             );
         }
     }
-    logWarning(ruledOutWarnings, warnings);
+    logWarning({"Removed due to low Gram-Schmidt residual norm (linear dependency)": ruledOutWarnings}, warnings);
     return keptIndices;
 }
 
