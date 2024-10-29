@@ -181,7 +181,7 @@ export function performRegression(
         
         // Add warnings for the removed rules
         warnings.push({
-            "Removed Rules": selectedRuleIndices.filter(r => allRules[r].priority < minPriority).map(r => {allRules[r].toString(metadata.target_var)})
+            "Removed Rules": selectedRuleIndices.filter(r => allRules[r].priority < minPriority).map(r => allRules[r].toString(metadata.target_var))
         });
         
         selectedRuleIndices = selectedRuleIndices.filter(

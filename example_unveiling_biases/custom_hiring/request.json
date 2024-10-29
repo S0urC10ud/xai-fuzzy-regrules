@@ -2,7 +2,11 @@
     "target_var": "Salary",
     "outlier_filtering": {},
     "split_char": ";",
-    "regularization": 0,
+    "lasso": {
+        "regularization": 10,
+        "max_lasso_iterations": 1000,
+        "lasso_convergance_tolerance": 1e-5
+    },
     "rule_filters": {
         "l1_column_threshold": 0.01,
         "l1_row_threshold": 0.1,

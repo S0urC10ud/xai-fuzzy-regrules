@@ -22,9 +22,7 @@ export function computeMetrics(finalY: number[], y_pred: number[]): any {
     const mape =
         (finalY.reduce((acc, val, idx) => {
             return acc + Math.abs((val - y_pred[idx]) / (Math.abs(val) + epsilon));
-        }, 0) /
-            n) *
-        100;
+        }, 0) / n) * 100;
 
     return {
         mean_absolute_error: mae,

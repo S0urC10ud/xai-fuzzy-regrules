@@ -8,7 +8,17 @@ export function computeMembershipDegrees(
     max: number,
     classes: string[]
 ): MembershipDegrees {
-    const numClasses = classes.length;
+    const allowedClasses = ["verylow", "low", "mediumlow", "medium", "mediumhigh", "high", "veryhigh"];
+
+    const sortedClasses = classes
+        .filter(cls => allowedClasses.includes(cls))
+        .sort((a, b) => allowedClasses.indexOf(a) - allowedClasses.indexOf(b));
+
+    if (classes.filter(cls => !allowedClasses.includes(cls)).length > 0) {
+        throw new Error("Invalid (de-)fuzzification classes provided. Valid classes are: verylow, low, mediumlow, medium, mediumhigh, high, veryhigh.");
+    }
+
+    const numClasses = sortedClasses.length;
     if (![3, 5, 6, 7].includes(numClasses)) {
         throw new Error("Number of classes must be either 3, 5, 6, or 7.");
     }
@@ -37,18 +47,16 @@ export function computeMembershipDegrees(
     // Compute raw membership degrees
     const rawDegrees: number[] = triangles.map(({ left, peak, right }) => triangle(x, left, peak, right));
 
-    // ensure first and lass class peak at min and max
-    if (numClasses >= 1) {
-        rawDegrees[0] = x <= min ? 1 : rawDegrees[0];
-        rawDegrees[numClasses - 1] = x >= max ? 1 : rawDegrees[numClasses - 1];
-    }
+    // Ensure first and last class peak at min and max
+    rawDegrees[0] = x <= min ? 1 : rawDegrees[0];
+    rawDegrees[numClasses - 1] = x >= max ? 1 : rawDegrees[numClasses - 1];
 
     // Normalize the degrees so that their sum is 1
     const sumDegrees = rawDegrees.reduce((sum, degree) => sum + degree, 0);
     const normalizedDegrees = sumDegrees === 0 ? rawDegrees.map(() => 0) : rawDegrees.map(degree => degree / sumDegrees);
 
     const membershipDegrees: MembershipDegrees = {};
-    classes.forEach((cls, idx) => {
+    sortedClasses.forEach((cls, idx) => {
         membershipDegrees[cls] = parseFloat(normalizedDegrees[idx].toFixed(4)); // Rounded for readability
     });
 
