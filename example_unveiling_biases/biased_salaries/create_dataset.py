@@ -57,5 +57,5 @@ df['base_salary'] = df.apply(
 df['Salary'] = df['base_salary']
 
 df = df.drop(columns=['base_salary'])
-output_path = os.path.join(os.path.dirname(__file__), 'hiring_dataset.csv')
+output_path = os.path.join(os.path.dirname(__file__), 'biased_salaries.csv')
 df.to_csv(output_path, sep=";", index=False)
