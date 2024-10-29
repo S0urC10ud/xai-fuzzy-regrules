@@ -181,11 +181,11 @@ export function performRegression(
         
         // Add warnings for the removed rules
         warnings.push({
-            "Removed Rules": selectedRuleIndices.filter(r => allRules[r].priority < minPriority).map(r => allRules[r].toString(metadata.target_var))
+            "Removed Rules": selectedRuleIndices.filter(r => allRules[r].priority < minPriority && !allRules[r].isIntercept).map(r => allRules[r].toString(metadata.target_var))
         });
         
         selectedRuleIndices = selectedRuleIndices.filter(
-            idx => idx == 0 || allRules[idx].priority >= minPriority
+            idx => allRules[idx].isIntercept || allRules[idx].priority >= minPriority
         );
 
         if (selectedRuleIndices.length === 0) {
@@ -195,13 +195,13 @@ export function performRegression(
         }
 
         if (selectedRuleIndices.length > finalX.length) {
-            const finalWarn = `Too many rules selected after priority- and linearity-filtering with minimum priority ${minPriority}, it should be increased.`;
+            const finalWarn = `Too many rules (${selectedRuleIndices.length} > ${finalX.length}) selected after priority- and linearity-filtering with minimum priority ${minPriority}. Either filter more rules or provide a bigger dataset.`;
             logWarning(finalWarn, warnings);
             throw new Error(`Regression solve failed: ${finalWarn}`);
         }
     } else {
         if (selectedRuleIndices.length > finalX.length) {
-            const finalWarn = `Too many rules selected after vector selection with dependency threshold ${metadata.rule_filters.dependency_threshold}, it should be increased.`;
+            const finalWarn = `Too many rules (${selectedRuleIndices.length} > ${finalX.length}) selected after vector selection with dependency threshold ${metadata.rule_filters.dependency_threshold}. Either filter more rules or provide a bigger dataset.`;
             logWarning(finalWarn, warnings);
             throw new Error(`Regression solve failed: ${finalWarn}`);
         }

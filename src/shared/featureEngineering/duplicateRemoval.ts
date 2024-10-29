@@ -1,4 +1,4 @@
-import { Rule, Record } from '../types';
+import { Rule } from '../types';
 import { hashRow, hashColumn } from '../utils/hashUtils';
 import { logWarning } from '../utils/logger';
 
@@ -130,7 +130,6 @@ export function removeDuplicateColumns(
     );
 
     const uniqueXUpdated = X.map(row => keptColumns.map(colIndex => row[colIndex]));
-    const filteredRules = keptColumns.map(colIndex => allRules[colIndex]).filter(rule => rule !== null) as Rule[];
-
+    const filteredRules = keptColumns.map(colIndex => allRules[colIndex]) as Rule[];
     return { finalX: uniqueXUpdated, filteredRules };
 }
