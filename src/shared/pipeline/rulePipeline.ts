@@ -27,10 +27,10 @@ export function executeRulePipeline(
         metadata
     );
 
-    const support_weight = metadata.rule_priority_weights?.support_weight || 2;
-    const leverage_weight = metadata.rule_priority_weights?.leverage_weight || 10;
-    const num_antecedents_weight = metadata.rule_priority_weights?.num_antecedents_weight || 1;
-    const whitelist_boolean_weight = metadata.rule_priority_weights?.whitelist_boolean_weight || 100;
+    const support_weight = metadata.rule_priority_weights?.support_weight ?? 2;
+    const leverage_weight = metadata.rule_priority_weights?.leverage_weight ?? 10;
+    const num_antecedents_weight = metadata.rule_priority_weights?.num_antecedents_weight ?? 1;
+    const whitelist_boolean_weight = metadata.rule_priority_weights?.whitelist_boolean_weight ?? 100;
 
     allRules = applyWhitelistBlacklist(allRules, metadata, targetVar, warnings);
     const target_min_value = records.reduce((min, record) => Math.min(min, record[targetVar] as number), Infinity);

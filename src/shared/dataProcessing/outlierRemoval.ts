@@ -15,6 +15,8 @@ function quantile(arr: number[], q: number): number {
 export function removeOutliers(
     records: Record[],
     numericalKeys: string[],
+    target_mean: number,
+    target_std: number,
     warnings: any[],
     metadata: Metadata
 ): Record[] {
@@ -28,7 +30,10 @@ export function removeOutliers(
     records = records.filter(record => {
         return numericalKeys.every(key => {
             const filterConfig = metadata.outlier_filtering![key];
-            const value = Number(record[key]);
+            let value = Number(record[key]);
+            if(key === metadata.target_var) {
+                value = (value-10)*target_std + target_mean;
+            }
 
             if (isNaN(value)) {
                 nullValueRemovedCount++;
@@ -39,9 +44,16 @@ export function removeOutliers(
                 return true;
             }
 
-            const values = records.map(r => r[key]) as number[];
+            
 
-            if (filterConfig.method === "IQR" && filterConfig.outlier_iqr_multiplier !== undefined) {
+            if (filterConfig.method === "IQR") {
+                if(filterConfig.outlier_iqr_multiplier == undefined)
+                    throw new Error("IQR filter requires outlier_iqr_multiplier value");
+                
+                let values = records.map(r => r[key]) as number[];
+                if(key === metadata.target_var) {
+                    values = values.map(v => (v-10)*target_std + target_mean);
+                }
                 const q1 = quantile(values, 0.25);
                 const q3 = quantile(values, 0.75);
                 const iqr = q3 - q1;
@@ -52,7 +64,10 @@ export function removeOutliers(
                     removedCounts[key] = (removedCounts[key] || 0) + 1;
                     return false;
                 }
-            } else if (filterConfig.method === "VariableBounds" && filterConfig.min !== undefined && filterConfig.max !== undefined) {
+            } else if (filterConfig.method === "VariableBounds") {
+                if(filterConfig.min == undefined || filterConfig.max == undefined)
+                    throw new Error("VariableBounds filter requires min and max values");
+                
                 if (value < filterConfig.min || value > filterConfig.max) {
                     removedCounts[key] = (removedCounts[key] || 0) + 1;
                     return false;

@@ -30,11 +30,15 @@ export function executeDataPipeline(
         return records.every(record => !isNaN(parseFloat(record[key] as string)));
     });
 
+    if(!numericalKeys.includes(metadata.target_var)) {
+        throw new Error("Target variable is not numerical - please choose another dataset or target variable");
+    }
+
     const categoricalKeys: string[] = Object.keys(records[0]).filter(
         key => !numericalKeys.includes(key)
     );
 
-    records = removeOutliers(records, numericalKeys, warnings, metadata);
+    records = removeOutliers(records, numericalKeys, target_mean, target_std, warnings, metadata);
 
     const { filteredKeys, updatedRecords } = filterLowVarianceColumns(
         records,

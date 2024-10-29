@@ -218,8 +218,8 @@ export function performRegression(
     const XMatrix = new Matrix(subMatrixData);
     const X = XMatrix.to2DArray();
 
-    const maxLassoIterations = metadata.lasso.max_lasso_iterations || 10000;
-    const lassoConvergenceTolerance = metadata.lasso.lasso_convergance_tolerance || 1e-4;
+    const maxLassoIterations = metadata.lasso.max_lasso_iterations ?? 10000;
+    const lassoConvergenceTolerance = metadata.lasso.lasso_convergance_tolerance ?? 1e-4;
 
     // Perform Lasso regression using coordinate descent
     const coefficients = lassoCoordinateDescent(X, yVector, lambda, lassoConvergenceTolerance, maxLassoIterations, warnings);

@@ -5,7 +5,7 @@ import random
 
 np.random.seed(12)
 n_samples = 3000
-hiring_managers = ['A', 'B', 'C', 'D']
+hiring_managers = ['A', 'B', 'C','D','E','F','G']
 job_positions = ['technician', 'services', 'HR', 'sales', 'management']
 genders = ['male', 'female', 'other']
 
@@ -39,7 +39,7 @@ df['base_salary'] = (
     + (df['GPA'] - 3.0) * 2000  # GPA contributes to salary
 )
 
-manager_salary_factor = {'A': 1.4, 'B': 1.0, 'C': 1.0, 'D': 0.7}
+manager_salary_factor = {'A': 1.2, 'B': 1.0, 'C': 1.0, 'D': 1., 'E': 1., 'F': 1., 'G': 1.}
 df['base_salary'] *= df['HiringManager'].map(manager_salary_factor)
 
 
@@ -50,16 +50,11 @@ df['base_salary'] *= df['Gender'].map(gender_salary_factor)
 position_effect = {'technician': 1.1, 'services': 1, 'HR': 1.02, 'sales': 1.08, 'management': 1.5}
 df['base_salary'] *= df['JobPosition'].map(position_effect)
 
-
-# if male and hiring manager is A, then remove 40% from salary
+# hiring manager B loves the gender other
 df['base_salary'] = df.apply(
-    lambda row: row['base_salary'] * 0.8 if row["HiringManager"]=="A" and row["Gender"]=="male" else row['base_salary'], axis=1)
+    lambda row: row['base_salary'] +20_000 if row["HiringManager"] in ["B"] and row["Gender"]=="other" else row['base_salary'], axis=1)
 
-# hiring manager B and C do not like gender other
-df['base_salary'] = df.apply(
-    lambda row: row['base_salary'] * 0.6 if row["HiringManager"] in ["B", "C"] and row["Gender"]=="other" else row['base_salary'], axis=1)
-
-df['Salary'] = df['base_salary']# + np.random.normal(0, 2000, n_samples)
+df['Salary'] = df['base_salary']
 
 df = df.drop(columns=['base_salary'])
 output_path = os.path.join(os.path.dirname(__file__), 'hiring_dataset.csv')
