@@ -4,13 +4,13 @@
         "Salary":
         {
             "method": "VariableBounds",
-            "min": 1000,
-            "max": 100000
+            "min": 25000,
+            "max": 85000
         }
     },
     "split_char": ";",
     "lasso": {
-        "regularization": 0,
+        "regularization": 10,
         "max_lasso_iterations": 1000,
         "lasso_convergance_tolerance": 1e-4
     },
