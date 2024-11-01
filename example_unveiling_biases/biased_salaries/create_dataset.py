@@ -43,10 +43,6 @@ manager_salary_factor = {'A': 1.2, 'B': 1.0, 'C': 1.0, 'D': 1., 'E': 1., 'F': 1.
 df['base_salary'] *= df['HiringManager'].map(manager_salary_factor)
 
 
-gender_salary_factor = {'male': 1.2, 'female': 0.85, 'other': 1}
-df['base_salary'] *= df['Gender'].map(gender_salary_factor)
-
-
 position_effect = {'technician': 1.1, 'services': 1, 'HR': 1.02, 'sales': 1.08, 'management': 1.5}
 df['base_salary'] *= df['JobPosition'].map(position_effect)
 
@@ -54,7 +50,7 @@ df['base_salary'] *= df['JobPosition'].map(position_effect)
 df['base_salary'] = df.apply(
     lambda row: row['base_salary'] +20_000 if row["HiringManager"] in ["B"] and row["Gender"]=="other" else row['base_salary'], axis=1)
 
-df['Salary'] = df['base_salary']
+df['Salary'] = df['base_salary'] + np.random.normal(0, 1500, n_samples)
 
 df = df.drop(columns=['base_salary'])
 output_path = os.path.join(os.path.dirname(__file__), 'biased_salaries.csv')
