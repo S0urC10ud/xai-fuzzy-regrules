@@ -3,24 +3,782 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My TypeScript Project</title>
+    <link rel="icon" type="image/png" href="assets/icon.png">
+    <title>Fuzzy Data Explanation</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+        }
+        body {
+            display: flex;
+            flex-direction: column;
+            background-color: #121212;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+        header {
+            background-color: #1e1e1e;
+            padding: 20px;
+            text-align: left;
+            font-size: 1.5em;
+            color: #ffcc00;
+            height: 4.5rem !important;
+        }
+        .centercontainer {
+            flex: 1;
+            display: flex;
+            flex-direction: row;
+            height: calc(100vh - 8rem) !important;
+            width:100vw !important;
+            transition: all 0.3s ease;
+        }
+        .left-pane {
+            flex: 2;
+            padding: 20px;
+            background-color: #121212;
+            overflow-y: auto;
+            border-right: 1px solid #333;
+            transition: flex 0.3s ease;
+        }
+        .right-pane {
+            flex: 1;
+            padding: 20px;
+            background-color: #1e1e1e;
+            overflow-y: auto;
+            min-width: 0;
+            transition: flex 0.3s ease, opacity 0.3s ease;
+            position: relative;
+            overflow-x: hidden;
+        }
+        .collapsed .right-pane {
+            flex: 0;
+            opacity: 0;
+            visibility: hidden;
+        }
+        .footer {
+            position: relative;
+            bottom: 0;
+            width: 100%;
+            background-color: #1e1e1e;
+            margin:0 !important;
+            padding: 10px 0;
+            text-align: center;
+            height: 3.5rem !important;
+        }
+        .footer a {
+            color: #ffffff;
+            text-decoration: none;
+            padding-bottom: 2px;
+            transition: color 0.3s, border-bottom-color 0.3s;
+            margin: 0 10px; /* Add margin to the links */
+            border-bottom: none;
+        }
+        .footer a:hover {
+            color: #ffcc00;
+            border-bottom-color: #ffcc00;
+            border-bottom: 1px solid #ffcc00;
+        }
+        .footer .separator {
+            margin: 0 15px; /* Add margin to the separator */
+        }
+        .primary-color {
+            color: #ffcc00;
+        }
+        .collapsible {
+            display: none;
+            background-color: #1e1e1e;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            color: #ffcc00;
+        }
+        @media (max-width: 768px) {
+            .centercontainer {
+                flex-direction: column;
+                position: relative;
+            }
+            .right-pane {
+                position: absolute;
+                top: 60px; /* Adjust based on header height */
+                right: 0;
+                width: 100%;
+                height: calc(100% - 60px);
+                display: none;
+                background-color: #1e1e1e;
+                z-index: 1000;
+                overflow-y: auto;
+            }
+            .collapsible {
+                display: block;
+            }
+        }
+
+        /* Configuration Grid Styles */
+        .configuration-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+        .config-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+            align-items: start;
+        }
+        .config-item {
+            display: flex;
+            flex-direction: column;
+        }
+        .short-input input {
+            width: 60px;
+        }
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+        }
+        .checkbox-item label {
+            margin-right: 10px;
+            flex: 1;
+        }
+
+        /* Custom Tooltip Styles */
+        .custom-tooltip {
+            position: relative;
+            display: inline-block;
+            cursor: pointer;
+            color: #ffcc00;
+        }
+        .custom-tooltip .custom-tooltiptext {
+            visibility: hidden;
+            width: 220px;
+            background-color: #333;
+            color: #fff;
+            text-align: left;
+            border-radius: 5px;
+            padding: 10px;
+            position: absolute;
+            z-index: 1002; /* Ensure it's above other elements */
+            bottom: 125%; /* Position above the tooltip trigger */
+            left: 50%;
+            transform: translateX(-50%);
+            transition: opacity 0.3s;
+        }
+        .custom-tooltip .custom-tooltiptext::after {
+            content: "";
+            position: absolute;
+            top: 100%; /* At the bottom of the tooltip */
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: #333 transparent transparent transparent;
+        }
+        .custom-tooltip:hover .custom-tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .config-fieldset {
+            border: 1px solid #333;
+            padding: 15px;
+            border-radius: 5px;
+            background-color: #1e1e1e;
+        }
+        .config-fieldset legend {
+            color: #ffcc00;
+            font-weight: bold;
+            padding: 0 5px;
+        }
+        .nested-fieldset {
+            border: 1px dashed #555;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+            background-color: #2e2e2e;
+        }
+        .nested-fieldset legend {
+            color: #ffcc00;
+            font-size: 0.9em;
+        }
+        select[multiple] {
+            height: 100px;
+        }
+        textarea {
+            background-color: #2e2e2e;
+            color: #ffffff;
+            border: 1px solid #555;
+            border-radius: 4px;
+            padding: 8px;
+            resize: vertical;
+        }
+        input[type="text"],
+        input[type="number"],
+        select,
+        textarea {
+            padding: 8px;
+            border: 1px solid #555;
+            border-radius: 4px;
+            background-color: #2e2e2e;
+            color: #ffffff;
+        }
+        input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            margin: 10px;
+        }
+        input[type="text"]:focus,
+        input[type="number"]:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #ffcc00;
+        }
+        *:disabled {
+            background-color: #000000 !important;
+            border: 1px solid #ccc !important;
+            color: #999 !important;
+        }
+        .delete-filter{
+            background-color: #222222;
+            border: 1px rgb(146, 18, 18) solid;
+            margin-top: 10px;
+        }
+        
+        .add-filter {
+            margin-top: 10px;
+            background: #121212;
+            color: #ffcc00;
+            border: 1px solid #ffcc00;
+        }
+
+        .add-filter:hover {
+            margin-top: 10px;
+            background: #ffcc00 !important;
+            color: #000000 !important;
+            border: 1px solid #000000;
+        }
+
+        .button-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 10px;
+        }
+        #choice-container {
+            display: flex;
+            place-items: center;
+            align-items: center;
+            justify-content: center;
+            flex-direction: row;
+            height: 100%;
+            width: 100%;
+            gap: 3rem;
+        }
+
+        .option-to-choose {
+            width: 15rem;
+            height: 15rem;
+            background-color: #333;
+            border-radius: 5px;
+            border: 1px gold solid;
+            display: flex;
+            flex-direction: column;
+            place-items: center;
+            align-items: center;
+            justify-content: center;
+            transition: 1s;
+            padding: 0.3rem;
+            text-align: center;
+        }
+
+        .option-to-choose:hover {
+            background-color: #ffcc00;
+            color: #000000;
+            box-shadow: 0 0 10px 2px gold;
+            transition-duration: 0.3s;
+            cursor: pointer;
+        }
+
+        .option-to-choose span {
+            font-size: 4rem;
+            transition-duration: 1s;
+
+        }
+        .option-to-choose:hover span {
+            font-size: 5rem;
+            transition-duration: 0.3s;
+        }
+
+        .option-to-choose p {
+            color: lightgray;
+            transition-duration: 1s;
+        }
+        .option-to-choose:hover p {
+            color: black;
+            transition-duration: 0.3s;
+        }
+
+        @media (max-width: 580px) {
+            .header-title {
+                display: none;
+            }
+        }
+
+        @keyframes clickEffect {
+            0% {
+                transform: scale(0.8);
+                background-color: #ffcc00;
+                color: black;
+            }
+            50% {
+                transform: scale(1.2);
+                background-color: #ffcc00;
+                color: black;
+            }
+            100% {
+                transform: scale(1);
+                background-color: #ffcc00;
+                color: black;
+            }
+        }
+
+        .click-animation {
+            animation: clickEffect 0.3s ease;
+        }
+    </style>
 </head>
 <body>
-    <h1>Welcome to My TypeScript Project</h1>
-    <div id="app"></div>
-    
-    <!-- Upload Form -->
-    <form id="uploadForm">
-        <label for="csvFile">Upload CSV File:</label>
-        <input type="file" id="csvFile" name="csvFile" accept=".csv" required />
-        <br />
-        <label for="rules">Enter Rules (JSON):</label>
-        <textarea id="rules" name="rules" rows="4" cols="50" required></textarea>
-        <br />
-        <button type="submit">Upload</button>
-    </form>
-    
-    <!-- Include the bundled JavaScript file -->
+    <header>
+        <img src="assets/icon.png" alt="Icon" style="height: 32px; width: 32px;">
+        <span class="header-title">Fuzzy Rule-Regression XAI</span>
+        <button class="btn btn-primar y add-filter" style="margin-top: 0; position:absolute; top: 1rem; right: 1rem;">Run ⚙️</button>
+        <button class="btn btn-primar y add-filter" style="margin-top: 0; position:absolute; top: 1rem; right: 7rem;">Upload 🔗</button>
+
+    </header>
+    <div class="centercontainer" id="mainContainer">
+        <div class="left-pane">
+            <h2 class="primary-color">Rules</h2>
+            <div id="choice-container">
+                <div class="option-to-choose">
+                    <span>🚀</span>
+                    <p>Try out a demo dataset!</p>
+                </div>
+                <div class="option-to-choose">
+                    <span>🔗</span>
+                    <p>Upload your own dataset!</p>
+                </div>
+            </div>
+        </div>
+        <div class="right-pane">
+            <h3 class="primary-color">Configuration</h3>
+            <form class="configuration-grid">
+                <!-- Data Splitting -->
+                <div class="row">
+                    <div class="config-item col-5">
+                        <label for="split_char">Split Char
+                            <span class="custom-tooltip">?<span class="custom-tooltiptext">Split character for the CSV-file</span></span>
+                        </label>
+                        <input type="text" id="split_char" name="split_char" value=";">
+                    </div>
+                    <div class="config-item col-7">
+                        <label for="target_var">Target Variable
+                            <span class="custom-tooltip">?<span class="custom-tooltiptext">Target column from CSV file to explain</span></span>
+                        </label>
+                        <input type="text" id="target_var" name="target_var" value="MEDV">
+                    </div>
+
+                </div>
+
+                <!-- Target Variable and Number of Antecedents -->
+                <div class="row">                    
+                    <div class="config-item col-6">
+                        <label for="num_vars">Number of Antecedents
+                            <span class="custom-tooltip">?<span class="custom-tooltiptext">Number of antecedents to combine</span></span>
+                        </label>
+                        <input type="number" id="num_vars" name="num_vars" value="2">
+                    </div>
+                    <div class="config-item checkbox-item col-6">
+                        <label for="include_intercept">Include Intercept
+                            <span class="custom-tooltip">?<span class="custom-tooltiptext">Determines if an intercept is used to offset the model</span></span>
+                        </label>
+                        <input type="checkbox" id="include_intercept" name="include_intercept" checked>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <!-- Numerical Fuzzification -->
+                    <div class="config-item col-6">
+                        <label for="numerical_fuzzification">Fuzzification
+                            <span class="custom-tooltip">?<span class="custom-tooltiptext">Defines the fuzzy sets for numerical variables. More sets means more redundancies.</span></span>
+                        </label>
+                        <select id="numerical_fuzzification" name="numerical_fuzzification">
+                            <option value="3">3 Sets</option>
+                            <option value="5" selected>5 Sets</option>
+                            <option value="6">6 Sets</option>
+                            <option value="7">7 Sets</option>
+                        </select>
+                    </div>
+
+                    <!-- Numerical Defuzzification -->
+                    <div class="config-item col-6">
+                        <label for="numerical_defuzzification">Defuzzification
+                            <span class="custom-tooltip">?<span class="custom-tooltiptext">Defines the fuzzy sets for defuzzification. More sets means more redundancies.</span></span>
+                        </label>
+                        <select id="numerical_defuzzification" name="numerical_defuzzification">
+                            <option value="3">3 Sets</option>
+                            <option value="5" selected>5 Sets</option>
+                            <option value="6">6 Sets</option>
+                            <option value="7">7 Sets</option>
+                        </select>
+                        
+                    </div>
+                </div>
+
+                <div class="config-row">
+                    <div class="config-item">
+                        <label for="whitelist">Whitelist Rules
+                            <span class="custom-tooltip">?<span class="custom-tooltiptext">Rules that will definitely be included</span></span>
+                        </label>
+                        <textarea id="whitelist" name="whitelist" rows="3" placeholder="e.g., If CRIM is high AND If PTRATIO is high then MEDV is verylow&#10;e.g., If DIS is low AND If INDUS is high then MEDV is verylow"></textarea>
+                    </div>
+                    
+                    <div class="config-item">
+                        <label for="blacklist">Blacklist Rules
+                            <span class="custom-tooltip">?<span class="custom-tooltiptext">Rules that will be excluded from generation</span></span>
+                        </label>
+                        <textarea id="blacklist" name="blacklist" rows="3" placeholder="e.g., If CRIM is high AND If RM is high then MEDV is verylow&#10;e.g., If DIS is high AND If LSTAT is high then MEDV is veryhigh"></textarea>
+                    </div>
+                </div>
+
+                <fieldset class="config-fieldset">
+                    <legend>Rule Filters</legend>
+                    <div class="row">
+                        <div class="config-item col-6">
+                            <label for="l1_row_threshold">L1 Row Threshold
+                                <span class="custom-tooltip">?<span class="custom-tooltiptext">Threshold for row duplication checks</span></span>
+                            </label>
+                            <input type="number" step="0.1" id="l1_row_threshold" name="l1_row_threshold" value="0.1">
+                        </div>
+                        
+                        <div class="config-item col-6">
+                            <label for="l1_column_threshold">L1 Column Threshold
+                                <span class="custom-tooltip">?<span class="custom-tooltiptext">Threshold for column duplication checks</span></span>
+                            </label>
+                            <input type="number" step="0.1" id="l1_column_threshold" name="l1_column_threshold" value="0.1">
+                        </div>
+                    </div>
+                    <div class="row" style="margin-top: 10px">
+                        <div class="config-item col-6">
+                            <label for="dependency_threshold">Dependency Threshold
+                                <span class="custom-tooltip">?<span class="custom-tooltiptext">Threshold for linear dependency detection</span></span>
+                            </label>
+                            <input type="number" step="0.01" id="dependency_threshold" name="dependency_threshold" value="0.02">
+                        </div>
+                        
+                        <div class="config-item col-6">
+                            <label for="significance_level">Significance Level
+                                <span class="custom-tooltip">?<span class="custom-tooltiptext">Alpha level for statistical significance</span></span>
+                            </label>
+                            <input type="number" step="0.01" id="significance_level" name="significance_level" value="0.05">
+                        </div>
+                    </div>
+                    
+                    <div class="row" style="margin-top: 10px">
+                        <div class="config-item checkbox-item col-6">
+                            <label for="remove_insignificant_rules">Remove Insignificant Rules
+                                <span class="custom-tooltip">?<span class="custom-tooltiptext">Remove rules not statistically significant - only works if regularization is 0</span></span>
+                            </label>
+                            <input type="checkbox" id="remove_insignificant_rules" name="remove_insignificant_rules">
+                        </div>
+                        
+                        <div class="config-item checkbox-item col-6">
+                            <label for="only_whitelist">Only Whitelist
+                                <span class="custom-tooltip">?<span class="custom-tooltiptext">Use only specified whitelist rules</span></span>
+                            </label>
+                            <input type="checkbox" id="only_whitelist" name="only_whitelist">
+                        </div>
+                    </div>
+                    
+                    <fieldset class="nested-fieldset">
+                        <legend>Rule Priority Filtering</legend>
+                        <div class="row">
+                            <div class="checkbox-item config-item col-6">
+                                <label for="rule_priority_enabled">Enabled
+                                    <span class="custom-tooltip">?<span class="custom-tooltiptext">Enables minimum rule priority filtering</span></span>
+                                </label>
+                                <input type="checkbox" id="rule_priority_enabled" name="rule_priority_enabled">
+                            </div>
+                            
+                            <div class="config-item col-6">
+                                <label for="min_priority">Min Priority
+                                    <span class="custom-tooltip">?<span class="custom-tooltiptext">Minimum priority value for rules to survive</span></span>
+                                </label>
+                                <input type="number" id="min_priority" name="min_priority" value="10">
+                            </div>
+                        </div>
+                    </fieldset>
+                    <fieldset class="nested-fieldset">
+                        <legend>Rule Priority Weights (Sorting and Filtering)</legend>
+                        <div class="row">
+                            <div class="config-item col-6">
+                                <label for="support_weight">Support Weight
+                                    <span class="custom-tooltip">?<span class="custom-tooltiptext">Weight for rule support in priority calculation</span></span>
+                                </label>
+                                <input type="number" step="1" id="support_weight" name="support_weight" value="1">
+                            </div>
+                            
+                            <div class="config-item col-6">
+                                <label for="leverage_weight">Leverage Weight
+                                    <span class="custom-tooltip">?<span class="custom-tooltiptext">Weight for rule leverage in priority calculation</span></span>
+                                </label>
+                                <input type="number" step="1" id="leverage_weight" name="leverage_weight" value="10">
+                            </div>
+                        </div>
+                        <div class="row" style="margin-top: 10px;">
+                            <div class="config-item col-6">
+                                <label for="num_antecedents_weight">Num Antecedents Weight
+                                    <span class="custom-tooltip">?<span class="custom-tooltiptext">Weight for the number of antecedents in priority calculation</span></span>
+                                </label>
+                                <input type="number" step="1" id="num_antecedents_weight" name="num_antecedents_weight" value="1">
+                            </div>
+                            
+                            <div class="config-item col-6">
+                                <label for="whitelist_boolean_weight">Whitelist Boolean Weight
+                                    <span class="custom-tooltip">?<span class="custom-tooltiptext">Weight if the rule is whitelisted</span></span>
+                                </label>
+                                <input type="number" step="1" id="whitelist_boolean_weight" name="whitelist_boolean_weight" value="1000">
+                            </div>
+                        </div>
+                    </fieldset>
+                </fieldset>
+                <fieldset class="config-fieldset">
+                    <legend>Lasso Configuration</legend>
+                    <div class="config-row">
+                        <div class="config-item">
+                            <label for="lasso_regularization">Regularization
+                                <span class="custom-tooltip">?<span class="custom-tooltiptext">Avoids singular matrix for inversion</span></span>
+                            </label>
+                            <input type="number" step="0.00001" id="lasso_regularization" name="lasso_regularization" value="0.00001">
+                        </div>
+                        
+                        <div class="config-item">
+                            <label for="max_lasso_iterations">Max Lasso Iterations
+                                <span class="custom-tooltip">?<span class="custom-tooltiptext">Maximum iterations for Lasso convergence</span></span>
+                            </label>
+                            <input type="number" id="max_lasso_iterations" name="max_lasso_iterations" value="10000">
+                        </div>
+                        
+                        <div class="config-item">
+                            <label for="lasso_convergence_tolerance">Lasso Convergence Tolerance
+                                <span class="custom-tooltip">?<span class="custom-tooltiptext">Threshold for convergence based on beta differences</span></span>
+                            </label>
+                            <input type="number" step="0.0001" id="lasso_convergence_tolerance" name="lasso_convergence_tolerance" value="0.0001">
+                        </div>
+                    </div>
+                </fieldset>
+                
+
+                <fieldset class="config-fieldset">
+                    <legend>Outlier Filtering</legend>
+                    <p>This is especially recommended for the Target-Variable</p>
+                    <div id="outlier-filters-container">
+                        <!-- Existing Outlier Filters -->
+
+                    </div>
+                    <div class="button-container">
+                        <button type="button" id="add-outlier-filter" class="btn btn-primary btn-sm add-filter">Add Filter</button>
+                    </div>
+                </fieldset>
+
+                <div class="row">
+                    <div class="config-item checkbox-item col-6">
+                        <label for="remove_low_variance">Remove Low Variance
+                            <span class="custom-tooltip">?<span class="custom-tooltiptext">Toggles removal of columns below variance threshold</span></span>
+                        </label>
+                        <input type="checkbox" id="remove_low_variance" name="remove_low_variance">
+                    </div>
+                    
+                    <div class="config-item col-6">
+                        <label for="variance_threshold">Variance Threshold
+                            <span class="custom-tooltip">?<span class="custom-tooltiptext">Columns with variance below this value can be removed</span></span>
+                        </label>
+                        <input type="number" step="1e-5" id="variance_threshold" name="variance_threshold" value="0.00001">
+                    </div>
+                </div>
+
+                <fieldset class="config-fieldset">
+                    <legend>Advanced</legend>
+                    <div class="row">
+                        <div class="config-item checkbox-item col-6">
+                            <label for="only_one_round_stat_removal">Only One Round of Statistical Removal
+                                <span class="custom-tooltip">?<span class="custom-tooltiptext">Limits to one round for statistical rule removal</span></span>
+                            </label>
+                            <input type="checkbox" id="only_one_round_stat_removal" name="only_one_round_stat_removal" checked>
+                        </div>
+                        
+                        <div class="config-item checkbox-item col-6">
+                            <label for="only_one_round_lin_removal">Only One Round of Linearity Removal
+                                <span class="custom-tooltip">?<span class="custom-tooltiptext">Limits to one round for linearity rule removal</span></span>
+                            </label>
+                            <input type="checkbox" id="only_one_round_lin_removal" name="only_one_round_lin_removal" checked>
+                        </div>
+                    </div>
+                </fieldset>
+            </form>
+        </div>
+    </div>
+
+    <div class="collapsible primary-color" onclick="toggleRightPane()">Toggle Configuration</div>
+
+    <footer class="footer mt-5 py-3 text-white text-center">
+        <div class="container">
+            <span><a href="https://martin-dallinger.me">Martin Dallinger</a><span class="separator">|</span><a href="https://github.com/S0urC10ud/xai-fuzzy-regrules">View the GitHub Project here</a></span>
+        </div>
+    </footer>
+
     <script src="./dist/bundle.js"></script>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        function toggleRightPane() {
+            var rightPane = document.querySelector('.right-pane');
+            var toggleButton = document.querySelector('.collapsible');
+            
+            if (rightPane.style.display === 'none' || rightPane.style.display === '') {
+                rightPane.style.display = 'block';
+            } else {
+                rightPane.style.display = 'none';
+            }
+
+            // Add click animation class
+            toggleButton.classList.add('click-animation');
+            
+            // Remove the class after the animation ends
+            setTimeout(function() {
+                toggleButton.classList.remove('click-animation');
+            }, 300); // Duration of the animation
+        }
+
+        function handleResize() {
+            var rightPane = document.querySelector('.right-pane');
+            if (window.innerWidth > 768) {
+                rightPane.style.display = 'block';
+            } else {
+                rightPane.style.display = 'none';
+            }
+        }
+
+        window.addEventListener('resize', handleResize);
+
+        // Initial check on page load
+        window.addEventListener('load', handleResize);
+
+        const mainContainer = document.getElementById('mainContainer');
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            const removeLowVarianceCheckbox = document.getElementById('remove_low_variance');
+            const varianceThresholdField = document.getElementById('variance_threshold');
+
+            if (removeLowVarianceCheckbox && varianceThresholdField) {
+                const toggleVarianceThreshold = () => {
+                    varianceThresholdField.disabled = !removeLowVarianceCheckbox.checked;
+                };
+
+                removeLowVarianceCheckbox.addEventListener('change', toggleVarianceThreshold);
+                toggleVarianceThreshold();
+            }
+
+            const rulePriorityEnabledCheckbox = document.getElementById('rule_priority_enabled');
+            const minPriorityField = document.getElementById('min_priority');
+
+            if (rulePriorityEnabledCheckbox && minPriorityField) {
+                const toggleRulePriority = () => {
+                    minPriorityField.disabled = !rulePriorityEnabledCheckbox.checked;
+                };
+
+                rulePriorityEnabledCheckbox.addEventListener('change', toggleRulePriority);
+                toggleRulePriority();
+            }
+        });
+    // Step 2: Handle dynamic display of inputs based on method
+    document.addEventListener('DOMContentLoaded', function() {
+        const container = document.getElementById('outlier-filters-container');
+        const addButton = document.getElementById('add-outlier-filter');
+
+        addButton.addEventListener('click', () => {
+            const fieldset = document.createElement('fieldset');
+            fieldset.className = 'nested-fieldset';
+            fieldset.innerHTML = `
+                <legend>New Column</legend>
+                <div class="config-row">
+                    <div class="config-item">
+                        <label>Column Name
+                            <span class="custom-tooltip">?<span class="custom-tooltiptext">Name of the column for outlier filtering</span></span>
+                        </label>
+                        <input type="text" class="column-name" name="outlier_new_column" placeholder="Enter column name">
+                    </div>
+                    <div class="config-item">
+                        <label>Method
+                            <span class="custom-tooltip">?<span class="custom-tooltiptext">Outlier detection method</span></span>
+                        </label>
+                        <select class="outlier-method" name="outlier_method">
+                            <option value="VariableBounds">Variable Bounds</option>
+                            <option value="IQR">IQR</option>
+                        </select>
+                    </div>
+                    
+                    <div class="config-item method-inputs">
+                        <label>Min</label>
+                        <input type="number" name="outlier_min" value="0">
+                    </div>
+                    
+                    <div class="config-item method-inputs">
+                        <label>Max</label>
+                        <input type="number" name="outlier_max" value="100">
+                    </div>
+                    
+                    <div class="config-item method-inputs" style="display:none;">
+                        <label>IQR Multiplier</label>
+                        <input type="number" step="0.1" name="outlier_iqr_multiplier" value="1.5">
+                    </div>
+                </div>
+                <button type="button" class="delete-filter btn btn-danger btn-sm">🗑️</button>
+            `;
+            container.appendChild(fieldset);
+        });
+
+        // Step 3: Delegate event for method change and delete
+        container.addEventListener('change', function(e) {
+            if(e.target.classList.contains('outlier-method')) {
+                const method = e.target.value;
+                const inputs = e.target.closest('.config-row').querySelectorAll('.method-inputs');
+                inputs.forEach(input => {
+                    if(method === 'VariableBounds') {
+                        if(input.querySelector('label').textContent.includes('Min') || input.querySelector('label').textContent.includes('Max')) {
+                            input.style.display = 'block';
+                        } else {
+                            input.style.display = 'none';
+                        }
+                    } else if(method === 'IQR') {
+                        if(input.querySelector('label').textContent.includes('IQR Multiplier')) {
+                            input.style.display = 'block';
+                        } else {
+                            input.style.display = 'none';
+                        }
+                    }
+                });
+            }
+        });
+
+        // Step 4: Handle delete filter
+        container.addEventListener('click', function(e) {
+            if(e.target.classList.contains('delete-filter')) {
+                e.target.closest('fieldset').remove();
+            }
+        });
+    });
+</script>
 </body>
 </html>

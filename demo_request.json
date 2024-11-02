@@ -49,5 +49,5 @@
         "num_antecedents_weight": 1,
         "whitelist_boolean_weight": 1000
     },
-    "include_intercept": true,
+    "include_intercept": true
 }
