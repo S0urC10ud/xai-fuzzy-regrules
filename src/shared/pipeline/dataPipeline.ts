@@ -1,4 +1,4 @@
-import { Record, Metadata } from '../types';
+import { Record, Metadata } from '../types/index';
 import { parseCSV } from '../dataProcessing/csvParser';
 import { removeOutliers } from '../dataProcessing/outlierRemoval';
 import { filterLowVarianceColumns } from '../dataProcessing/varianceFilter';

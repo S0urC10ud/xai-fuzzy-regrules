@@ -288,8 +288,9 @@
             align-items: center;
             justify-content: center;
             transition: 1s;
-            padding: 0.3rem;
+            padding: 1rem;
             text-align: center;
+            box-shadow: 0 0 4px 1px #ffcc00 inset;
         }
 
         .option-to-choose:hover {
@@ -407,6 +408,25 @@
             overflow: auto;
         }
 
+        .pulsing-button {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 4px 1px #ffcc00;
+                opacity: 1;
+            }
+            50% {
+                box-shadow: 0 0 0px 0px #ffcc00;
+                opacity: 0.8;
+            }
+            100% {
+                box-shadow: 0 0 4px 1px #ffcc00;
+                opacity: 1;
+            }
+        }
+
     </style>
     <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.css">
 </head>
@@ -414,40 +434,29 @@
     <header>
         <img src="assets/icon.png" alt="Icon" style="height: 32px; width: 32px;">
         <span class="header-title">Fuzzy Rule-Regression XAI</span>
-        <button class="btn btn-primar y add-filter" style="margin-top: 0; position:absolute; top: 1rem; right: 1rem;">Run ⚙️</button>
-        <button class="btn btn-primar y add-filter" style="margin-top: 0; position:absolute; top: 1rem; right: 7rem;">Upload 🔗</button>
-
+        <button id="runButton" class="btn btn-primary add-filter" style="margin-top: 0; position:absolute; top: 1rem; right: 1rem;">Run ⚙️</button>
+        <button id="uploadButton1" class="btn btn-primary add-filter" style="margin-top: 0; position:absolute; top: 1rem; right: 7rem;">Upload File 🔗</button>
+        
+        <!-- Hidden File Inputs -->
+        <input type="file" id="fileInput1" accept=".csv,.xlsx" style="display: none;">
     </header>
     <div class="centercontainer" id="mainContainer">
         <div class="left-pane">
             <div id="choice-container">
                 <div class="option-to-choose">
                     <span>🚀</span>
-                    <p>Try out a demo dataset!</p>
+                    <p>Try out a demo dataset with its default config</p>
                 </div>
-                <div class="option-to-choose">
+                <div id="uploadButton2" class="option-to-choose">
                     <span>🔗</span>
-                    <p>Upload your own dataset!</p>
+                    <p>Upload your own dataset, configure and run</p>
                 </div>
             </div>
             <div id="main-content-container">
                 <div id="tableContainer">
                 <h3 class="primary-color">Rules</h3>
                 <table id="rulesTable" class="display table table-striped" style="width:100%;">
-                    <thead>
-                        <tr>
-                            <th>Title</th>
-                            <th>Coefficient</th>
-                            <th>Priority</th>
-                            <th>Support</th>
-                            <th>Leverage</th>
-                            <th>Secondary Rules</th>
-                            <th>Is Whitelist</th>
-                            <th>P-Value</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                    </tbody>
+                    <!-- Table headers will be generated dynamically -->
                 </table>
                 </div>
                     <div class="sub-zone" style="grid-column-start: 1; grid-column-end: 2; overflow: auto;">
@@ -488,8 +497,8 @@
                 <!-- Target Variable and Number of Antecedents -->
                 <div class="row">                    
                     <div class="config-item col-6">
-                        <label for="num_vars">Number of Antecedents
-                            <span class="custom-tooltip">?<span class="custom-tooltiptext">Number of antecedents to combine</span></span>
+                        <label for="num_vars">Max number of Antecedents
+                            <span class="custom-tooltip">?<span class="custom-tooltiptext">Upper bound of number of antecedents to combine</span></span>
                         </label>
                         <input type="number" id="num_vars" name="num_vars" value="2">
                     </div>
@@ -728,7 +737,7 @@
 
     <footer class="footer mt-5 py-3 text-white text-center">
         <div class="container">
-            <span><a href="https://martin-dallinger.me">Martin Dallinger</a><span class="separator">|</span><a href="https://github.com/S0urC10ud/xai-fuzzy-regrules">View the GitHub Project here</a></span>
+            <span><a href="https://martin-dallinger.me">Created by Martin Dallinger</a><span class="separator">|</span><a href="https://github.com/S0urC10ud/xai-fuzzy-regrules">View the GitHub Project here</a></span>
         </div>
     </footer>
     <div class="modal fade" id="downloadModal" tabindex="-1" role="dialog" aria-labelledby="downloadModalLabel" aria-hidden="true">
@@ -895,7 +904,7 @@
     document.querySelectorAll('.option-to-choose').forEach(option => {
     option.addEventListener('click', async function() {
         const optionText = this.querySelector('p').innerText;
-        if (optionText === 'Try out a demo dataset!') {
+        if (optionText === 'Try out a demo dataset with its default config') {
             try {
                 $('#downloadModal').modal('show');
                 } catch (error) {
@@ -977,10 +986,15 @@
                 throw new Error('Failed to fetch biased salaries data');
             }
             const rulesData = await rulesResponse.json();
-            $('#rulesTable').DataTable({
-            data: rulesData.sorted_rules,
-            response: true,
-            columns: [
+
+            // Determine if "Secondary Rules" column should be displayed
+            const hasSecondaryRules = rulesData.sorted_rules.some(rule => rule.secondaryRules && rule.secondaryRules.length > 0);
+                
+            // Determine if "P-Value" column should be displayed
+            const hasPValue = rulesData.sorted_rules.some(rule => !isNaN(rule.pValue) && rule.pValue !== null);
+
+            // Define columns based on data
+            const columns = [
                 { 
                     data: 'title',
                     width: '25rem'
@@ -1008,69 +1022,140 @@
                     render: function(data) {
                         return parseFloat(data).toFixed(6);
                     }
-                },
-                { 
+                }
+            ];
+
+            if (hasSecondaryRules) {
+                columns.push({ 
                     data: 'secondaryRules',
                     render: function(data) {
                         return data.join(', ');
                     }
-                },
-                { 
-                    data: 'isWhitelist',
-                    render: function(data) {
-                        return data;
-                    }
-                },
-                { 
+                });
+            }
+
+            if (hasPValue) {
+                columns.push({ 
                     data: 'pValue',
                     render: function(data) {
-                        return parseFloat(data).toFixed(6);
+                        return isNaN(data) ? 'N/A' : parseFloat(data).toFixed(6);
                     }
-                },
-                
-            ],
-            order: [[1, 'desc']], // Sort by coefficient descending
-            responsive: true,
-            searching: true,
-            paging: true,
-            ordering: true,
-            pageLength: 10
-            
-        });
-        const mean_absolute_error = rulesData.mean_absolute_error;
-        const root_mean_squared_error = rulesData.root_mean_squared_error;
-        const r_squared = rulesData.r_squared;
-        const mean_absolute_percentage_error = rulesData.mean_absolute_percentage_error;
+                });
+            }
 
-        const qualityMetrics = [
-            { name: 'Mean Absolute Error', value: mean_absolute_error.toFixed(4) },
-            { name: 'Root Mean Squared Error', value: root_mean_squared_error.toFixed(4) },
-            { name: 'R²', value: r_squared.toFixed(4) },
-            { name: 'Mean Absolute Percentage Error', value: mean_absolute_percentage_error.toFixed(4) }
-        ];
+            let thead = '<thead><tr>';
+            const columnMap = {
+                "title": "Rule",
+                "coefficient": "Coefficient",
+                "priority": "Priority",
+                "support": "Support",
+                "leverage": "Leverage",
+                "secondaryRules": "Secondary Rules",
+                "pValue": "P-Value"
+            };
+            columns.forEach(function(column) {
+                thead += '<th>' + columnMap[column.data] + '</th>';
+            });
+            thead += '</tr></thead>';
 
-        let qualityHtml = '<table>';
-        qualityHtml += '<tr><th>Metric</th><th>Value</th></tr>';
-        qualityMetrics.forEach(metric => {
-            qualityHtml += `<tr><td>${metric.name}</td><td>${metric.value}</td></tr>`;
-        });
-        qualityHtml += '</table>';
-        document.getElementById('qualityOfFit').innerHTML = qualityHtml;
+            // Set the table header
+            $('#rulesTable').html(thead);
 
-        // Populate Warnings
-        const warnings = rulesData.warnings; // Adjust based on JSON structure
-        let warningsHtml = '<ul>';
-        warnings.forEach(warning => {
-            if(Array.isArray(warning) && warning.length === 0)
-                return;
-            warningsHtml += `<li>${warning}</li>`;
-        });
-        warningsHtml += '</ul>';
-        document.getElementById('warnings').innerHTML = warningsHtml;
+            $('#rulesTable').DataTable({
+                data: rulesData.sorted_rules,
+                columns: columns,
+                order: [[1, 'desc']], // Sort by coefficient descending
+                responsive: true,
+                searching: true,
+                paging: true,
+                ordering: true,
+                pageLength: 10
+            });
+
+            const mean_absolute_error = rulesData.mean_absolute_error;
+            const root_mean_squared_error = rulesData.root_mean_squared_error;
+            const r_squared = rulesData.r_squared;
+            const mean_absolute_percentage_error = rulesData.mean_absolute_percentage_error;
+
+            const qualityMetrics = [
+                { name: 'Mean Absolute Error', value: mean_absolute_error.toFixed(4) },
+                { name: 'Root Mean Squared Error', value: root_mean_squared_error.toFixed(4) },
+                { name: 'R²', value: r_squared.toFixed(4) },
+                { name: 'Mean Absolute Percentage Error', value: mean_absolute_percentage_error.toFixed(4) }
+            ];
+
+            let qualityHtml = '<table>';
+            qualityHtml += '<tr><th>Metric</th><th>Value</th></tr>';
+            qualityMetrics.forEach(metric => {
+                qualityHtml += `<tr><td>${metric.name}</td><td>${metric.value}</td></tr>`;
+            });
+            qualityHtml += '</table>';
+            document.getElementById('qualityOfFit').innerHTML = qualityHtml;
+
+            // Populate Warnings
+            const warnings = rulesData.warnings; // Adjust based on JSON structure
+            let warningsHtml = '<ul>';
+            warnings.forEach(warning => {
+                if(Array.isArray(warning) && warning.length === 0)
+                    return;
+                warningsHtml += `<li>${warning}</li>`;
+            });
+            warningsHtml += '</ul>';
+            document.getElementById('warnings').innerHTML = warningsHtml;
         } catch (error) {
             console.error('Error loading demo configuration:', error);
         }
     });
+        // Global variables to store uploaded file contents
+        window.uploadedFile1 = "";
+        window.uploadedFile2 = "";
+
+        // Reference to buttons and file inputs
+        const uploadButton1 = document.getElementById('uploadButton1');
+        const uploadButton2 = document.getElementById('uploadButton2');
+        const fileInput1 = document.getElementById('fileInput1');
+        const fileInput2 = document.getElementById('fileInput2');
+        const runButton = document.getElementById('runButton');
+
+        // Handle Upload Button 1 Click
+        uploadButton1.addEventListener('click', () => {
+            fileInput1.click();
+        });
+
+        // Handle Upload Button 2 Click
+        uploadButton2.addEventListener('click', () => {
+            fileInput1.click();
+        });
+
+        // Function to read file and store content
+        function handleFileUpload(fileInput, fileNumber) {
+            const file = fileInput.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    if(fileNumber === 1){
+                        window.uploadedFile = e.target.result;
+                    } else {
+                        window.uploadedFile = e.target.result;
+                    }
+                };
+                reader.readAsText(file);
+                
+                // Success message elements
+                document.getElementById('uploadButton1').textContent = "Uploaded File✔️";
+                document.getElementById('uploadButton1').style.backgroundColor = "#ffcc00";
+                document.getElementById('uploadButton1').style.color = "black";
+
+                document.getElementById('uploadButton2').childNodes[1].textContent = "✔️";
+                document.getElementById('uploadButton2').childNodes[3].textContent = "Successfully read the file! Now configure and run!";
+                document.getElementById('uploadButton2').childNodes[3].style.color = "black";
+                document.getElementById('uploadButton2').style.backgroundColor = "#ffcc00";
+
+                runButton.classList.add('pulsing-button');
+            }
+        }
+        fileInput1.addEventListener('change', () => handleFileUpload(fileInput1, 1));
+    </script>
 </script>
 <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.js"></script>
 </body>

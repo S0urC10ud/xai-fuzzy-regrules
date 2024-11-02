@@ -1,4 +1,4 @@
-import { Rule, Metadata, Record } from '../types';
+import { Rule, Metadata, Record } from '../types/index';
 import { generateAllPossibleRules } from '../rules/ruleGenerator';
 import { applyWhitelistBlacklist } from '../rules/ruleManager';
 import { computeMembershipDegrees } from '../utils/fuzzy';

@@ -1,4 +1,4 @@
-import { EvaluationMetrics } from '../types';
+import { EvaluationMetrics } from '../types/index';
 import { computeMetrics } from '../evaluation/metrics';
 
 export function executeEvaluationPipeline(

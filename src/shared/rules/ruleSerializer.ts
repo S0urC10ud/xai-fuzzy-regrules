@@ -1,4 +1,4 @@
-import { Rule } from '../types';
+import { Rule } from '../types/index';
 
 export function serializeRule(rule: Rule, targetVar: string): string {
     const antecedentStr = rule.antecedents

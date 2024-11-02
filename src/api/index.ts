@@ -1,6 +1,6 @@
 import express, { Request, Response } from 'express';
 import multer from 'multer';
-import { main } from '../shared';
+import { main } from '../shared/index';
 
 // Extend the Request type to include the file property from multer
 interface CustomRequest extends Request {

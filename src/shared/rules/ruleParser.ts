@@ -1,4 +1,4 @@
-import { Rule, FuzzySet } from '../types';
+import { Rule, FuzzySet } from '../types/index';
 
 export function parseRuleString(
     ruleStr: string,

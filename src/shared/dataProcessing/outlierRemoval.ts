@@ -1,4 +1,4 @@
-import { Record, Metadata } from '../types';
+import { Record, Metadata } from '../types/index';
 
 function quantile(arr: number[], q: number): number {
     const sorted = arr.slice().sort((a, b) => a - b);

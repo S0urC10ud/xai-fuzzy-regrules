@@ -31,12 +31,13 @@ First, clone the repo and get the necessary dependencies:
 git clone https://github.com/S0urC10ud/xai-fuzzy-regrules
 cd xai-fuzzy-regrules
 npm i
-npm run build
+npm run build:(web or node)
 ```
 
 ### Running as API Server
 Start the server:
 ```
+npm run build:node
 npm start
 ```
 
@@ -75,13 +76,10 @@ The UI currently WIP.
 
 To run the frontend first bundle it:
 ```
-npm run webpack
+npm run build:web
 ```
 
-And then serve it with the same webserver:
-```
-npm start
-```
+And then serve it with the web-server of your choice (e.g. `http-server`) in the root-directory of this project.
 
 # API Documentation
 
@@ -157,7 +155,7 @@ Example request metadata:
 }
 ```
 
-Example response/result for the boston housing dataset:
+Example response/result for the Boston housing dataset:
 
 ```json
 {
@@ -322,7 +320,7 @@ Example response/result for the boston housing dataset:
 }
 ```
 
-# Licencse
+# License
 This project is licensed under the GNU GPL v3.
 
 # Contact

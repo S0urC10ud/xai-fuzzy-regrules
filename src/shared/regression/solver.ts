@@ -1,5 +1,5 @@
 import { Matrix, solve } from 'ml-matrix';
-import { Metadata, Rule } from '../types';
+import { Metadata, Rule } from '../types/index';
 import { serializeRule } from '../rules/ruleSerializer';
 import { logWarning } from '../utils/logger';
 

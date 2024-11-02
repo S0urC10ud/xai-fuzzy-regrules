@@ -1,4 +1,4 @@
-import { Record, Metadata } from '../types';
+import { Record, Metadata } from '../types/index';
 import { encodeCategoricalVariables } from '../featureEngineering/encodeCategorical';
 import { fuzzifyNumericalData } from '../featureEngineering/fuzzifyData';
 

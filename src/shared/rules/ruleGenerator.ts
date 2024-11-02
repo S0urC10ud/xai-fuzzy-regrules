@@ -1,4 +1,4 @@
-import { Rule, Metadata, FuzzySet } from '../types';
+import { Rule, Metadata, FuzzySet } from '../types/index';
 import { getCombinations, cartesianProduct } from '../utils/combinations';
 
 export function generateAllPossibleRules(

@@ -1,4 +1,4 @@
-import { Record } from '../types';
+import { Record } from '../types/index';
 
 export function encodeCategoricalVariables(
     records: Record[],

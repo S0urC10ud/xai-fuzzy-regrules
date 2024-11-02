@@ -1,4 +1,4 @@
-import { Rule, Metadata } from '../types';
+import { Rule, Metadata } from '../types/index';
 import { performRegression } from '../regression/regressor';
 import { removeDuplicateRows, removeDuplicateColumns } from '../featureEngineering/duplicateRemoval';
 

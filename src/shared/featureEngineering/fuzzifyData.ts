@@ -1,6 +1,5 @@
-import { Record, Metadata } from '../types';
+import { Record, Metadata } from '../types/index';
 import { computeMembershipDegrees } from '../utils/fuzzy';
-import { generateFuzzificationChart } from '../utils/vis_fuzzification';
 
 export function fuzzifyNumericalData(
     records: Record[],
@@ -10,12 +9,19 @@ export function fuzzifyNumericalData(
     variableBounds: { [key: string]: { min: number; max: number } },
     warnings: any[]
 ): void {
+    let generateFuzzificationChart: Function | null = null;
+    const isBackend = typeof process !== 'undefined' && process.env.IS_BACKEND === 'true';
+    if (isBackend) {
+        // Only require this module if in a backend environment
+        generateFuzzificationChart = require('../utils/vis_fuzzification').generateFuzzificationChart;
+    }
+
     numericalKeys.forEach(key => {
         const values: number[] = records.map(record => parseFloat(record[key] as string));
         const { min, max } = variableBounds[key];
 
         if (key !== targetVar) {
-            if(metadata.generate_fuzzification_chart)
+            if(metadata.generate_fuzzification_chart && generateFuzzificationChart)
                 generateFuzzificationChart(values, min, max, key, metadata["numerical_fuzzification"]);
 
             records.forEach(record => {

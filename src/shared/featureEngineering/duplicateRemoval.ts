@@ -1,4 +1,4 @@
-import { Rule } from '../types';
+import { Rule } from '../types/index';
 import { hashRow, hashColumn } from '../utils/hashUtils';
 import { logWarning } from '../utils/logger';
 

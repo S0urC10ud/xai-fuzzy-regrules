@@ -1,4 +1,4 @@
-import { FuzzySet, Metadata, Rule } from '../types';
+import { FuzzySet, Metadata, Rule } from '../types/index';
 import { parseRuleString } from './ruleParser';
 import { serializeRule } from './ruleSerializer';
 import { logWarning } from '../utils/logger';

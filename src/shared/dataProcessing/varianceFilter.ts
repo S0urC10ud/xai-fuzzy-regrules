@@ -1,5 +1,5 @@
 import * as math from 'mathjs';
-import { Record, Metadata } from '../types';
+import { Record, Metadata } from '../types/index';
 import { logWarning } from '../utils/logger';
 
 export function filterLowVarianceColumns(

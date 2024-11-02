@@ -1,4 +1,4 @@
-import { Metadata, Record } from '../types';
+import { Metadata, Record } from '../types/index';
 import { computeMembershipDegrees } from '../utils/fuzzy';
 
 export function prepareDefuzzification(

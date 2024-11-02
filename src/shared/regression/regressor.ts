@@ -1,5 +1,5 @@
 import { Matrix, inverse } from 'ml-matrix';
-import { Metadata, Rule } from '../types';
+import { Metadata, Rule } from '../types/index';
 import { logWarning } from '../utils/logger';
 import tCDF from '@stdlib/stats-base-dists-t-cdf';
 

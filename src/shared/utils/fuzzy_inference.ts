@@ -1,4 +1,4 @@
-import { Record, Rule } from '../types';
+import { Record, Rule } from '../types/index';
 
 export function performInference(records: Record[], allRules: Rule[], ruleOutputFuzzySetDegreesMap: { [ruleIndex: number]: number[]; }, outputUniverse: number[], X: number[][]) {
     records.forEach(record => {
