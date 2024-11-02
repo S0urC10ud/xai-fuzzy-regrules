@@ -346,7 +346,69 @@
         .click-animation {
             animation: clickEffect 0.3s ease;
         }
+
+        .modal-header, .modal-body, .modal-footer {
+            background-color: #222222 !important;
+        }
+
+        /* Enhance stripe colors for dark theme */
+        .table-striped tbody tr:nth-of-type(odd) {
+            background-color: #2e2e2e;
+        }
+
+        .table-striped tbody tr:nth-of-type(even) {
+            background-color: #1e1e1e;
+        }
+
+        /* Ensure text is white for readability */
+        .table-striped tbody tr td {
+            color: #ffffff;
+        }
+        .table-striped thead th {
+            background-color: #333;
+            color: #ffffff;
+        }
+        .dataTables_filter input {
+            color: white;
+        }
+        .sub-zone {
+            margin-top: 20px;
+        }
+        .sub-zone h3 {
+            color: #ffcc00;
+            padding: 10px;
+        }
+        #qualityOfFit table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        #qualityOfFit th, #qualityOfFit td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ccc;
+        }
+        #qualityOfFit th {
+            background-color: #333;
+            color: #ffffff;
+        }
+
+        #main-content-container {
+            display: none;
+            width: 100%;
+            height: 100%;
+            grid-template-columns: 35% 65%;
+            grid-template-rows: 75% 25%;
+        }
+        #tableContainer {
+            grid-row-start: 1;
+            grid-row-end: 2;
+            grid-column-start: 1;
+            grid-column-end: 3;
+            overflow: auto;
+        }
+
     </style>
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.css">
 </head>
 <body>
     <header>
@@ -358,7 +420,6 @@
     </header>
     <div class="centercontainer" id="mainContainer">
         <div class="left-pane">
-            <h2 class="primary-color">Rules</h2>
             <div id="choice-container">
                 <div class="option-to-choose">
                     <span>🚀</span>
@@ -368,6 +429,40 @@
                     <span>🔗</span>
                     <p>Upload your own dataset!</p>
                 </div>
+            </div>
+            <div id="main-content-container">
+                <div id="tableContainer">
+                <h3 class="primary-color">Rules</h3>
+                <table id="rulesTable" class="display table table-striped" style="width:100%;">
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th>Coefficient</th>
+                            <th>Priority</th>
+                            <th>Support</th>
+                            <th>Leverage</th>
+                            <th>Secondary Rules</th>
+                            <th>Is Whitelist</th>
+                            <th>P-Value</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
+                </div>
+                    <div class="sub-zone" style="grid-column-start: 1; grid-column-end: 2; overflow: auto;">
+                        <h3>Quality of Fit</h3>
+                        <div id="qualityOfFit">
+                            <!-- Quality metrics will be displayed here -->
+                        </div>
+                    </div>
+                
+                    <div class="sub-zone" style="grid-column-start: 2; grid-column-end: 3; overflow: auto;">
+                        <h3>Warnings</h3>
+                        <div id="warnings">
+                            <!-- Warnings will be displayed here -->
+                        </div>
+                    </div>
             </div>
         </div>
         <div class="right-pane">
@@ -621,7 +716,7 @@
                             <label for="only_one_round_lin_removal">Only One Round of Linearity Removal
                                 <span class="custom-tooltip">?<span class="custom-tooltiptext">Limits to one round for linearity rule removal</span></span>
                             </label>
-                            <input type="checkbox" id="only_one_round_lin_removal" name="only_one_round_lin_removal" checked>
+                            <input type="checkbox" id="only_one_round_lin_removal" name="only_one_round_lin_removal" checked="checked">
                         </div>
                     </div>
                 </fieldset>
@@ -636,7 +731,25 @@
             <span><a href="https://martin-dallinger.me">Martin Dallinger</a><span class="separator">|</span><a href="https://github.com/S0urC10ud/xai-fuzzy-regrules">View the GitHub Project here</a></span>
         </div>
     </footer>
-
+    <div class="modal fade" id="downloadModal" tabindex="-1" role="dialog" aria-labelledby="downloadModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="downloadModalLabel">Download Dataset</h5>
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+            <div class="modal-body">
+              Do you want to download the demo dataset?
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+              <button type="button" id="downloadButton" class="btn btn-primary">Download</button>
+            </div>
+          </div>
+        </div>
+    </div>
     <script src="./dist/bundle.js"></script>
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
@@ -779,6 +892,186 @@
             }
         });
     });
+    document.querySelectorAll('.option-to-choose').forEach(option => {
+    option.addEventListener('click', async function() {
+        const optionText = this.querySelector('p').innerText;
+        if (optionText === 'Try out a demo dataset!') {
+            try {
+                $('#downloadModal').modal('show');
+                } catch (error) {
+                    console.error('Error fetching JSON:', error);
+                }
+            }
+        });
+    });
+
+    document.getElementById('downloadButton').addEventListener('click', function() {
+        const link = document.createElement('a');
+        link.href = 'assets/biased_salaries.csv';
+        link.download = 'biased_salaries.csv';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Hide modal after download
+        $('#downloadModal').modal('hide');
+    });
+    $('#downloadModal').on('hidden.bs.modal', async function () {
+        try {
+            const response = await fetch('assets/demo_configuration.json');
+            if (!response.ok) {
+                throw new Error('Failed to fetch demo configuration');
+            }
+            const config = await response.json();
+            
+            // Map JSON fields to form inputs
+            document.getElementById('split_char').value = config.split_char ?? ';';
+            document.getElementById('target_var').value = config.target_var ?? 'MEDV';
+            document.getElementById('num_vars').value = config.num_vars ?? 2;
+            document.getElementById('include_intercept').checked = config.include_intercept ?? false;
+            document.getElementById('numerical_fuzzification').value = config.numerical_fuzzification.length ?? 5;
+            document.getElementById('numerical_defuzzification').value = config.numerical_defuzzification.length ?? 5;
+            document.getElementById('whitelist').value = config.whitelist.join('\n') ?? '';
+            document.getElementById('blacklist').value = config.blacklist.join('\n') ?? '';
+            
+            // Rule Filters
+            document.getElementById('l1_row_threshold').value = config.rule_filters.l1_row_threshold ?? 0.1;
+            document.getElementById('l1_column_threshold').value = config.rule_filters.l1_column_threshold ?? 0.1;
+            document.getElementById('dependency_threshold').value = config.rule_filters.dependency_threshold ?? 0.02;
+            document.getElementById('significance_level').value = config.rule_filters.significance_level ?? 0.05;
+            document.getElementById('remove_insignificant_rules').checked = config.rule_filters.remove_insignificant_rules ?? false;
+            document.getElementById('only_whitelist').checked = config.rule_filters.only_whitelist ?? false;
+            
+            // Rule Priority Filtering
+            document.getElementById('rule_priority_enabled').checked = config.rule_filters.rule_priority_filtering.enabled ?? false;
+            document.getElementById('min_priority').value = config.rule_filters.rule_priority_filtering.min_priority ?? 10;
+            
+            // Rule Priority Weights
+            document.getElementById('support_weight').value = config.rule_priority_weights.support_weight ?? 1;
+            document.getElementById('leverage_weight').value = config.rule_priority_weights.leverage_weight ?? 10;
+            document.getElementById('num_antecedents_weight').value = config.rule_priority_weights.num_antecedents_weight ?? 1;
+            document.getElementById('whitelist_boolean_weight').value = config.rule_priority_weights.whitelist_boolean_weight ?? 1000;
+            
+            // Lasso Configuration
+            document.getElementById('lasso_regularization').value = config.lasso.regularization ?? 0.00001;
+            document.getElementById('max_lasso_iterations').value = config.lasso.max_lasso_iterations ?? 10000;
+            document.getElementById('lasso_convergence_tolerance').value = config.lasso.lasso_convergence_tolerance ?? 0.0001;
+            
+            // Variance Threshold
+            document.getElementById('remove_low_variance').checked = config.remove_low_variance ?? false;
+            document.getElementById('variance_threshold').value = config.variance_threshold ?? 0.00001;
+            
+            // Advanced Settings
+            document.getElementById('only_one_round_stat_removal').checked = config.rule_filters.only_one_round_of_statistical_removal ?? true;
+            document.getElementById('only_one_round_lin_removal').checked = config.rule_filters.only_one_round_of_linearity_removal ?? true;
+            
+            console.log('Configuration pane updated with demo configuration.');
+
+            // Hide choice-container and show rules table
+            document.getElementById('choice-container').style.display = 'none';
+            document.getElementById('main-content-container').style.display = 'grid';
+
+            // Fetch and display rules
+            const rulesResponse = await fetch('assets/biased_salaries.json');
+            if (!rulesResponse.ok) {
+                throw new Error('Failed to fetch biased salaries data');
+            }
+            const rulesData = await rulesResponse.json();
+            $('#rulesTable').DataTable({
+            data: rulesData.sorted_rules,
+            response: true,
+            columns: [
+                { 
+                    data: 'title',
+                    width: '25rem'
+                },
+                { 
+                    data: 'coefficient',
+                    render: function(data) {
+                        return parseFloat(data).toFixed(6);
+                    }
+                },
+                { 
+                    data: 'priority',
+                    render: function(data) {
+                        return parseFloat(data).toFixed(6);
+                    }
+                },
+                { 
+                    data: 'support',
+                    render: function(data) {
+                        return parseFloat(data).toFixed(6);
+                    }
+                },
+                { 
+                    data: 'leverage',
+                    render: function(data) {
+                        return parseFloat(data).toFixed(6);
+                    }
+                },
+                { 
+                    data: 'secondaryRules',
+                    render: function(data) {
+                        return data.join(', ');
+                    }
+                },
+                { 
+                    data: 'isWhitelist',
+                    render: function(data) {
+                        return data;
+                    }
+                },
+                { 
+                    data: 'pValue',
+                    render: function(data) {
+                        return parseFloat(data).toFixed(6);
+                    }
+                },
+                
+            ],
+            order: [[1, 'desc']], // Sort by coefficient descending
+            responsive: true,
+            searching: true,
+            paging: true,
+            ordering: true,
+            pageLength: 10
+            
+        });
+        const mean_absolute_error = rulesData.mean_absolute_error;
+        const root_mean_squared_error = rulesData.root_mean_squared_error;
+        const r_squared = rulesData.r_squared;
+        const mean_absolute_percentage_error = rulesData.mean_absolute_percentage_error;
+
+        const qualityMetrics = [
+            { name: 'Mean Absolute Error', value: mean_absolute_error.toFixed(4) },
+            { name: 'Root Mean Squared Error', value: root_mean_squared_error.toFixed(4) },
+            { name: 'R²', value: r_squared.toFixed(4) },
+            { name: 'Mean Absolute Percentage Error', value: mean_absolute_percentage_error.toFixed(4) }
+        ];
+
+        let qualityHtml = '<table>';
+        qualityHtml += '<tr><th>Metric</th><th>Value</th></tr>';
+        qualityMetrics.forEach(metric => {
+            qualityHtml += `<tr><td>${metric.name}</td><td>${metric.value}</td></tr>`;
+        });
+        qualityHtml += '</table>';
+        document.getElementById('qualityOfFit').innerHTML = qualityHtml;
+
+        // Populate Warnings
+        const warnings = rulesData.warnings; // Adjust based on JSON structure
+        let warningsHtml = '<ul>';
+        warnings.forEach(warning => {
+            if(Array.isArray(warning) && warning.length === 0)
+                return;
+            warningsHtml += `<li>${warning}</li>`;
+        });
+        warningsHtml += '</ul>';
+        document.getElementById('warnings').innerHTML = warningsHtml;
+        } catch (error) {
+            console.error('Error loading demo configuration:', error);
+        }
+    });
 </script>
+<script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.js"></script>
 </body>
 </html>
