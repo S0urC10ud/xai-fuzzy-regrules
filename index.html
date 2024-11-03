@@ -260,6 +260,27 @@
             border: 1px solid #000000;
         }
 
+        .add-filter:focus  {
+            margin-top: 10px;
+            background: #ffcc00 !important;
+            color: #000000 !important;
+            border: 1px solid #000000;
+        }
+
+        .add-filter:not(:disabled):hover {
+            margin-top: 10px;
+            background: #ffcc00 !important;
+            color: #000000 !important;
+            border: 1px solid #000000;
+        }
+
+        .add-filter:disabled {
+            background: #0a0a0a !important;
+            color: #ffffff !important;
+            border: 1px solid #6c757d !important;
+            cursor: not-allowed;
+        }
+
         .button-container {
             display: flex;
             justify-content: center;
@@ -414,7 +435,7 @@
 
         @keyframes pulse {
             0% {
-                box-shadow: 0 0 4px 1px #ffcc00;
+                box-shadow: 0 0 10px 1px #ffcc00;
                 opacity: 1;
             }
             50% {
@@ -422,11 +443,32 @@
                 opacity: 0.8;
             }
             100% {
-                box-shadow: 0 0 4px 1px #ffcc00;
+                box-shadow: 0 0 10px 1px #ffcc00;
                 opacity: 1;
             }
         }
 
+        select[name="rulesTable_length"] option{
+            background-color: #2a2a2a;
+            color: white;
+        }
+
+        legend {
+            width: auto !important;
+        }
+
+        .rule-title-column {
+            width: 20rem !important;
+        }
+
+        #rulesTable {
+            table-layout: fixed;
+            width: 100%;
+        }
+
+        #rulesTable_wrapper{
+            width: max(60rem,100%);
+        }
     </style>
     <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.css">
 </head>
@@ -434,11 +476,11 @@
     <header>
         <img src="assets/icon.png" alt="Icon" style="height: 32px; width: 32px;">
         <span class="header-title">Fuzzy Rule-Regression XAI</span>
-        <button id="runButton" class="btn btn-primary add-filter" style="margin-top: 0; position:absolute; top: 1rem; right: 1rem;">Run ⚙️</button>
+        <button id="runButton" class="btn btn-primary add-filter" style="margin-top: 0; position:absolute; top: 1rem; right: 1rem;" disabled>Run ⚙️</button>
         <button id="uploadButton1" class="btn btn-primary add-filter" style="margin-top: 0; position:absolute; top: 1rem; right: 7rem;">Upload File 🔗</button>
         
         <!-- Hidden File Inputs -->
-        <input type="file" id="fileInput1" accept=".csv,.xlsx" style="display: none;">
+        <input type="file" id="fileInput1" accept=".csv,.xlsx,.xls" style="display: none;">
     </header>
     <div class="centercontainer" id="mainContainer">
         <div class="left-pane">
@@ -623,7 +665,8 @@
                         </div>
                     </fieldset>
                     <fieldset class="nested-fieldset">
-                        <legend>Rule Priority Weights (Sorting and Filtering)</legend>
+                        <legend>Rule Priority Weights</legend>
+                        Always used for sorting rules regarding linear dependencies. Can be used for filtering.
                         <div class="row">
                             <div class="config-item col-6">
                                 <label for="support_weight">Support Weight
@@ -683,9 +726,9 @@
                 </fieldset>
                 
 
-                <fieldset class="config-fieldset">
+                <div class="config-fieldset">
                     <legend>Outlier Filtering</legend>
-                    <p>This is especially recommended for the Target-Variable</p>
+                    <p>This is especially recommended for the target-variable</p>
                     <div id="outlier-filters-container">
                         <!-- Existing Outlier Filters -->
 
@@ -693,7 +736,7 @@
                     <div class="button-container">
                         <button type="button" id="add-outlier-filter" class="btn btn-primary btn-sm add-filter">Add Filter</button>
                     </div>
-                </fieldset>
+                </div>
 
                 <div class="row">
                     <div class="config-item checkbox-item col-6">
@@ -733,7 +776,7 @@
         </div>
     </div>
 
-    <div class="collapsible primary-color" onclick="toggleRightPane()">Toggle Configuration</div>
+    <button class="collapsible primary-color add-filter" onclick="toggleRightPane()">Toggle Configuration</button>
 
     <footer class="footer mt-5 py-3 text-white text-center">
         <div class="container">
@@ -753,17 +796,196 @@
               Do you want to download the demo dataset?
             </div>
             <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+              <button type="button" class="btn btn-secondary" data-dismiss="modal">Proceed without Download</button>
               <button type="button" id="downloadButton" class="btn btn-primary">Download</button>
             </div>
           </div>
         </div>
     </div>
+
+    <div class="modal fade" id="loadingModal" tabindex="-1" role="dialog" aria-labelledby="loadingModalLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content" style="background: transparent; border: none; box-shadow: none;">
+                <div class="modal-body text-center">
+                    <div class="spinner-border text-warning" role="status" style="width: 5rem; height: 5rem;">
+                        <span class="sr-only">Loading...</span>
+                    </div>
+                    <p class="mt-3 text-warning">Processing...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="./dist/bundle.js"></script>
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script>
+        const worker = new Worker('./analysisWorker.js');
+
+        worker.onerror = function(event) {
+            console.error('Error in worker: ', event);
+            window.specialEvent = event;
+        };
+
+        worker.onmessageerror = function(event) {
+            console.error('Error in worker message: ', event);
+            window.specialEvent = event;
+        };
+        
+        worker.onmessage = function(event) {
+            const { success, data, error } = event.data;
+            $('#loadingModal').modal('hide');
+
+            if (success) {
+                visualizeTable(data);
+                console.log('Analysis completed');
+                runButton.classList.remove('pulsing-button');
+                document.getElementById('choice-container').style.display = 'none';
+                document.getElementById('main-content-container').style.display = 'grid';
+                setTimeout(() => {
+                    $('#loadingModal').modal('hide'); //again delayed (might be needed)
+                }, 1000);
+            } else {
+                alert('Error running analysis: ' + error);
+            }
+        };
+
+        function visualizeTable(rulesData){
+            // Determine if "Secondary Rules" column should be displayed
+            const hasSecondaryRules = rulesData.sorted_rules.some(rule => rule.secondaryRules && rule.secondaryRules.length > 0);
+                
+            // Determine if "P-Value" column should be displayed
+            const hasPValue = rulesData.sorted_rules.some(rule => !isNaN(rule.pValue) && rule.pValue !== null);
+
+            // Define columns based on data
+            const columns = [
+                { 
+                    data: 'title',
+                    width: '20rem'
+                },
+                { 
+                    data: 'coefficient',
+                    render: function(data) {
+                        return parseFloat(data).toFixed(6);
+                    }
+                },
+                { 
+                    data: 'priority',
+                    render: function(data) {
+                        return parseFloat(data).toFixed(6);
+                    }
+                },
+                { 
+                    data: 'support',
+                    render: function(data) {
+                        return parseFloat(data).toFixed(6);
+                    }
+                },
+                { 
+                    data: 'leverage',
+                    render: function(data) {
+                        return parseFloat(data).toFixed(6);
+                    }
+                }
+            ];
+
+            if (hasSecondaryRules) {
+                columns.push({ 
+                    data: 'secondaryRules',
+                    render: function(data) {
+                        return data.join(', ');
+                    }
+                });
+            }
+
+            if (hasPValue) {
+                columns.push({ 
+                    data: 'pValue',
+                    render: function(data) {
+                        return isNaN(data) ? 'N/A' : parseFloat(data).toFixed(6);
+                    }
+                });
+            }
+
+            const columnMap = {
+                "title": "Rule",
+                "coefficient": "Coefficient",
+                "priority": "Priority",
+                "support": "Support",
+                "leverage": "Leverage",
+                "secondaryRules": "Secondary Rules",
+                "pValue": "P-Value"
+            };
+
+            let thead = '<thead><tr>';
+            columns.forEach(function(column, index) {
+                if (column.data === 'title') {
+                    thead += '<th style="width:20rem;">' + columnMap[column.data] + '</th>';
+                } else {
+                    thead += '<th>' + columnMap[column.data] + '</th>';
+                }
+            });
+            thead += '</tr></thead>';
+
+            // Set the table header
+            $('#rulesTable').html(thead);
+
+            $('#rulesTable').DataTable().destroy();
+            $('#rulesTable').DataTable({
+                data: rulesData.sorted_rules,
+                columns: columns,
+                order: [[1, 'desc']],
+                responsive: false,
+                autoWidth: false,
+                searching: true,
+                paging: true,
+                ordering: true,
+                pageLength: 10,
+                columnDefs: [
+                    { 
+                        targets: 0,
+                        width: '20rem',
+                        className: 'rule-title-column'
+                    }
+                ]
+            });
+
+            const mean_absolute_error = rulesData.mean_absolute_error;
+            const root_mean_squared_error = rulesData.root_mean_squared_error;
+            const r_squared = rulesData.r_squared;
+            const mean_absolute_percentage_error = rulesData.mean_absolute_percentage_error;
+
+            const qualityMetrics = [
+                { name: 'Mean Absolute Error', value: mean_absolute_error.toFixed(4) },
+                { name: 'Root Mean Squared Error', value: root_mean_squared_error.toFixed(4) },
+                { name: 'R²', value: r_squared.toFixed(4) },
+                { name: 'Mean Absolute Percentage Error', value: mean_absolute_percentage_error.toFixed(4) }
+            ];
+
+            let qualityHtml = '<table>';
+            qualityHtml += '<tr><th>Metric</th><th>Value</th></tr>';
+            qualityMetrics.forEach(metric => {
+                qualityHtml += `<tr><td>${metric.name}</td><td>${metric.value}</td></tr>`;
+            });
+            qualityHtml += '</table>';
+            document.getElementById('qualityOfFit').innerHTML = qualityHtml;
+
+            // Populate Warnings
+            const warnings = rulesData.warnings; // Adjust based on JSON structure
+            let warningsHtml = '<ul>';
+                warnings.forEach(warning => {
+                if (Array.isArray(warning) && warning.length === 0) {
+                    return;
+                }
+                // Serialize warning if it's an object, otherwise convert it to a string
+                const warningText = typeof warning === 'object' ? JSON.stringify(warning) : warning.toString();
+                warningsHtml += `<li>${warningText}</li>`;
+            });
+            warningsHtml += '</ul>';
+            document.getElementById('warnings').innerHTML = warningsHtml;
+        }
+
         function toggleRightPane() {
             var rightPane = document.querySelector('.right-pane');
             var toggleButton = document.querySelector('.collapsible');
@@ -824,7 +1046,7 @@
                 toggleRulePriority();
             }
         });
-    // Step 2: Handle dynamic display of inputs based on method
+
     document.addEventListener('DOMContentLoaded', function() {
         const container = document.getElementById('outlier-filters-container');
         const addButton = document.getElementById('add-outlier-filter');
@@ -869,9 +1091,15 @@
                 <button type="button" class="delete-filter btn btn-danger btn-sm">🗑️</button>
             `;
             container.appendChild(fieldset);
+            // Add event listener to the column-name input
+            const columnNameInput = fieldset.querySelector('.column-name');
+            const legend = fieldset.querySelector('legend');
+            
+            columnNameInput.addEventListener('input', () => {
+                const value = columnNameInput.value.trim();
+                legend.textContent = value ? value : 'New Column';
+            });
         });
-
-        // Step 3: Delegate event for method change and delete
         container.addEventListener('change', function(e) {
             if(e.target.classList.contains('outlier-method')) {
                 const method = e.target.value;
@@ -894,7 +1122,6 @@
             }
         });
 
-        // Step 4: Handle delete filter
         container.addEventListener('click', function(e) {
             if(e.target.classList.contains('delete-filter')) {
                 e.target.closest('fieldset').remove();
@@ -926,7 +1153,6 @@
         $('#downloadModal').modal('hide');
     });
     $('#downloadModal').on('hidden.bs.modal', async function () {
-        try {
             const response = await fetch('assets/demo_configuration.json');
             if (!response.ok) {
                 throw new Error('Failed to fetch demo configuration');
@@ -987,124 +1213,7 @@
             }
             const rulesData = await rulesResponse.json();
 
-            // Determine if "Secondary Rules" column should be displayed
-            const hasSecondaryRules = rulesData.sorted_rules.some(rule => rule.secondaryRules && rule.secondaryRules.length > 0);
-                
-            // Determine if "P-Value" column should be displayed
-            const hasPValue = rulesData.sorted_rules.some(rule => !isNaN(rule.pValue) && rule.pValue !== null);
-
-            // Define columns based on data
-            const columns = [
-                { 
-                    data: 'title',
-                    width: '25rem'
-                },
-                { 
-                    data: 'coefficient',
-                    render: function(data) {
-                        return parseFloat(data).toFixed(6);
-                    }
-                },
-                { 
-                    data: 'priority',
-                    render: function(data) {
-                        return parseFloat(data).toFixed(6);
-                    }
-                },
-                { 
-                    data: 'support',
-                    render: function(data) {
-                        return parseFloat(data).toFixed(6);
-                    }
-                },
-                { 
-                    data: 'leverage',
-                    render: function(data) {
-                        return parseFloat(data).toFixed(6);
-                    }
-                }
-            ];
-
-            if (hasSecondaryRules) {
-                columns.push({ 
-                    data: 'secondaryRules',
-                    render: function(data) {
-                        return data.join(', ');
-                    }
-                });
-            }
-
-            if (hasPValue) {
-                columns.push({ 
-                    data: 'pValue',
-                    render: function(data) {
-                        return isNaN(data) ? 'N/A' : parseFloat(data).toFixed(6);
-                    }
-                });
-            }
-
-            let thead = '<thead><tr>';
-            const columnMap = {
-                "title": "Rule",
-                "coefficient": "Coefficient",
-                "priority": "Priority",
-                "support": "Support",
-                "leverage": "Leverage",
-                "secondaryRules": "Secondary Rules",
-                "pValue": "P-Value"
-            };
-            columns.forEach(function(column) {
-                thead += '<th>' + columnMap[column.data] + '</th>';
-            });
-            thead += '</tr></thead>';
-
-            // Set the table header
-            $('#rulesTable').html(thead);
-
-            $('#rulesTable').DataTable({
-                data: rulesData.sorted_rules,
-                columns: columns,
-                order: [[1, 'desc']], // Sort by coefficient descending
-                responsive: true,
-                searching: true,
-                paging: true,
-                ordering: true,
-                pageLength: 10
-            });
-
-            const mean_absolute_error = rulesData.mean_absolute_error;
-            const root_mean_squared_error = rulesData.root_mean_squared_error;
-            const r_squared = rulesData.r_squared;
-            const mean_absolute_percentage_error = rulesData.mean_absolute_percentage_error;
-
-            const qualityMetrics = [
-                { name: 'Mean Absolute Error', value: mean_absolute_error.toFixed(4) },
-                { name: 'Root Mean Squared Error', value: root_mean_squared_error.toFixed(4) },
-                { name: 'R²', value: r_squared.toFixed(4) },
-                { name: 'Mean Absolute Percentage Error', value: mean_absolute_percentage_error.toFixed(4) }
-            ];
-
-            let qualityHtml = '<table>';
-            qualityHtml += '<tr><th>Metric</th><th>Value</th></tr>';
-            qualityMetrics.forEach(metric => {
-                qualityHtml += `<tr><td>${metric.name}</td><td>${metric.value}</td></tr>`;
-            });
-            qualityHtml += '</table>';
-            document.getElementById('qualityOfFit').innerHTML = qualityHtml;
-
-            // Populate Warnings
-            const warnings = rulesData.warnings; // Adjust based on JSON structure
-            let warningsHtml = '<ul>';
-            warnings.forEach(warning => {
-                if(Array.isArray(warning) && warning.length === 0)
-                    return;
-                warningsHtml += `<li>${warning}</li>`;
-            });
-            warningsHtml += '</ul>';
-            document.getElementById('warnings').innerHTML = warningsHtml;
-        } catch (error) {
-            console.error('Error loading demo configuration:', error);
-        }
+            visualizeTable(rulesData);
     });
         // Global variables to store uploaded file contents
         window.uploadedFile1 = "";
@@ -1141,6 +1250,7 @@
                 };
                 reader.readAsText(file);
                 
+                document.getElementById('runButton').disabled = false;
                 // Success message elements
                 document.getElementById('uploadButton1').textContent = "Uploaded File✔️";
                 document.getElementById('uploadButton1').style.backgroundColor = "#ffcc00";
@@ -1155,6 +1265,125 @@
             }
         }
         fileInput1.addEventListener('change', () => handleFileUpload(fileInput1, 1));
+        
+        function getNumericalFuzzification() {
+            const numSets = parseInt(document.getElementById('numerical_fuzzification').value, 10);
+            switch(numSets) {
+                case 3:
+                    return ["low", "medium", "high"];
+                case 5:
+                    return ["verylow", "low", "medium", "high", "veryhigh"];
+                case 6:
+                    return ["verylow", "low", "mediumlow", "mediumhigh", "high", "veryhigh"];
+                case 7:
+                    return ["verylow", "low", "mediumlow", "medium", "mediumhigh", "high", "veryhigh"];
+                default:
+                    return ["low", "medium", "high"];
+            }
+        }
+
+        function getNumericalDefuzzification() {
+            const numSets = parseInt(document.getElementById('numerical_defuzzification').value, 10);
+            switch(numSets) {
+                case 3:
+                    return ["low", "medium", "high"];
+                case 5:
+                    return ["verylow", "low", "medium", "high", "veryhigh"];
+                case 6:
+                    return ["verylow", "low", "mediumlow", "mediumhigh", "high", "veryhigh"];
+                case 7:
+                    return ["verylow", "low", "mediumlow", "medium", "mediumhigh", "high", "veryhigh"];
+                default:
+                    return ["low", "medium", "high"];
+            }
+        }
+
+        
+        function getOutlierFiltering() {
+            const container = document.getElementById('outlier-filters-container');
+            const filters = {};
+
+            const fieldsets = container.querySelectorAll('fieldset');
+
+            fieldsets.forEach(fieldset => {
+                const columnName = fieldset.querySelector('.column-name').value.trim();
+                const method = fieldset.querySelector('.outlier-method').value;
+                const filter = { method };
+
+                if (method === 'VariableBounds') {
+                    const min = parseFloat(fieldset.querySelector('input[name="outlier_min"]').value);
+                    const max = parseFloat(fieldset.querySelector('input[name="outlier_max"]').value);
+                    filter.min = min;
+                    filter.max = max;
+                } else if (method === 'IQR') {
+                    const multiplier = parseFloat(fieldset.querySelector('input[name="outlier_iqr_multiplier"]').value);
+                    filter.outlier_iqr_multiplier = multiplier;
+                }
+
+                if (columnName) {
+                    filters[columnName] = filter;
+                }
+            });
+
+            return filters;
+        }
+
+        function getWhitelist() {
+            const input = document.getElementById('whitelist').value;
+            return input.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+        }
+
+        function getBlacklist() {
+            const input = document.getElementById('blacklist').value;
+            return input.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+        }
+
+        document.getElementById('runButton')?.addEventListener('click', async () => {
+        const config = {
+            "split_char": document.getElementById('split_char').value,
+            "target_var": document.getElementById('target_var').value,
+            "lasso": {
+                "regularization": parseFloat(document.getElementById('lasso_regularization').value),
+                "max_lasso_iterations": parseInt(document.getElementById('max_lasso_iterations').value, 10),
+                "lasso_convergence_tolerance": parseFloat(document.getElementById('lasso_convergence_tolerance').value),
+            },
+            "rule_filters": {
+                "l1_row_threshold": parseFloat(document.getElementById('l1_row_threshold').value),
+                "l1_column_threshold": parseFloat(document.getElementById('l1_column_threshold').value),
+                "dependency_threshold": parseFloat(document.getElementById('dependency_threshold').value),
+                "significance_level": parseFloat(document.getElementById('significance_level').value),
+                "remove_insignificant_rules": document.getElementById('remove_insignificant_rules').checked,
+                "only_whitelist": document.getElementById('only_whitelist').checked,
+                "only_one_round_of_statistical_removal": document.getElementById('only_one_round_stat_removal').checked,
+                "only_one_round_of_linearity_removal": document.getElementById('only_one_round_lin_removal').checked,
+                "rule_priority_filtering": {
+                    "enabled": document.getElementById('rule_priority_enabled').checked,
+                    "min_priority": parseFloat(document.getElementById('min_priority').value)
+                }
+            },
+            "numerical_fuzzification": getNumericalFuzzification(),
+            "numerical_defuzzification": getNumericalDefuzzification(),
+            "variance_threshold": parseFloat(document.getElementById('variance_threshold').value),
+            "remove_low_variance": document.getElementById('remove_low_variance').checked,
+            "outlier_filtering": getOutlierFiltering(),
+            "num_vars": parseInt(document.getElementById('num_vars').value, 10),
+            "whitelist": getWhitelist(),
+            "blacklist": getBlacklist(),
+            "rule_priority_weights": {
+                "support_weight": parseInt(document.getElementById('support_weight').value, 10),
+                "leverage_weight": parseInt(document.getElementById('leverage_weight').value, 10),
+                "num_antecedents_weight": parseInt(document.getElementById('num_antecedents_weight').value, 10),
+                "whitelist_boolean_weight": parseInt(document.getElementById('whitelist_boolean_weight').value, 10)
+            },
+            "include_intercept": document.getElementById('include_intercept').checked
+        };
+
+        // Store the config object for later use
+        console.log('Configuration object created:', config);
+        $('#loadingModal').modal('show');
+
+        worker.postMessage({ config, uploadedFile: window.uploadedFile });
+    });
     </script>
 </script>
 <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.js"></script>
