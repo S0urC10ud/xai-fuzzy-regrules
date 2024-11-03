@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/png" href="assets/icon.png">
     <title>Fuzzy Data Explanation</title>
-    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="lib/bootstrap.min.css" rel="stylesheet">
     <style>
         html, body {
             height: 100%;
@@ -458,7 +458,7 @@
         }
 
         .rule-title-column {
-            width: 20rem !important;
+            padding-left: 5px !important;
         }
 
         #rulesTable {
@@ -469,8 +469,27 @@
         #rulesTable_wrapper{
             width: max(60rem,100%);
         }
+
+        .grip {
+            position: absolute;
+            right: 0;
+            top: 0;
+            width: 5px;
+            height: 100%;
+            cursor: col-resize;
+            user-select: none;
+        }
+
+        .dragging {
+            background-color: rgba(255, 204, 0, 0.2); /* Light yellow overlay */
+        }
+
     </style>
-    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.css">
+    <script src="lib/jquery-3.5.1.slim.min.js"></script>
+    <script src="lib/popper.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="lib/jquery.dataTables.css">
+    <script type="text/javascript" charset="utf8" src="lib/jquery.dataTables.js"></script>
+    <script src="lib/colResizable-1.6.js"></script>
 </head>
 <body>
     <header>
@@ -817,20 +836,24 @@
     </div>
 
     <script src="./dist/bundle.js"></script>
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="lib/bootstrap.min.js"></script>
     <script>
         const worker = new Worker('./analysisWorker.js');
 
         worker.onerror = function(event) {
             console.error('Error in worker: ', event);
             window.specialEvent = event;
+            setTimeout(() => {
+                    $('#loadingModal').modal('hide'); //again delayed (might be needed)
+                }, 1000);
         };
 
         worker.onmessageerror = function(event) {
             console.error('Error in worker message: ', event);
             window.specialEvent = event;
+            setTimeout(() => {
+                    $('#loadingModal').modal('hide'); //again delayed (might be needed)
+                }, 1000);
         };
         
         worker.onmessage = function(event) {
@@ -838,16 +861,21 @@
             $('#loadingModal').modal('hide');
 
             if (success) {
-                visualizeTable(data);
                 console.log('Analysis completed');
                 runButton.classList.remove('pulsing-button');
                 document.getElementById('choice-container').style.display = 'none';
                 document.getElementById('main-content-container').style.display = 'grid';
+
+                visualizeTable(data);
+                
                 setTimeout(() => {
                     $('#loadingModal').modal('hide'); //again delayed (might be needed)
                 }, 1000);
             } else {
                 alert('Error running analysis: ' + error);
+                setTimeout(() => {
+                    $('#loadingModal').modal('hide'); //again delayed (might be needed)
+                }, 1000);
             }
         };
 
@@ -948,7 +976,17 @@
                         width: '20rem',
                         className: 'rule-title-column'
                     }
-                ]
+                ],
+                initComplete: function() {
+                    $('#rulesTable').colResizable({
+                        liveDrag: true,
+                        resizeMode: 'fit', // Options: 'fit', 'flex', 'overflow'
+                        minWidth: 50, // Minimum width of a column in pixels
+                        gripInnerHtml: "<div class='grip'></div>",
+                        draggingClass: "dragging",
+                        hoverClass: "hover"
+                    });
+                }
             });
 
             const mean_absolute_error = rulesData.mean_absolute_error;
@@ -1339,7 +1377,9 @@
         }
 
         document.getElementById('runButton')?.addEventListener('click', async () => {
-        const config = {
+            $('#loadingModal').modal('show');
+        
+            const config = {
             "split_char": document.getElementById('split_char').value,
             "target_var": document.getElementById('target_var').value,
             "lasso": {
@@ -1380,12 +1420,11 @@
 
         // Store the config object for later use
         console.log('Configuration object created:', config);
-        $('#loadingModal').modal('show');
 
         worker.postMessage({ config, uploadedFile: window.uploadedFile });
     });
     </script>
 </script>
-<script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.js"></script>
+
 </body>
 </html>
