@@ -4,12 +4,12 @@ Author: Martin Dallinger (martin.dallinger@outlook.com)\
 Linz Institute of Technology Secure and Correct Systems Lab\
 Supervisor: Univ.-Prof. Priv.-Doz. DDI Dr. Stefan Rass
 
-![Demo Overview](assets/demo_overview.png)
-
-
 This project offers a regression-based approach over fully explainable fuzzy rules (Mamdani FIS) to discover biases in arbitrary datasets.
 
-Currently work in progress. More details (especially technical documentation) will follow in the next months.
+More details (especially technical documentation) will follow in the next months.
+
+Check out the web-application:
+![Demo Overview](assets/demo_overview.png)
 
 # Overview
 
