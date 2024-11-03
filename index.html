@@ -1,1430 +1,716 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" type="image/png" href="assets/icon.png">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/png" href="assets/icon.png" />
     <title>Fuzzy Data Explanation</title>
-    <link href="lib/bootstrap.min.css" rel="stylesheet">
-    <style>
-        html, body {
-            height: 100%;
-            margin: 0;
-        }
-        body {
-            display: flex;
-            flex-direction: column;
-            background-color: #121212;
-            color: white;
-            font-family: Arial, sans-serif;
-        }
-        header {
-            background-color: #1e1e1e;
-            padding: 20px;
-            text-align: left;
-            font-size: 1.5em;
-            color: #ffcc00;
-            height: 4.5rem !important;
-        }
-        .centercontainer {
-            flex: 1;
-            display: flex;
-            flex-direction: row;
-            height: calc(100vh - 8rem) !important;
-            width:100vw !important;
-            transition: all 0.3s ease;
-        }
-        .left-pane {
-            flex: 2;
-            padding: 20px;
-            background-color: #121212;
-            overflow-y: auto;
-            border-right: 1px solid #333;
-            transition: flex 0.3s ease;
-        }
-        .right-pane {
-            flex: 1;
-            padding: 20px;
-            background-color: #1e1e1e;
-            overflow-y: auto;
-            min-width: 0;
-            transition: flex 0.3s ease, opacity 0.3s ease;
-            position: relative;
-            overflow-x: hidden;
-        }
-        .collapsed .right-pane {
-            flex: 0;
-            opacity: 0;
-            visibility: hidden;
-        }
-        .footer {
-            position: relative;
-            bottom: 0;
-            width: 100%;
-            background-color: #1e1e1e;
-            margin:0 !important;
-            padding: 10px 0;
-            text-align: center;
-            height: 3.5rem !important;
-        }
-        .footer a {
-            color: #ffffff;
-            text-decoration: none;
-            padding-bottom: 2px;
-            transition: color 0.3s, border-bottom-color 0.3s;
-            margin: 0 10px; /* Add margin to the links */
-            border-bottom: none;
-        }
-        .footer a:hover {
-            color: #ffcc00;
-            border-bottom-color: #ffcc00;
-            border-bottom: 1px solid #ffcc00;
-        }
-        .footer .separator {
-            margin: 0 15px; /* Add margin to the separator */
-        }
-        .primary-color {
-            color: #ffcc00;
-        }
-        .collapsible {
-            display: none;
-            background-color: #1e1e1e;
-            padding: 10px;
-            text-align: center;
-            cursor: pointer;
-            color: #ffcc00;
-        }
-        @media (max-width: 768px) {
-            .centercontainer {
-                flex-direction: column;
-                position: relative;
-            }
-            .right-pane {
-                position: absolute;
-                top: 60px; /* Adjust based on header height */
-                right: 0;
-                width: 100%;
-                height: calc(100% - 60px);
-                display: none;
-                background-color: #1e1e1e;
-                z-index: 1000;
-                overflow-y: auto;
-            }
-            .collapsible {
-                display: block;
-            }
-        }
-
-        /* Configuration Grid Styles */
-        .configuration-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 20px;
-        }
-        .config-row {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            gap: 20px;
-            align-items: start;
-        }
-        .config-item {
-            display: flex;
-            flex-direction: column;
-        }
-        .short-input input {
-            width: 60px;
-        }
-        .checkbox-item {
-            display: flex;
-            align-items: center;
-        }
-        .checkbox-item label {
-            margin-right: 10px;
-            flex: 1;
-        }
-
-        /* Custom Tooltip Styles */
-        .custom-tooltip {
-            position: relative;
-            display: inline-block;
-            cursor: pointer;
-            color: #ffcc00;
-        }
-        .custom-tooltip .custom-tooltiptext {
-            visibility: hidden;
-            width: 220px;
-            background-color: #333;
-            color: #fff;
-            text-align: left;
-            border-radius: 5px;
-            padding: 10px;
-            position: absolute;
-            z-index: 1002; /* Ensure it's above other elements */
-            bottom: 125%; /* Position above the tooltip trigger */
-            left: 50%;
-            transform: translateX(-50%);
-            transition: opacity 0.3s;
-        }
-        .custom-tooltip .custom-tooltiptext::after {
-            content: "";
-            position: absolute;
-            top: 100%; /* At the bottom of the tooltip */
-            left: 50%;
-            margin-left: -5px;
-            border-width: 5px;
-            border-style: solid;
-            border-color: #333 transparent transparent transparent;
-        }
-        .custom-tooltip:hover .custom-tooltiptext {
-            visibility: visible;
-            opacity: 1;
-        }
-
-        .config-fieldset {
-            border: 1px solid #333;
-            padding: 15px;
-            border-radius: 5px;
-            background-color: #1e1e1e;
-        }
-        .config-fieldset legend {
-            color: #ffcc00;
-            font-weight: bold;
-            padding: 0 5px;
-        }
-        .nested-fieldset {
-            border: 1px dashed #555;
-            padding: 10px;
-            border-radius: 5px;
-            margin-top: 10px;
-            background-color: #2e2e2e;
-        }
-        .nested-fieldset legend {
-            color: #ffcc00;
-            font-size: 0.9em;
-        }
-        select[multiple] {
-            height: 100px;
-        }
-        textarea {
-            background-color: #2e2e2e;
-            color: #ffffff;
-            border: 1px solid #555;
-            border-radius: 4px;
-            padding: 8px;
-            resize: vertical;
-        }
-        input[type="text"],
-        input[type="number"],
-        select,
-        textarea {
-            padding: 8px;
-            border: 1px solid #555;
-            border-radius: 4px;
-            background-color: #2e2e2e;
-            color: #ffffff;
-        }
-        input[type="checkbox"] {
-            width: 20px;
-            height: 20px;
-            margin: 10px;
-        }
-        input[type="text"]:focus,
-        input[type="number"]:focus,
-        select:focus,
-        textarea:focus {
-            outline: none;
-            border-color: #ffcc00;
-        }
-        *:disabled {
-            background-color: #000000 !important;
-            border: 1px solid #ccc !important;
-            color: #999 !important;
-        }
-        .delete-filter{
-            background-color: #222222;
-            border: 1px rgb(146, 18, 18) solid;
-            margin-top: 10px;
-        }
-        
-        .add-filter {
-            margin-top: 10px;
-            background: #121212;
-            color: #ffcc00;
-            border: 1px solid #ffcc00;
-        }
-
-        .add-filter:hover {
-            margin-top: 10px;
-            background: #ffcc00 !important;
-            color: #000000 !important;
-            border: 1px solid #000000;
-        }
-
-        .add-filter:focus  {
-            margin-top: 10px;
-            background: #ffcc00 !important;
-            color: #000000 !important;
-            border: 1px solid #000000;
-        }
-
-        .add-filter:not(:disabled):hover {
-            margin-top: 10px;
-            background: #ffcc00 !important;
-            color: #000000 !important;
-            border: 1px solid #000000;
-        }
-
-        .add-filter:disabled {
-            background: #0a0a0a !important;
-            color: #ffffff !important;
-            border: 1px solid #6c757d !important;
-            cursor: not-allowed;
-        }
-
-        .button-container {
-            display: flex;
-            justify-content: center;
-            margin-top: 10px;
-        }
-        #choice-container {
-            display: flex;
-            place-items: center;
-            align-items: center;
-            justify-content: center;
-            flex-direction: row;
-            height: 100%;
-            width: 100%;
-            gap: 3rem;
-        }
-
-        .option-to-choose {
-            width: 15rem;
-            height: 15rem;
-            background-color: #333;
-            border-radius: 5px;
-            border: 1px gold solid;
-            display: flex;
-            flex-direction: column;
-            place-items: center;
-            align-items: center;
-            justify-content: center;
-            transition: 1s;
-            padding: 1rem;
-            text-align: center;
-            box-shadow: 0 0 4px 1px #ffcc00 inset;
-        }
-
-        .option-to-choose:hover {
-            background-color: #ffcc00;
-            color: #000000;
-            box-shadow: 0 0 10px 2px gold;
-            transition-duration: 0.3s;
-            cursor: pointer;
-        }
-
-        .option-to-choose span {
-            font-size: 4rem;
-            transition-duration: 1s;
-
-        }
-        .option-to-choose:hover span {
-            font-size: 5rem;
-            transition-duration: 0.3s;
-        }
-
-        .option-to-choose p {
-            color: lightgray;
-            transition-duration: 1s;
-        }
-        .option-to-choose:hover p {
-            color: black;
-            transition-duration: 0.3s;
-        }
-
-        @media (max-width: 580px) {
-            .header-title {
-                display: none;
-            }
-        }
-
-        @keyframes clickEffect {
-            0% {
-                transform: scale(0.8);
-                background-color: #ffcc00;
-                color: black;
-            }
-            50% {
-                transform: scale(1.2);
-                background-color: #ffcc00;
-                color: black;
-            }
-            100% {
-                transform: scale(1);
-                background-color: #ffcc00;
-                color: black;
-            }
-        }
-
-        .click-animation {
-            animation: clickEffect 0.3s ease;
-        }
-
-        .modal-header, .modal-body, .modal-footer {
-            background-color: #222222 !important;
-        }
-
-        /* Enhance stripe colors for dark theme */
-        .table-striped tbody tr:nth-of-type(odd) {
-            background-color: #2e2e2e;
-        }
-
-        .table-striped tbody tr:nth-of-type(even) {
-            background-color: #1e1e1e;
-        }
-
-        /* Ensure text is white for readability */
-        .table-striped tbody tr td {
-            color: #ffffff;
-        }
-        .table-striped thead th {
-            background-color: #333;
-            color: #ffffff;
-        }
-        .dataTables_filter input {
-            color: white;
-        }
-        .sub-zone {
-            margin-top: 20px;
-        }
-        .sub-zone h3 {
-            color: #ffcc00;
-            padding: 10px;
-        }
-        #qualityOfFit table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        #qualityOfFit th, #qualityOfFit td {
-            padding: 10px;
-            text-align: left;
-            border-bottom: 1px solid #ccc;
-        }
-        #qualityOfFit th {
-            background-color: #333;
-            color: #ffffff;
-        }
-
-        #main-content-container {
-            display: none;
-            width: 100%;
-            height: 100%;
-            grid-template-columns: 35% 65%;
-            grid-template-rows: 75% 25%;
-        }
-        #tableContainer {
-            grid-row-start: 1;
-            grid-row-end: 2;
-            grid-column-start: 1;
-            grid-column-end: 3;
-            overflow: auto;
-        }
-
-        .pulsing-button {
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0% {
-                box-shadow: 0 0 10px 1px #ffcc00;
-                opacity: 1;
-            }
-            50% {
-                box-shadow: 0 0 0px 0px #ffcc00;
-                opacity: 0.8;
-            }
-            100% {
-                box-shadow: 0 0 10px 1px #ffcc00;
-                opacity: 1;
-            }
-        }
-
-        select[name="rulesTable_length"] option{
-            background-color: #2a2a2a;
-            color: white;
-        }
-
-        legend {
-            width: auto !important;
-        }
-
-        .rule-title-column {
-            padding-left: 5px !important;
-        }
-
-        #rulesTable {
-            table-layout: fixed;
-            width: 100%;
-        }
-
-        #rulesTable_wrapper{
-            width: max(60rem,100%);
-        }
-
-        .grip {
-            position: absolute;
-            right: 0;
-            top: 0;
-            width: 5px;
-            height: 100%;
-            cursor: col-resize;
-            user-select: none;
-        }
-
-        .dragging {
-            background-color: rgba(255, 204, 0, 0.2); /* Light yellow overlay */
-        }
-
-    </style>
+    <link href="lib/bootstrap.min.css" rel="stylesheet" />
+    <link href="custom_frontend/main.css" rel="stylesheet" />
     <script src="lib/jquery-3.5.1.slim.min.js"></script>
     <script src="lib/popper.min.js"></script>
-    <link rel="stylesheet" type="text/css" href="lib/jquery.dataTables.css">
-    <script type="text/javascript" charset="utf8" src="lib/jquery.dataTables.js"></script>
+    <link rel="stylesheet" type="text/css" href="lib/jquery.dataTables.css" />
+    <script
+      type="text/javascript"
+      charset="utf8"
+      src="lib/jquery.dataTables.js"
+    ></script>
     <script src="lib/colResizable-1.6.js"></script>
-</head>
-<body>
+  </head>
+  <body>
     <header>
-        <img src="assets/icon.png" alt="Icon" style="height: 32px; width: 32px;">
-        <span class="header-title">Fuzzy Rule-Regression XAI</span>
-        <button id="runButton" class="btn btn-primary add-filter" style="margin-top: 0; position:absolute; top: 1rem; right: 1rem;" disabled>Run ⚙️</button>
-        <button id="uploadButton1" class="btn btn-primary add-filter" style="margin-top: 0; position:absolute; top: 1rem; right: 7rem;">Upload File 🔗</button>
-        
-        <!-- Hidden File Inputs -->
-        <input type="file" id="fileInput1" accept=".csv,.xlsx,.xls" style="display: none;">
+      <img src="assets/icon.png" alt="Icon" style="height: 32px; width: 32px" />
+      <span class="header-title">Fuzzy Rule-Regression XAI</span>
+      <button
+        id="runButton"
+        class="btn btn-primary add-filter"
+        style="margin-top: 0; position: absolute; top: 1rem; right: 1rem"
+        disabled
+      >
+        Run ⚙️
+      </button>
+      <button
+        id="uploadButton1"
+        class="btn btn-primary add-filter"
+        style="margin-top: 0; position: absolute; top: 1rem; right: 7rem"
+      >
+        Upload File 🔗
+      </button>
+
+      <!-- Hidden File Inputs -->
+      <input
+        type="file"
+        id="fileInput1"
+        accept=".csv,.xlsx,.xls"
+        style="display: none"
+      />
     </header>
     <div class="centercontainer" id="mainContainer">
-        <div class="left-pane">
-            <div id="choice-container">
-                <div class="option-to-choose">
-                    <span>🚀</span>
-                    <p>Try out a demo dataset with its default config</p>
-                </div>
-                <div id="uploadButton2" class="option-to-choose">
-                    <span>🔗</span>
-                    <p>Upload your own dataset, configure and run</p>
-                </div>
-            </div>
-            <div id="main-content-container">
-                <div id="tableContainer">
-                <h3 class="primary-color">Rules</h3>
-                <table id="rulesTable" class="display table table-striped" style="width:100%;">
-                    <!-- Table headers will be generated dynamically -->
-                </table>
-                </div>
-                    <div class="sub-zone" style="grid-column-start: 1; grid-column-end: 2; overflow: auto;">
-                        <h3>Quality of Fit</h3>
-                        <div id="qualityOfFit">
-                            <!-- Quality metrics will be displayed here -->
-                        </div>
-                    </div>
-                
-                    <div class="sub-zone" style="grid-column-start: 2; grid-column-end: 3; overflow: auto;">
-                        <h3>Warnings</h3>
-                        <div id="warnings">
-                            <!-- Warnings will be displayed here -->
-                        </div>
-                    </div>
-            </div>
+      <div class="left-pane">
+        <div id="choice-container">
+          <div class="option-to-choose">
+            <span>🚀</span>
+            <p>Try out a demo dataset with its default config</p>
+          </div>
+          <div id="uploadButton2" class="option-to-choose">
+            <span>🔗</span>
+            <p>Upload your own dataset, configure and run</p>
+          </div>
         </div>
-        <div class="right-pane">
-            <h3 class="primary-color">Configuration</h3>
-            <form class="configuration-grid">
-                <!-- Data Splitting -->
-                <div class="row">
-                    <div class="config-item col-5">
-                        <label for="split_char">Split Char
-                            <span class="custom-tooltip">?<span class="custom-tooltiptext">Split character for the CSV-file</span></span>
-                        </label>
-                        <input type="text" id="split_char" name="split_char" value=";">
-                    </div>
-                    <div class="config-item col-7">
-                        <label for="target_var">Target Variable
-                            <span class="custom-tooltip">?<span class="custom-tooltiptext">Target column from CSV file to explain</span></span>
-                        </label>
-                        <input type="text" id="target_var" name="target_var" value="MEDV">
-                    </div>
-
-                </div>
-
-                <!-- Target Variable and Number of Antecedents -->
-                <div class="row">                    
-                    <div class="config-item col-6">
-                        <label for="num_vars">Max number of Antecedents
-                            <span class="custom-tooltip">?<span class="custom-tooltiptext">Upper bound of number of antecedents to combine</span></span>
-                        </label>
-                        <input type="number" id="num_vars" name="num_vars" value="2">
-                    </div>
-                    <div class="config-item checkbox-item col-6">
-                        <label for="include_intercept">Include Intercept
-                            <span class="custom-tooltip">?<span class="custom-tooltiptext">Determines if an intercept is used to offset the model</span></span>
-                        </label>
-                        <input type="checkbox" id="include_intercept" name="include_intercept" checked>
-                    </div>
-                </div>
-
-                <div class="row">
-                    <!-- Numerical Fuzzification -->
-                    <div class="config-item col-6">
-                        <label for="numerical_fuzzification">Fuzzification
-                            <span class="custom-tooltip">?<span class="custom-tooltiptext">Defines the fuzzy sets for numerical variables. More sets means more redundancies.</span></span>
-                        </label>
-                        <select id="numerical_fuzzification" name="numerical_fuzzification">
-                            <option value="3">3 Sets</option>
-                            <option value="5" selected>5 Sets</option>
-                            <option value="6">6 Sets</option>
-                            <option value="7">7 Sets</option>
-                        </select>
-                    </div>
-
-                    <!-- Numerical Defuzzification -->
-                    <div class="config-item col-6">
-                        <label for="numerical_defuzzification">Defuzzification
-                            <span class="custom-tooltip">?<span class="custom-tooltiptext">Defines the fuzzy sets for defuzzification. More sets means more redundancies.</span></span>
-                        </label>
-                        <select id="numerical_defuzzification" name="numerical_defuzzification">
-                            <option value="3">3 Sets</option>
-                            <option value="5" selected>5 Sets</option>
-                            <option value="6">6 Sets</option>
-                            <option value="7">7 Sets</option>
-                        </select>
-                        
-                    </div>
-                </div>
-
-                <div class="config-row">
-                    <div class="config-item">
-                        <label for="whitelist">Whitelist Rules
-                            <span class="custom-tooltip">?<span class="custom-tooltiptext">Rules that will definitely be included</span></span>
-                        </label>
-                        <textarea id="whitelist" name="whitelist" rows="3" placeholder="e.g., If CRIM is high AND If PTRATIO is high then MEDV is verylow&#10;e.g., If DIS is low AND If INDUS is high then MEDV is verylow"></textarea>
-                    </div>
-                    
-                    <div class="config-item">
-                        <label for="blacklist">Blacklist Rules
-                            <span class="custom-tooltip">?<span class="custom-tooltiptext">Rules that will be excluded from generation</span></span>
-                        </label>
-                        <textarea id="blacklist" name="blacklist" rows="3" placeholder="e.g., If CRIM is high AND If RM is high then MEDV is verylow&#10;e.g., If DIS is high AND If LSTAT is high then MEDV is veryhigh"></textarea>
-                    </div>
-                </div>
-
-                <fieldset class="config-fieldset">
-                    <legend>Rule Filters</legend>
-                    <div class="row">
-                        <div class="config-item col-6">
-                            <label for="l1_row_threshold">L1 Row Threshold
-                                <span class="custom-tooltip">?<span class="custom-tooltiptext">Threshold for row duplication checks</span></span>
-                            </label>
-                            <input type="number" step="0.1" id="l1_row_threshold" name="l1_row_threshold" value="0.1">
-                        </div>
-                        
-                        <div class="config-item col-6">
-                            <label for="l1_column_threshold">L1 Column Threshold
-                                <span class="custom-tooltip">?<span class="custom-tooltiptext">Threshold for column duplication checks</span></span>
-                            </label>
-                            <input type="number" step="0.1" id="l1_column_threshold" name="l1_column_threshold" value="0.1">
-                        </div>
-                    </div>
-                    <div class="row" style="margin-top: 10px">
-                        <div class="config-item col-6">
-                            <label for="dependency_threshold">Dependency Threshold
-                                <span class="custom-tooltip">?<span class="custom-tooltiptext">Threshold for linear dependency detection</span></span>
-                            </label>
-                            <input type="number" step="0.01" id="dependency_threshold" name="dependency_threshold" value="0.02">
-                        </div>
-                        
-                        <div class="config-item col-6">
-                            <label for="significance_level">Significance Level
-                                <span class="custom-tooltip">?<span class="custom-tooltiptext">Alpha level for statistical significance</span></span>
-                            </label>
-                            <input type="number" step="0.01" id="significance_level" name="significance_level" value="0.05">
-                        </div>
-                    </div>
-                    
-                    <div class="row" style="margin-top: 10px">
-                        <div class="config-item checkbox-item col-6">
-                            <label for="remove_insignificant_rules">Remove Insignificant Rules
-                                <span class="custom-tooltip">?<span class="custom-tooltiptext">Remove rules not statistically significant - only works if regularization is 0</span></span>
-                            </label>
-                            <input type="checkbox" id="remove_insignificant_rules" name="remove_insignificant_rules">
-                        </div>
-                        
-                        <div class="config-item checkbox-item col-6">
-                            <label for="only_whitelist">Only Whitelist
-                                <span class="custom-tooltip">?<span class="custom-tooltiptext">Use only specified whitelist rules</span></span>
-                            </label>
-                            <input type="checkbox" id="only_whitelist" name="only_whitelist">
-                        </div>
-                    </div>
-                    
-                    <fieldset class="nested-fieldset">
-                        <legend>Rule Priority Filtering</legend>
-                        <div class="row">
-                            <div class="checkbox-item config-item col-6">
-                                <label for="rule_priority_enabled">Enabled
-                                    <span class="custom-tooltip">?<span class="custom-tooltiptext">Enables minimum rule priority filtering</span></span>
-                                </label>
-                                <input type="checkbox" id="rule_priority_enabled" name="rule_priority_enabled">
-                            </div>
-                            
-                            <div class="config-item col-6">
-                                <label for="min_priority">Min Priority
-                                    <span class="custom-tooltip">?<span class="custom-tooltiptext">Minimum priority value for rules to survive</span></span>
-                                </label>
-                                <input type="number" id="min_priority" name="min_priority" value="10">
-                            </div>
-                        </div>
-                    </fieldset>
-                    <fieldset class="nested-fieldset">
-                        <legend>Rule Priority Weights</legend>
-                        Always used for sorting rules regarding linear dependencies. Can be used for filtering.
-                        <div class="row">
-                            <div class="config-item col-6">
-                                <label for="support_weight">Support Weight
-                                    <span class="custom-tooltip">?<span class="custom-tooltiptext">Weight for rule support in priority calculation</span></span>
-                                </label>
-                                <input type="number" step="1" id="support_weight" name="support_weight" value="1">
-                            </div>
-                            
-                            <div class="config-item col-6">
-                                <label for="leverage_weight">Leverage Weight
-                                    <span class="custom-tooltip">?<span class="custom-tooltiptext">Weight for rule leverage in priority calculation</span></span>
-                                </label>
-                                <input type="number" step="1" id="leverage_weight" name="leverage_weight" value="10">
-                            </div>
-                        </div>
-                        <div class="row" style="margin-top: 10px;">
-                            <div class="config-item col-6">
-                                <label for="num_antecedents_weight">Num Antecedents Weight
-                                    <span class="custom-tooltip">?<span class="custom-tooltiptext">Weight for the number of antecedents in priority calculation</span></span>
-                                </label>
-                                <input type="number" step="1" id="num_antecedents_weight" name="num_antecedents_weight" value="1">
-                            </div>
-                            
-                            <div class="config-item col-6">
-                                <label for="whitelist_boolean_weight">Whitelist Boolean Weight
-                                    <span class="custom-tooltip">?<span class="custom-tooltiptext">Weight if the rule is whitelisted</span></span>
-                                </label>
-                                <input type="number" step="1" id="whitelist_boolean_weight" name="whitelist_boolean_weight" value="1000">
-                            </div>
-                        </div>
-                    </fieldset>
-                </fieldset>
-                <fieldset class="config-fieldset">
-                    <legend>Lasso Configuration</legend>
-                    <div class="config-row">
-                        <div class="config-item">
-                            <label for="lasso_regularization">Regularization
-                                <span class="custom-tooltip">?<span class="custom-tooltiptext">Avoids singular matrix for inversion</span></span>
-                            </label>
-                            <input type="number" step="0.00001" id="lasso_regularization" name="lasso_regularization" value="0.00001">
-                        </div>
-                        
-                        <div class="config-item">
-                            <label for="max_lasso_iterations">Max Lasso Iterations
-                                <span class="custom-tooltip">?<span class="custom-tooltiptext">Maximum iterations for Lasso convergence</span></span>
-                            </label>
-                            <input type="number" id="max_lasso_iterations" name="max_lasso_iterations" value="10000">
-                        </div>
-                        
-                        <div class="config-item">
-                            <label for="lasso_convergence_tolerance">Lasso Convergence Tolerance
-                                <span class="custom-tooltip">?<span class="custom-tooltiptext">Threshold for convergence based on beta differences</span></span>
-                            </label>
-                            <input type="number" step="0.0001" id="lasso_convergence_tolerance" name="lasso_convergence_tolerance" value="0.0001">
-                        </div>
-                    </div>
-                </fieldset>
-                
-
-                <div class="config-fieldset">
-                    <legend>Outlier Filtering</legend>
-                    <p>This is especially recommended for the target-variable</p>
-                    <div id="outlier-filters-container">
-                        <!-- Existing Outlier Filters -->
-
-                    </div>
-                    <div class="button-container">
-                        <button type="button" id="add-outlier-filter" class="btn btn-primary btn-sm add-filter">Add Filter</button>
-                    </div>
-                </div>
-
-                <div class="row">
-                    <div class="config-item checkbox-item col-6">
-                        <label for="remove_low_variance">Remove Low Variance
-                            <span class="custom-tooltip">?<span class="custom-tooltiptext">Toggles removal of columns below variance threshold</span></span>
-                        </label>
-                        <input type="checkbox" id="remove_low_variance" name="remove_low_variance">
-                    </div>
-                    
-                    <div class="config-item col-6">
-                        <label for="variance_threshold">Variance Threshold
-                            <span class="custom-tooltip">?<span class="custom-tooltiptext">Columns with variance below this value can be removed</span></span>
-                        </label>
-                        <input type="number" step="1e-5" id="variance_threshold" name="variance_threshold" value="0.00001">
-                    </div>
-                </div>
-
-                <fieldset class="config-fieldset">
-                    <legend>Advanced</legend>
-                    <div class="row">
-                        <div class="config-item checkbox-item col-6">
-                            <label for="only_one_round_stat_removal">Only One Round of Statistical Removal
-                                <span class="custom-tooltip">?<span class="custom-tooltiptext">Limits to one round for statistical rule removal</span></span>
-                            </label>
-                            <input type="checkbox" id="only_one_round_stat_removal" name="only_one_round_stat_removal" checked>
-                        </div>
-                        
-                        <div class="config-item checkbox-item col-6">
-                            <label for="only_one_round_lin_removal">Only One Round of Linearity Removal
-                                <span class="custom-tooltip">?<span class="custom-tooltiptext">Limits to one round for linearity rule removal</span></span>
-                            </label>
-                            <input type="checkbox" id="only_one_round_lin_removal" name="only_one_round_lin_removal" checked="checked">
-                        </div>
-                    </div>
-                </fieldset>
-            </form>
-        </div>
-    </div>
-
-    <button class="collapsible primary-color add-filter" onclick="toggleRightPane()">Toggle Configuration</button>
-
-    <footer class="footer mt-5 py-3 text-white text-center">
-        <div class="container">
-            <span><a href="https://martin-dallinger.me">Created by Martin Dallinger</a><span class="separator">|</span><a href="https://github.com/S0urC10ud/xai-fuzzy-regrules">View the GitHub Project here</a></span>
-        </div>
-    </footer>
-    <div class="modal fade" id="downloadModal" tabindex="-1" role="dialog" aria-labelledby="downloadModalLabel" aria-hidden="true">
-        <div class="modal-dialog" role="document">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title" id="downloadModalLabel">Download Dataset</h5>
-              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-              </button>
+        <div id="main-content-container">
+          <div id="tableContainer">
+            <h3 class="primary-color">Rules</h3>
+            <table
+              id="rulesTable"
+              class="display table table-striped"
+              style="width: 100%"
+            >
+              <!-- Table headers will be generated dynamically -->
+            </table>
+          </div>
+          <div
+            class="sub-zone"
+            style="grid-column-start: 1; grid-column-end: 2; overflow: auto"
+          >
+            <h3>Quality of Fit</h3>
+            <div id="qualityOfFit">
+              <!-- Quality metrics will be displayed here -->
             </div>
-            <div class="modal-body">
-              Do you want to download the demo dataset?
-            </div>
-            <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" data-dismiss="modal">Proceed without Download</button>
-              <button type="button" id="downloadButton" class="btn btn-primary">Download</button>
+          </div>
+
+          <div
+            class="sub-zone"
+            style="grid-column-start: 2; grid-column-end: 3; overflow: auto"
+          >
+            <h3>Warnings</h3>
+            <div id="warnings">
+              <!-- Warnings will be displayed here -->
             </div>
           </div>
         </div>
+      </div>
+      <div class="right-pane">
+        <h3 class="primary-color">Configuration</h3>
+        <form class="configuration-grid">
+          <!-- Data Splitting -->
+          <div class="row">
+            <div class="config-item col-5">
+              <label for="split_char"
+                >Split Char
+                <span class="custom-tooltip"
+                  >?<span class="custom-tooltiptext"
+                    >Split character for the CSV-file</span
+                  ></span
+                >
+              </label>
+              <input type="text" id="split_char" name="split_char" value=";" />
+            </div>
+            <div class="config-item col-7">
+              <label for="target_var"
+                >Target Variable
+                <span class="custom-tooltip"
+                  >?<span class="custom-tooltiptext"
+                    >Target column from CSV file to explain</span
+                  ></span
+                >
+              </label>
+              <input
+                type="text"
+                id="target_var"
+                name="target_var"
+                value="MEDV"
+              />
+            </div>
+          </div>
+
+          <!-- Target Variable and Number of Antecedents -->
+          <div class="row">
+            <div class="config-item col-6">
+              <label for="num_vars"
+                >Max number of Antecedents
+                <span class="custom-tooltip"
+                  >?<span class="custom-tooltiptext"
+                    >Upper bound of number of antecedents to combine</span
+                  ></span
+                >
+              </label>
+              <input type="number" id="num_vars" name="num_vars" value="2" />
+            </div>
+            <div class="config-item checkbox-item col-6">
+              <label for="include_intercept"
+                >Include Intercept
+                <span class="custom-tooltip"
+                  >?<span class="custom-tooltiptext"
+                    >Determines if an intercept is used to offset the
+                    model</span
+                  ></span
+                >
+              </label>
+              <input
+                type="checkbox"
+                id="include_intercept"
+                name="include_intercept"
+                checked
+              />
+            </div>
+          </div>
+
+          <div class="row">
+            <!-- Numerical Fuzzification -->
+            <div class="config-item col-6">
+              <label for="numerical_fuzzification"
+                >Fuzzification
+                <span class="custom-tooltip"
+                  >?<span class="custom-tooltiptext"
+                    >Defines the fuzzy sets for numerical variables. More sets
+                    means more redundancies.</span
+                  ></span
+                >
+              </label>
+              <select
+                id="numerical_fuzzification"
+                name="numerical_fuzzification"
+              >
+                <option value="3">3 Sets</option>
+                <option value="5" selected>5 Sets</option>
+                <option value="6">6 Sets</option>
+                <option value="7">7 Sets</option>
+              </select>
+            </div>
+
+            <!-- Numerical Defuzzification -->
+            <div class="config-item col-6">
+              <label for="numerical_defuzzification"
+                >Defuzzification
+                <span class="custom-tooltip"
+                  >?<span class="custom-tooltiptext"
+                    >Defines the fuzzy sets for defuzzification. More sets means
+                    more redundancies.</span
+                  ></span
+                >
+              </label>
+              <select
+                id="numerical_defuzzification"
+                name="numerical_defuzzification"
+              >
+                <option value="3">3 Sets</option>
+                <option value="5" selected>5 Sets</option>
+                <option value="6">6 Sets</option>
+                <option value="7">7 Sets</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="config-row">
+            <div class="config-item">
+              <label for="whitelist"
+                >Whitelist Rules
+                <span class="custom-tooltip"
+                  >?<span class="custom-tooltiptext"
+                    >Rules that will definitely be included</span
+                  ></span
+                >
+              </label>
+              <textarea
+                id="whitelist"
+                name="whitelist"
+                rows="3"
+                placeholder="e.g., If CRIM is high AND If PTRATIO is high then MEDV is verylow&#10;e.g., If DIS is low AND If INDUS is high then MEDV is verylow"
+              ></textarea>
+            </div>
+
+            <div class="config-item">
+              <label for="blacklist"
+                >Blacklist Rules
+                <span class="custom-tooltip"
+                  >?<span class="custom-tooltiptext"
+                    >Rules that will be excluded from generation</span
+                  ></span
+                >
+              </label>
+              <textarea
+                id="blacklist"
+                name="blacklist"
+                rows="3"
+                placeholder="e.g., If CRIM is high AND If RM is high then MEDV is verylow&#10;e.g., If DIS is high AND If LSTAT is high then MEDV is veryhigh"
+              ></textarea>
+            </div>
+          </div>
+
+          <fieldset class="config-fieldset">
+            <legend>Rule Filters</legend>
+            <div class="row">
+              <div class="config-item col-6">
+                <label for="l1_row_threshold"
+                  >L1 Row Threshold
+                  <span class="custom-tooltip"
+                    >?<span class="custom-tooltiptext"
+                      >Threshold for row duplication checks</span
+                    ></span
+                  >
+                </label>
+                <input
+                  type="number"
+                  step="0.1"
+                  id="l1_row_threshold"
+                  name="l1_row_threshold"
+                  value="0.1"
+                />
+              </div>
+
+              <div class="config-item col-6">
+                <label for="l1_column_threshold"
+                  >L1 Column Threshold
+                  <span class="custom-tooltip"
+                    >?<span class="custom-tooltiptext"
+                      >Threshold for column duplication checks</span
+                    ></span
+                  >
+                </label>
+                <input
+                  type="number"
+                  step="0.1"
+                  id="l1_column_threshold"
+                  name="l1_column_threshold"
+                  value="0.1"
+                />
+              </div>
+            </div>
+            <div class="row" style="margin-top: 10px">
+              <div class="config-item col-6">
+                <label for="dependency_threshold"
+                  >Dependency Threshold
+                  <span class="custom-tooltip"
+                    >?<span class="custom-tooltiptext"
+                      >Threshold for linear dependency detection</span
+                    ></span
+                  >
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  id="dependency_threshold"
+                  name="dependency_threshold"
+                  value="0.02"
+                />
+              </div>
+
+              <div class="config-item col-6">
+                <label for="significance_level"
+                  >Significance Level
+                  <span class="custom-tooltip"
+                    >?<span class="custom-tooltiptext"
+                      >Alpha level for statistical significance</span
+                    ></span
+                  >
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  id="significance_level"
+                  name="significance_level"
+                  value="0.05"
+                />
+              </div>
+            </div>
+
+            <div class="row" style="margin-top: 10px">
+              <div class="config-item checkbox-item col-6">
+                <label for="remove_insignificant_rules"
+                  >Remove Insignificant Rules
+                  <span class="custom-tooltip"
+                    >?<span class="custom-tooltiptext"
+                      >Remove rules not statistically significant - only works
+                      if regularization is 0</span
+                    ></span
+                  >
+                </label>
+                <input
+                  type="checkbox"
+                  id="remove_insignificant_rules"
+                  name="remove_insignificant_rules"
+                />
+              </div>
+
+              <div class="config-item checkbox-item col-6">
+                <label for="only_whitelist"
+                  >Only Whitelist
+                  <span class="custom-tooltip"
+                    >?<span class="custom-tooltiptext"
+                      >Use only specified whitelist rules</span
+                    ></span
+                  >
+                </label>
+                <input
+                  type="checkbox"
+                  id="only_whitelist"
+                  name="only_whitelist"
+                />
+              </div>
+            </div>
+
+            <fieldset class="nested-fieldset">
+              <legend>Rule Priority Filtering</legend>
+              <div class="row">
+                <div class="checkbox-item config-item col-6">
+                  <label for="rule_priority_enabled"
+                    >Enabled
+                    <span class="custom-tooltip"
+                      >?<span class="custom-tooltiptext"
+                        >Enables minimum rule priority filtering</span
+                      ></span
+                    >
+                  </label>
+                  <input
+                    type="checkbox"
+                    id="rule_priority_enabled"
+                    name="rule_priority_enabled"
+                  />
+                </div>
+
+                <div class="config-item col-6">
+                  <label for="min_priority"
+                    >Min Priority
+                    <span class="custom-tooltip"
+                      >?<span class="custom-tooltiptext"
+                        >Minimum priority value for rules to survive</span
+                      ></span
+                    >
+                  </label>
+                  <input
+                    type="number"
+                    id="min_priority"
+                    name="min_priority"
+                    value="10"
+                  />
+                </div>
+              </div>
+            </fieldset>
+            <fieldset class="nested-fieldset">
+              <legend>Rule Priority Weights</legend>
+              Always used for sorting rules regarding linear dependencies. Can
+              be used for filtering.
+              <div class="row">
+                <div class="config-item col-6">
+                  <label for="support_weight"
+                    >Support Weight
+                    <span class="custom-tooltip"
+                      >?<span class="custom-tooltiptext"
+                        >Weight for rule support in priority calculation</span
+                      ></span
+                    >
+                  </label>
+                  <input
+                    type="number"
+                    step="1"
+                    id="support_weight"
+                    name="support_weight"
+                    value="1"
+                  />
+                </div>
+
+                <div class="config-item col-6">
+                  <label for="leverage_weight"
+                    >Leverage Weight
+                    <span class="custom-tooltip"
+                      >?<span class="custom-tooltiptext"
+                        >Weight for rule leverage in priority calculation</span
+                      ></span
+                    >
+                  </label>
+                  <input
+                    type="number"
+                    step="1"
+                    id="leverage_weight"
+                    name="leverage_weight"
+                    value="10"
+                  />
+                </div>
+              </div>
+              <div class="row" style="margin-top: 10px">
+                <div class="config-item col-6">
+                  <label for="num_antecedents_weight"
+                    >Num Antecedents Weight
+                    <span class="custom-tooltip"
+                      >?<span class="custom-tooltiptext"
+                        >Weight for the number of antecedents in priority
+                        calculation</span
+                      ></span
+                    >
+                  </label>
+                  <input
+                    type="number"
+                    step="1"
+                    id="num_antecedents_weight"
+                    name="num_antecedents_weight"
+                    value="1"
+                  />
+                </div>
+
+                <div class="config-item col-6">
+                  <label for="whitelist_boolean_weight"
+                    >Whitelist Boolean Weight
+                    <span class="custom-tooltip"
+                      >?<span class="custom-tooltiptext"
+                        >Weight if the rule is whitelisted</span
+                      ></span
+                    >
+                  </label>
+                  <input
+                    type="number"
+                    step="1"
+                    id="whitelist_boolean_weight"
+                    name="whitelist_boolean_weight"
+                    value="1000"
+                  />
+                </div>
+              </div>
+            </fieldset>
+          </fieldset>
+          <fieldset class="config-fieldset">
+            <legend>Lasso Configuration</legend>
+            <div class="config-row">
+              <div class="config-item">
+                <label for="lasso_regularization"
+                  >Regularization
+                  <span class="custom-tooltip"
+                    >?<span class="custom-tooltiptext"
+                      >Avoids singular matrix for inversion</span
+                    ></span
+                  >
+                </label>
+                <input
+                  type="number"
+                  step="0.00001"
+                  id="lasso_regularization"
+                  name="lasso_regularization"
+                  value="0.00001"
+                />
+              </div>
+
+              <div class="config-item">
+                <label for="max_lasso_iterations"
+                  >Max Lasso Iterations
+                  <span class="custom-tooltip"
+                    >?<span class="custom-tooltiptext"
+                      >Maximum iterations for Lasso convergence</span
+                    ></span
+                  >
+                </label>
+                <input
+                  type="number"
+                  id="max_lasso_iterations"
+                  name="max_lasso_iterations"
+                  value="10000"
+                />
+              </div>
+
+              <div class="config-item">
+                <label for="lasso_convergence_tolerance"
+                  >Lasso Convergence Tolerance
+                  <span class="custom-tooltip"
+                    >?<span class="custom-tooltiptext"
+                      >Threshold for convergence based on beta differences</span
+                    ></span
+                  >
+                </label>
+                <input
+                  type="number"
+                  step="0.0001"
+                  id="lasso_convergence_tolerance"
+                  name="lasso_convergence_tolerance"
+                  value="0.0001"
+                />
+              </div>
+            </div>
+          </fieldset>
+
+          <div class="config-fieldset">
+            <legend>Outlier Filtering</legend>
+            <p>This is especially recommended for the target-variable</p>
+            <div id="outlier-filters-container">
+              <!-- Existing Outlier Filters -->
+            </div>
+            <div class="button-container">
+              <button
+                type="button"
+                id="add-outlier-filter"
+                class="btn btn-primary btn-sm add-filter"
+              >
+                Add Filter
+              </button>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="config-item checkbox-item col-6">
+              <label for="remove_low_variance"
+                >Remove Low Variance
+                <span class="custom-tooltip"
+                  >?<span class="custom-tooltiptext"
+                    >Toggles removal of columns below variance threshold</span
+                  ></span
+                >
+              </label>
+              <input
+                type="checkbox"
+                id="remove_low_variance"
+                name="remove_low_variance"
+              />
+            </div>
+
+            <div class="config-item col-6">
+              <label for="variance_threshold"
+                >Variance Threshold
+                <span class="custom-tooltip"
+                  >?<span class="custom-tooltiptext"
+                    >Columns with variance below this value can be removed</span
+                  ></span
+                >
+              </label>
+              <input
+                type="number"
+                step="1e-5"
+                id="variance_threshold"
+                name="variance_threshold"
+                value="0.00001"
+              />
+            </div>
+          </div>
+
+          <fieldset class="config-fieldset">
+            <legend>Advanced</legend>
+            <div class="row">
+              <div class="config-item checkbox-item col-6">
+                <label for="only_one_round_stat_removal"
+                  >Only One Round of Statistical Removal
+                  <span class="custom-tooltip"
+                    >?<span class="custom-tooltiptext"
+                      >Limits to one round for statistical rule removal</span
+                    ></span
+                  >
+                </label>
+                <input
+                  type="checkbox"
+                  id="only_one_round_stat_removal"
+                  name="only_one_round_stat_removal"
+                  checked
+                />
+              </div>
+
+              <div class="config-item checkbox-item col-6">
+                <label for="only_one_round_lin_removal"
+                  >Only One Round of Linearity Removal
+                  <span class="custom-tooltip"
+                    >?<span class="custom-tooltiptext"
+                      >Limits to one round for linearity rule removal</span
+                    ></span
+                  >
+                </label>
+                <input
+                  type="checkbox"
+                  id="only_one_round_lin_removal"
+                  name="only_one_round_lin_removal"
+                  checked="checked"
+                />
+              </div>
+            </div>
+          </fieldset>
+        </form>
+      </div>
     </div>
 
-    <div class="modal fade" id="loadingModal" tabindex="-1" role="dialog" aria-labelledby="loadingModalLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false">
-        <div class="modal-dialog modal-dialog-centered" role="document">
-            <div class="modal-content" style="background: transparent; border: none; box-shadow: none;">
-                <div class="modal-body text-center">
-                    <div class="spinner-border text-warning" role="status" style="width: 5rem; height: 5rem;">
-                        <span class="sr-only">Loading...</span>
-                    </div>
-                    <p class="mt-3 text-warning">Processing...</p>
-                </div>
-            </div>
+    <button
+      class="collapsible primary-color add-filter"
+      onclick="toggleRightPane()"
+    >
+      Toggle Configuration
+    </button>
+
+    <footer class="footer mt-5 py-3 text-white text-center">
+      <div class="container">
+        <span
+          ><a href="https://martin-dallinger.me">Created by Martin Dallinger</a
+          ><span class="separator">|</span
+          ><a href="https://github.com/S0urC10ud/xai-fuzzy-regrules"
+            >View the GitHub Project here</a
+          ></span
+        >
+      </div>
+    </footer>
+    <div
+      class="modal fade"
+      id="downloadModal"
+      tabindex="-1"
+      role="dialog"
+      aria-labelledby="downloadModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="downloadModalLabel">
+              Download Dataset
+            </h5>
+            <button
+              type="button"
+              class="close"
+              data-dismiss="modal"
+              aria-label="Close"
+            >
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            Do you want to download the demo dataset?
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-dismiss="modal"
+            >
+              Proceed without Download
+            </button>
+            <button type="button" id="downloadButton" class="btn btn-primary">
+              Download
+            </button>
+          </div>
         </div>
+      </div>
+    </div>
+
+    <div
+      class="modal fade"
+      id="loadingModal"
+      tabindex="-1"
+      role="dialog"
+      aria-labelledby="loadingModalLabel"
+      aria-hidden="true"
+      data-backdrop="static"
+      data-keyboard="false"
+    >
+      <div class="modal-dialog modal-dialog-centered" role="document">
+        <div
+          class="modal-content"
+          style="background: transparent; border: none; box-shadow: none"
+        >
+          <div class="modal-body text-center">
+            <div
+              class="spinner-border text-warning"
+              role="status"
+              style="width: 5rem; height: 5rem"
+            >
+              <span class="sr-only">Loading...</span>
+            </div>
+            <p class="mt-3 text-warning">Processing...</p>
+          </div>
+        </div>
+      </div>
     </div>
 
     <script src="./dist/bundle.js"></script>
     <script src="lib/bootstrap.min.js"></script>
-    <script>
-        const worker = new Worker('./analysisWorker.js');
-
-        worker.onerror = function(event) {
-            console.error('Error in worker: ', event);
-            window.specialEvent = event;
-            setTimeout(() => {
-                    $('#loadingModal').modal('hide'); //again delayed (might be needed)
-                }, 1000);
-        };
-
-        worker.onmessageerror = function(event) {
-            console.error('Error in worker message: ', event);
-            window.specialEvent = event;
-            setTimeout(() => {
-                    $('#loadingModal').modal('hide'); //again delayed (might be needed)
-                }, 1000);
-        };
-        
-        worker.onmessage = function(event) {
-            const { success, data, error } = event.data;
-            $('#loadingModal').modal('hide');
-
-            if (success) {
-                console.log('Analysis completed');
-                runButton.classList.remove('pulsing-button');
-                document.getElementById('choice-container').style.display = 'none';
-                document.getElementById('main-content-container').style.display = 'grid';
-
-                visualizeTable(data);
-                
-                setTimeout(() => {
-                    $('#loadingModal').modal('hide'); //again delayed (might be needed)
-                }, 1000);
-            } else {
-                alert('Error running analysis: ' + error);
-                setTimeout(() => {
-                    $('#loadingModal').modal('hide'); //again delayed (might be needed)
-                }, 1000);
-            }
-        };
-
-        function visualizeTable(rulesData){
-            // Determine if "Secondary Rules" column should be displayed
-            const hasSecondaryRules = rulesData.sorted_rules.some(rule => rule.secondaryRules && rule.secondaryRules.length > 0);
-                
-            // Determine if "P-Value" column should be displayed
-            const hasPValue = rulesData.sorted_rules.some(rule => !isNaN(rule.pValue) && rule.pValue !== null);
-
-            // Define columns based on data
-            const columns = [
-                { 
-                    data: 'title',
-                    width: '20rem'
-                },
-                { 
-                    data: 'coefficient',
-                    render: function(data) {
-                        return parseFloat(data).toFixed(6);
-                    }
-                },
-                { 
-                    data: 'priority',
-                    render: function(data) {
-                        return parseFloat(data).toFixed(6);
-                    }
-                },
-                { 
-                    data: 'support',
-                    render: function(data) {
-                        return parseFloat(data).toFixed(6);
-                    }
-                },
-                { 
-                    data: 'leverage',
-                    render: function(data) {
-                        return parseFloat(data).toFixed(6);
-                    }
-                }
-            ];
-
-            if (hasSecondaryRules) {
-                columns.push({ 
-                    data: 'secondaryRules',
-                    render: function(data) {
-                        return data.join(', ');
-                    }
-                });
-            }
-
-            if (hasPValue) {
-                columns.push({ 
-                    data: 'pValue',
-                    render: function(data) {
-                        return isNaN(data) ? 'N/A' : parseFloat(data).toFixed(6);
-                    }
-                });
-            }
-
-            const columnMap = {
-                "title": "Rule",
-                "coefficient": "Coefficient",
-                "priority": "Priority",
-                "support": "Support",
-                "leverage": "Leverage",
-                "secondaryRules": "Secondary Rules",
-                "pValue": "P-Value"
-            };
-
-            let thead = '<thead><tr>';
-            columns.forEach(function(column, index) {
-                if (column.data === 'title') {
-                    thead += '<th style="width:20rem;">' + columnMap[column.data] + '</th>';
-                } else {
-                    thead += '<th>' + columnMap[column.data] + '</th>';
-                }
-            });
-            thead += '</tr></thead>';
-
-            // Set the table header
-            $('#rulesTable').html(thead);
-
-            $('#rulesTable').DataTable().destroy();
-            $('#rulesTable').DataTable({
-                data: rulesData.sorted_rules,
-                columns: columns,
-                order: [[1, 'desc']],
-                responsive: false,
-                autoWidth: false,
-                searching: true,
-                paging: true,
-                ordering: true,
-                pageLength: 10,
-                columnDefs: [
-                    { 
-                        targets: 0,
-                        width: '20rem',
-                        className: 'rule-title-column'
-                    }
-                ],
-                initComplete: function() {
-                    $('#rulesTable').colResizable({
-                        liveDrag: true,
-                        resizeMode: 'fit', // Options: 'fit', 'flex', 'overflow'
-                        minWidth: 50, // Minimum width of a column in pixels
-                        gripInnerHtml: "<div class='grip'></div>",
-                        draggingClass: "dragging",
-                        hoverClass: "hover"
-                    });
-                }
-            });
-
-            const mean_absolute_error = rulesData.mean_absolute_error;
-            const root_mean_squared_error = rulesData.root_mean_squared_error;
-            const r_squared = rulesData.r_squared;
-            const mean_absolute_percentage_error = rulesData.mean_absolute_percentage_error;
-
-            const qualityMetrics = [
-                { name: 'Mean Absolute Error', value: mean_absolute_error.toFixed(4) },
-                { name: 'Root Mean Squared Error', value: root_mean_squared_error.toFixed(4) },
-                { name: 'R²', value: r_squared.toFixed(4) },
-                { name: 'Mean Absolute Percentage Error', value: mean_absolute_percentage_error.toFixed(4) }
-            ];
-
-            let qualityHtml = '<table>';
-            qualityHtml += '<tr><th>Metric</th><th>Value</th></tr>';
-            qualityMetrics.forEach(metric => {
-                qualityHtml += `<tr><td>${metric.name}</td><td>${metric.value}</td></tr>`;
-            });
-            qualityHtml += '</table>';
-            document.getElementById('qualityOfFit').innerHTML = qualityHtml;
-
-            // Populate Warnings
-            const warnings = rulesData.warnings; // Adjust based on JSON structure
-            let warningsHtml = '<ul>';
-                warnings.forEach(warning => {
-                if (Array.isArray(warning) && warning.length === 0) {
-                    return;
-                }
-                // Serialize warning if it's an object, otherwise convert it to a string
-                const warningText = typeof warning === 'object' ? JSON.stringify(warning) : warning.toString();
-                warningsHtml += `<li>${warningText}</li>`;
-            });
-            warningsHtml += '</ul>';
-            document.getElementById('warnings').innerHTML = warningsHtml;
-        }
-
-        function toggleRightPane() {
-            var rightPane = document.querySelector('.right-pane');
-            var toggleButton = document.querySelector('.collapsible');
-            
-            if (rightPane.style.display === 'none' || rightPane.style.display === '') {
-                rightPane.style.display = 'block';
-            } else {
-                rightPane.style.display = 'none';
-            }
-
-            // Add click animation class
-            toggleButton.classList.add('click-animation');
-            
-            // Remove the class after the animation ends
-            setTimeout(function() {
-                toggleButton.classList.remove('click-animation');
-            }, 300); // Duration of the animation
-        }
-
-        function handleResize() {
-            var rightPane = document.querySelector('.right-pane');
-            if (window.innerWidth > 768) {
-                rightPane.style.display = 'block';
-            } else {
-                rightPane.style.display = 'none';
-            }
-        }
-
-        window.addEventListener('resize', handleResize);
-
-        // Initial check on page load
-        window.addEventListener('load', handleResize);
-
-        const mainContainer = document.getElementById('mainContainer');
-        
-        document.addEventListener('DOMContentLoaded', function() {
-            const removeLowVarianceCheckbox = document.getElementById('remove_low_variance');
-            const varianceThresholdField = document.getElementById('variance_threshold');
-
-            if (removeLowVarianceCheckbox && varianceThresholdField) {
-                const toggleVarianceThreshold = () => {
-                    varianceThresholdField.disabled = !removeLowVarianceCheckbox.checked;
-                };
-
-                removeLowVarianceCheckbox.addEventListener('change', toggleVarianceThreshold);
-                toggleVarianceThreshold();
-            }
-
-            const rulePriorityEnabledCheckbox = document.getElementById('rule_priority_enabled');
-            const minPriorityField = document.getElementById('min_priority');
-
-            if (rulePriorityEnabledCheckbox && minPriorityField) {
-                const toggleRulePriority = () => {
-                    minPriorityField.disabled = !rulePriorityEnabledCheckbox.checked;
-                };
-
-                rulePriorityEnabledCheckbox.addEventListener('change', toggleRulePriority);
-                toggleRulePriority();
-            }
-        });
-
-    document.addEventListener('DOMContentLoaded', function() {
-        const container = document.getElementById('outlier-filters-container');
-        const addButton = document.getElementById('add-outlier-filter');
-
-        addButton.addEventListener('click', () => {
-            const fieldset = document.createElement('fieldset');
-            fieldset.className = 'nested-fieldset';
-            fieldset.innerHTML = `
-                <legend>New Column</legend>
-                <div class="config-row">
-                    <div class="config-item">
-                        <label>Column Name
-                            <span class="custom-tooltip">?<span class="custom-tooltiptext">Name of the column for outlier filtering</span></span>
-                        </label>
-                        <input type="text" class="column-name" name="outlier_new_column" placeholder="Enter column name">
-                    </div>
-                    <div class="config-item">
-                        <label>Method
-                            <span class="custom-tooltip">?<span class="custom-tooltiptext">Outlier detection method</span></span>
-                        </label>
-                        <select class="outlier-method" name="outlier_method">
-                            <option value="VariableBounds">Variable Bounds</option>
-                            <option value="IQR">IQR</option>
-                        </select>
-                    </div>
-                    
-                    <div class="config-item method-inputs">
-                        <label>Min</label>
-                        <input type="number" name="outlier_min" value="0">
-                    </div>
-                    
-                    <div class="config-item method-inputs">
-                        <label>Max</label>
-                        <input type="number" name="outlier_max" value="100">
-                    </div>
-                    
-                    <div class="config-item method-inputs" style="display:none;">
-                        <label>IQR Multiplier</label>
-                        <input type="number" step="0.1" name="outlier_iqr_multiplier" value="1.5">
-                    </div>
-                </div>
-                <button type="button" class="delete-filter btn btn-danger btn-sm">🗑️</button>
-            `;
-            container.appendChild(fieldset);
-            // Add event listener to the column-name input
-            const columnNameInput = fieldset.querySelector('.column-name');
-            const legend = fieldset.querySelector('legend');
-            
-            columnNameInput.addEventListener('input', () => {
-                const value = columnNameInput.value.trim();
-                legend.textContent = value ? value : 'New Column';
-            });
-        });
-        container.addEventListener('change', function(e) {
-            if(e.target.classList.contains('outlier-method')) {
-                const method = e.target.value;
-                const inputs = e.target.closest('.config-row').querySelectorAll('.method-inputs');
-                inputs.forEach(input => {
-                    if(method === 'VariableBounds') {
-                        if(input.querySelector('label').textContent.includes('Min') || input.querySelector('label').textContent.includes('Max')) {
-                            input.style.display = 'block';
-                        } else {
-                            input.style.display = 'none';
-                        }
-                    } else if(method === 'IQR') {
-                        if(input.querySelector('label').textContent.includes('IQR Multiplier')) {
-                            input.style.display = 'block';
-                        } else {
-                            input.style.display = 'none';
-                        }
-                    }
-                });
-            }
-        });
-
-        container.addEventListener('click', function(e) {
-            if(e.target.classList.contains('delete-filter')) {
-                e.target.closest('fieldset').remove();
-            }
-        });
-    });
-    document.querySelectorAll('.option-to-choose').forEach(option => {
-    option.addEventListener('click', async function() {
-        const optionText = this.querySelector('p').innerText;
-        if (optionText === 'Try out a demo dataset with its default config') {
-            try {
-                $('#downloadModal').modal('show');
-                } catch (error) {
-                    console.error('Error fetching JSON:', error);
-                }
-            }
-        });
-    });
-
-    document.getElementById('downloadButton').addEventListener('click', function() {
-        const link = document.createElement('a');
-        link.href = 'assets/biased_salaries.csv';
-        link.download = 'biased_salaries.csv';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
-        // Hide modal after download
-        $('#downloadModal').modal('hide');
-    });
-    $('#downloadModal').on('hidden.bs.modal', async function () {
-            const response = await fetch('assets/demo_configuration.json');
-            if (!response.ok) {
-                throw new Error('Failed to fetch demo configuration');
-            }
-            const config = await response.json();
-            
-            // Map JSON fields to form inputs
-            document.getElementById('split_char').value = config.split_char ?? ';';
-            document.getElementById('target_var').value = config.target_var ?? 'MEDV';
-            document.getElementById('num_vars').value = config.num_vars ?? 2;
-            document.getElementById('include_intercept').checked = config.include_intercept ?? false;
-            document.getElementById('numerical_fuzzification').value = config.numerical_fuzzification.length ?? 5;
-            document.getElementById('numerical_defuzzification').value = config.numerical_defuzzification.length ?? 5;
-            document.getElementById('whitelist').value = config.whitelist.join('\n') ?? '';
-            document.getElementById('blacklist').value = config.blacklist.join('\n') ?? '';
-            
-            // Rule Filters
-            document.getElementById('l1_row_threshold').value = config.rule_filters.l1_row_threshold ?? 0.1;
-            document.getElementById('l1_column_threshold').value = config.rule_filters.l1_column_threshold ?? 0.1;
-            document.getElementById('dependency_threshold').value = config.rule_filters.dependency_threshold ?? 0.02;
-            document.getElementById('significance_level').value = config.rule_filters.significance_level ?? 0.05;
-            document.getElementById('remove_insignificant_rules').checked = config.rule_filters.remove_insignificant_rules ?? false;
-            document.getElementById('only_whitelist').checked = config.rule_filters.only_whitelist ?? false;
-            
-            // Rule Priority Filtering
-            document.getElementById('rule_priority_enabled').checked = config.rule_filters.rule_priority_filtering.enabled ?? false;
-            document.getElementById('min_priority').value = config.rule_filters.rule_priority_filtering.min_priority ?? 10;
-            
-            // Rule Priority Weights
-            document.getElementById('support_weight').value = config.rule_priority_weights.support_weight ?? 1;
-            document.getElementById('leverage_weight').value = config.rule_priority_weights.leverage_weight ?? 10;
-            document.getElementById('num_antecedents_weight').value = config.rule_priority_weights.num_antecedents_weight ?? 1;
-            document.getElementById('whitelist_boolean_weight').value = config.rule_priority_weights.whitelist_boolean_weight ?? 1000;
-            
-            // Lasso Configuration
-            document.getElementById('lasso_regularization').value = config.lasso.regularization ?? 0.00001;
-            document.getElementById('max_lasso_iterations').value = config.lasso.max_lasso_iterations ?? 10000;
-            document.getElementById('lasso_convergence_tolerance').value = config.lasso.lasso_convergence_tolerance ?? 0.0001;
-            
-            // Variance Threshold
-            document.getElementById('remove_low_variance').checked = config.remove_low_variance ?? false;
-            document.getElementById('variance_threshold').value = config.variance_threshold ?? 0.00001;
-            
-            // Advanced Settings
-            document.getElementById('only_one_round_stat_removal').checked = config.rule_filters.only_one_round_of_statistical_removal ?? true;
-            document.getElementById('only_one_round_lin_removal').checked = config.rule_filters.only_one_round_of_linearity_removal ?? true;
-            
-            console.log('Configuration pane updated with demo configuration.');
-
-            // Hide choice-container and show rules table
-            document.getElementById('choice-container').style.display = 'none';
-            document.getElementById('main-content-container').style.display = 'grid';
-
-            // Fetch and display rules
-            const rulesResponse = await fetch('assets/biased_salaries.json');
-            if (!rulesResponse.ok) {
-                throw new Error('Failed to fetch biased salaries data');
-            }
-            const rulesData = await rulesResponse.json();
-
-            visualizeTable(rulesData);
-    });
-        // Global variables to store uploaded file contents
-        window.uploadedFile1 = "";
-        window.uploadedFile2 = "";
-
-        // Reference to buttons and file inputs
-        const uploadButton1 = document.getElementById('uploadButton1');
-        const uploadButton2 = document.getElementById('uploadButton2');
-        const fileInput1 = document.getElementById('fileInput1');
-        const fileInput2 = document.getElementById('fileInput2');
-        const runButton = document.getElementById('runButton');
-
-        // Handle Upload Button 1 Click
-        uploadButton1.addEventListener('click', () => {
-            fileInput1.click();
-        });
-
-        // Handle Upload Button 2 Click
-        uploadButton2.addEventListener('click', () => {
-            fileInput1.click();
-        });
-
-        // Function to read file and store content
-        function handleFileUpload(fileInput, fileNumber) {
-            const file = fileInput.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    if(fileNumber === 1){
-                        window.uploadedFile = e.target.result;
-                    } else {
-                        window.uploadedFile = e.target.result;
-                    }
-                };
-                reader.readAsText(file);
-                
-                document.getElementById('runButton').disabled = false;
-                // Success message elements
-                document.getElementById('uploadButton1').textContent = "Uploaded File✔️";
-                document.getElementById('uploadButton1').style.backgroundColor = "#ffcc00";
-                document.getElementById('uploadButton1').style.color = "black";
-
-                document.getElementById('uploadButton2').childNodes[1].textContent = "✔️";
-                document.getElementById('uploadButton2').childNodes[3].textContent = "Successfully read the file! Now configure and run!";
-                document.getElementById('uploadButton2').childNodes[3].style.color = "black";
-                document.getElementById('uploadButton2').style.backgroundColor = "#ffcc00";
-
-                runButton.classList.add('pulsing-button');
-            }
-        }
-        fileInput1.addEventListener('change', () => handleFileUpload(fileInput1, 1));
-        
-        function getNumericalFuzzification() {
-            const numSets = parseInt(document.getElementById('numerical_fuzzification').value, 10);
-            switch(numSets) {
-                case 3:
-                    return ["low", "medium", "high"];
-                case 5:
-                    return ["verylow", "low", "medium", "high", "veryhigh"];
-                case 6:
-                    return ["verylow", "low", "mediumlow", "mediumhigh", "high", "veryhigh"];
-                case 7:
-                    return ["verylow", "low", "mediumlow", "medium", "mediumhigh", "high", "veryhigh"];
-                default:
-                    return ["low", "medium", "high"];
-            }
-        }
-
-        function getNumericalDefuzzification() {
-            const numSets = parseInt(document.getElementById('numerical_defuzzification').value, 10);
-            switch(numSets) {
-                case 3:
-                    return ["low", "medium", "high"];
-                case 5:
-                    return ["verylow", "low", "medium", "high", "veryhigh"];
-                case 6:
-                    return ["verylow", "low", "mediumlow", "mediumhigh", "high", "veryhigh"];
-                case 7:
-                    return ["verylow", "low", "mediumlow", "medium", "mediumhigh", "high", "veryhigh"];
-                default:
-                    return ["low", "medium", "high"];
-            }
-        }
-
-        
-        function getOutlierFiltering() {
-            const container = document.getElementById('outlier-filters-container');
-            const filters = {};
-
-            const fieldsets = container.querySelectorAll('fieldset');
-
-            fieldsets.forEach(fieldset => {
-                const columnName = fieldset.querySelector('.column-name').value.trim();
-                const method = fieldset.querySelector('.outlier-method').value;
-                const filter = { method };
-
-                if (method === 'VariableBounds') {
-                    const min = parseFloat(fieldset.querySelector('input[name="outlier_min"]').value);
-                    const max = parseFloat(fieldset.querySelector('input[name="outlier_max"]').value);
-                    filter.min = min;
-                    filter.max = max;
-                } else if (method === 'IQR') {
-                    const multiplier = parseFloat(fieldset.querySelector('input[name="outlier_iqr_multiplier"]').value);
-                    filter.outlier_iqr_multiplier = multiplier;
-                }
-
-                if (columnName) {
-                    filters[columnName] = filter;
-                }
-            });
-
-            return filters;
-        }
-
-        function getWhitelist() {
-            const input = document.getElementById('whitelist').value;
-            return input.split('\n').map(line => line.trim()).filter(line => line.length > 0);
-        }
-
-        function getBlacklist() {
-            const input = document.getElementById('blacklist').value;
-            return input.split('\n').map(line => line.trim()).filter(line => line.length > 0);
-        }
-
-        document.getElementById('runButton')?.addEventListener('click', async () => {
-            $('#loadingModal').modal('show');
-        
-            const config = {
-            "split_char": document.getElementById('split_char').value,
-            "target_var": document.getElementById('target_var').value,
-            "lasso": {
-                "regularization": parseFloat(document.getElementById('lasso_regularization').value),
-                "max_lasso_iterations": parseInt(document.getElementById('max_lasso_iterations').value, 10),
-                "lasso_convergence_tolerance": parseFloat(document.getElementById('lasso_convergence_tolerance').value),
-            },
-            "rule_filters": {
-                "l1_row_threshold": parseFloat(document.getElementById('l1_row_threshold').value),
-                "l1_column_threshold": parseFloat(document.getElementById('l1_column_threshold').value),
-                "dependency_threshold": parseFloat(document.getElementById('dependency_threshold').value),
-                "significance_level": parseFloat(document.getElementById('significance_level').value),
-                "remove_insignificant_rules": document.getElementById('remove_insignificant_rules').checked,
-                "only_whitelist": document.getElementById('only_whitelist').checked,
-                "only_one_round_of_statistical_removal": document.getElementById('only_one_round_stat_removal').checked,
-                "only_one_round_of_linearity_removal": document.getElementById('only_one_round_lin_removal').checked,
-                "rule_priority_filtering": {
-                    "enabled": document.getElementById('rule_priority_enabled').checked,
-                    "min_priority": parseFloat(document.getElementById('min_priority').value)
-                }
-            },
-            "numerical_fuzzification": getNumericalFuzzification(),
-            "numerical_defuzzification": getNumericalDefuzzification(),
-            "variance_threshold": parseFloat(document.getElementById('variance_threshold').value),
-            "remove_low_variance": document.getElementById('remove_low_variance').checked,
-            "outlier_filtering": getOutlierFiltering(),
-            "num_vars": parseInt(document.getElementById('num_vars').value, 10),
-            "whitelist": getWhitelist(),
-            "blacklist": getBlacklist(),
-            "rule_priority_weights": {
-                "support_weight": parseInt(document.getElementById('support_weight').value, 10),
-                "leverage_weight": parseInt(document.getElementById('leverage_weight').value, 10),
-                "num_antecedents_weight": parseInt(document.getElementById('num_antecedents_weight').value, 10),
-                "whitelist_boolean_weight": parseInt(document.getElementById('whitelist_boolean_weight').value, 10)
-            },
-            "include_intercept": document.getElementById('include_intercept').checked
-        };
-
-        // Store the config object for later use
-        console.log('Configuration object created:', config);
-
-        worker.postMessage({ config, uploadedFile: window.uploadedFile });
-    });
-    </script>
-</script>
-
-</body>
+    <script src="custom_frontend/main.js"></script>
+  </body>
 </html>

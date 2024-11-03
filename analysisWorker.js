@@ -1,4 +1,4 @@
-const res = importScripts("http://192.168.213.1:8080/dist/bundle.js");
+importScripts("/dist/bundle.js");
 
 self.onmessage = function(event) {
     const config = event.data.config;
