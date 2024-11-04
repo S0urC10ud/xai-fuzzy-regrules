@@ -68,7 +68,7 @@ function visualizeTable(rulesData) {
     {
       data: "title",
       title: "Rule",
-      width: "25rem",
+      width: "min(25rem,30vw)",
       render: function (data, type, row) {
         const coloredRule = colorColumnNames(row.title, columnColorMap);
         return coloredRule;
@@ -337,14 +337,10 @@ function handleResize() {
   var rightPane = document.querySelector(".right-pane");
   if (window.innerWidth > 768) {
     rightPane.style.display = "block";
-  } else {
-    rightPane.style.display = "none";
   }
 }
 
 window.addEventListener("resize", handleResize);
-
-// Initial check on page load
 window.addEventListener("load", handleResize);
 
 const mainContainer = document.getElementById("mainContainer");
