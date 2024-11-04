@@ -64,16 +64,23 @@ header {
   text-decoration: none;
   padding-bottom: 2px;
   transition: color 0.3s, border-bottom-color 0.3s;
-  margin: 0 10px; /* Add margin to the links */
+  margin: 0 10px;
   border-bottom: none;
 }
+
+.fieldset-descriptor {
+  color: lightgray;
+  margin-bottom: 10px;
+  display: block;
+}
+
 .footer a:hover {
   color: #ffcc00;
   border-bottom-color: #ffcc00;
   border-bottom: 1px solid #ffcc00;
 }
 .footer .separator {
-  margin: 0 15px; /* Add margin to the separator */
+  margin: 0;
 }
 .primary-color {
   color: #ffcc00;

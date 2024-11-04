@@ -13,6 +13,8 @@ export function main(metadata: Metadata, data: string): EvaluationMetrics {
     if(metadata.rule_filters.dependency_threshold > 0.1)
         warnings.push("High dependency threshold detected, consider setting this value to < 0.1 for better results.");
         
+    if(metadata.lasso.regularization > 0 && metadata.rule_filters.remove_insignificant_rules)
+        throw new Error("Cannot use Lasso regularization and remove insignificant rules at the same time.");
 
     const { records, numericalKeys, categoricalKeys } = executeDataPipeline(data, metadata, warnings);
     const variableBounds: { [key: string]: { min: number; max: number } } = {};
