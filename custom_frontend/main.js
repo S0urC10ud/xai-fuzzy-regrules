@@ -52,9 +52,40 @@ function visualizeTable(rulesData) {
   const columns = [
     {
       data: "title",
-      title:
-        "Rule</span>",
+      title: "Rule",
       width: "20rem",
+    },
+    {
+      data: null,
+      title: "🏹",
+      render: function (data, type, row) {
+        // Get the last word of the rule
+        const lastWord = row.title.trim().split(" ").pop().toLowerCase();
+        let emoji = "";
+        switch (lastWord) {
+          case "verylow":
+            emoji = "<span style='color:red;'>&#8595;</span>"; // Red down arrow
+            break;
+          case "low":
+            emoji = "<span style='color:orange;'>&#8595;</span>"; // Orange down arrow
+            break;
+          case "mediumlow":
+            emoji = "<span style='color:yellow;'>&#8595;</span>"; // Yellow down arrow
+            break;
+          case "medium":
+            emoji = "<span style='color:gray;'>&#8594;</span>"; // Gray right arrow
+            break;
+          case "high":
+            emoji = "<span style='color:orange;'>&#8593;</span>"; // Orange up arrow
+            break;
+          case "veryhigh":
+            emoji = "<span style='color:red;'>&#8593;</span>"; // Red up arrow
+            break;
+          default:
+            emoji = "";
+        }
+        return emoji;
+      },
     },
     {
       data: "coefficient",
@@ -148,7 +179,7 @@ function visualizeTable(rulesData) {
   const table = $("#rulesTable").DataTable({
     data: rulesData.sorted_rules,
     columns: columns,
-    order: [[1, "desc"]],
+    order: [[2, "desc"]],
     responsive: false,
     autoWidth: false,
     searching: true,
