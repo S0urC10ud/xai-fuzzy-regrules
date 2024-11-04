@@ -335,5 +335,6 @@ This project is licensed under the GNU GPL v3.
 For any questions or suggestions, please contact me at [martin.dallinger@outlook.com](martin.dallinger@outlook.com).
 
 # Additional Credits
-assets/icon.png was generated with DALL-E.
+
+assets/icon.png was generated with DALL-E.\
 GitHub Copilot was used to speed up coding tedious/boilerplate parts of the project
