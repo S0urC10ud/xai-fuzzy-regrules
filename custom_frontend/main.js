@@ -48,16 +48,36 @@ function visualizeTable(rulesData) {
     (rule) => !isNaN(rule.pValue) && rule.pValue !== null
   );
 
+  // Extract all unique column names from the rules
+  const columnNamesSet = new Set();
+  rulesData.sorted_rules.forEach((rule) => {
+    const columnsInRule = extractColumnNames(rule.title);
+    columnsInRule.forEach((col) => columnNamesSet.add(col));
+  });
+  const columnNames = Array.from(columnNamesSet);
+
+  // Assign unique colors to each column name
+  const colors = generateRainbowColors(columnNames.length);
+  const columnColorMap = {};
+  columnNames.forEach((colName, index) => {
+    columnColorMap[colName] = colors[index];
+  });
+
   // Define columns with tooltips
   const columns = [
     {
       data: "title",
       title: "Rule",
-      width: "20rem",
+      width: "25rem",
+      render: function (data, type, row) {
+        const coloredRule = colorColumnNames(row.title, columnColorMap);
+        return coloredRule;
+      },
     },
     {
       data: null,
-      title: "🏹",
+      title: "Trend",
+      width: "2rem",
       render: function (data, type, row) {
         // Get the last word of the rule
         const lastWord = row.title.trim().split(" ").pop().toLowerCase();
@@ -257,6 +277,41 @@ function visualizeTable(rulesData) {
   });
   warningsHtml += "</ul>";
   document.getElementById("warnings").innerHTML = warningsHtml;
+
+  // Helper function to extract column names from rule text
+  function extractColumnNames(ruleText) {
+    const columnNames = [];
+    const regex = /If ([^ ]+)/g;
+    let match;
+    while ((match = regex.exec(ruleText)) !== null) {
+      columnNames.push(match[1]);
+    }
+    return columnNames;
+  }
+
+  // Helper function to assign rainbow colors
+  function generateRainbowColors(numColors) {
+    const colors = [];
+    for (let i = 0; i < numColors; i++) {
+      const hue = (i * 360) / numColors;
+      colors.push(`hsl(${hue}, 80%, 50%)`);
+    }
+    return colors;
+  }
+
+  // Helper function to color column names in rule text
+  function colorColumnNames(ruleText, colorMap) {
+    let coloredText = ruleText;
+    Object.keys(colorMap).forEach((colName) => {
+      const color = colorMap[colName];
+      const regex = new RegExp(`\\b${colName}\\b`, "g");
+      coloredText = coloredText.replace(
+        regex,
+        `<span style="color:${color}">${colName}</span>`
+      );
+    });
+    return coloredText;
+  }
 }
 
 function toggleRightPane() {
