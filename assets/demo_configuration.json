@@ -35,7 +35,6 @@
     "whitelist": [],
     "blacklist": [],
     "remove_low_variance": false,
-    "generate_fuzzification_chart": false,
     "include_intercept": true,
     "rule_priority_weights": {
         "support_weight": 1,

@@ -9,21 +9,10 @@ export function fuzzifyNumericalData(
     variableBounds: { [key: string]: { min: number; max: number } },
     warnings: any[]
 ): void {
-    let generateFuzzificationChart: Function | null = null;
-    const isBackend = typeof process !== 'undefined' && process.env.IS_BACKEND === 'true';
-    if (isBackend) {
-        // Only require this module if in a backend environment
-        generateFuzzificationChart = require('../utils/vis_fuzzification').generateFuzzificationChart;
-    }
-
     numericalKeys.forEach(key => {
-        const values: number[] = records.map(record => parseFloat(record[key] as string));
         const { min, max } = variableBounds[key];
 
         if (key !== targetVar) {
-            if(metadata.generate_fuzzification_chart && generateFuzzificationChart)
-                generateFuzzificationChart(values, min, max, key, metadata["numerical_fuzzification"]);
-
             records.forEach(record => {
                 const x = parseFloat(record[key] as string);
                 const degrees = computeMembershipDegrees(x, min, max, metadata["numerical_fuzzification"]);

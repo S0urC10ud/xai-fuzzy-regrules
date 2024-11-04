@@ -35,7 +35,6 @@ export interface Metadata {
     whitelist?: string[];
     blacklist?: string[];
     remove_low_variance?: boolean;
-    generate_fuzzification_chart: boolean;
     include_intercept: boolean;
     rule_priority_weights?: {
         support_weight?:number;

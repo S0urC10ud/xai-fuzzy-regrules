@@ -24,7 +24,7 @@ It is recommended to remove outliers, especially on the target variable (can be 
 
 # Installation
 ## Prerequisites
-- Node.js v14.0 or higher
+- Suggested Node.js version: `22.11.0`
 - npm (Node Package Manager) v6.0 or higher
 
 Install dependencies with `npm install`.
@@ -157,7 +157,6 @@ Example request metadata:
     "num_antecedents_weight": 1, // num_antecedents_weight * (1 / numAntecedents) + 
     "whitelist_boolean_weight": 1000 // + whitelist_boolean_weight if the rule is a whitelisted rule
   },
-  "generate_fuzzification_chart": true // Generates a chart to visualize fuzzification if true
 }
 ```
 
