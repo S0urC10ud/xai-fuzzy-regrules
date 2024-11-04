@@ -8,7 +8,10 @@ This project offers a regression-based approach over fully explainable fuzzy rul
 
 More details (especially technical documentation) will follow in the next months.
 
-Check out the web-application: https://xai.martin-dallinger.me
+# Web-App 
+
+Everything runs in your browser🎉: https://xai.martin-dallinger.me
+
 ![Demo Overview](assets/demo_overview.png)
 
 # Overview
