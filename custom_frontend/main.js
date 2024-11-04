@@ -39,7 +39,24 @@ worker.onmessage = function (event) {
   }
 };
 
+document
+  .getElementById("downloadJsonButton")
+  .addEventListener("click", function () {
+    const dataStr =
+      "data:text/json;charset=utf-8," +
+      encodeURIComponent(JSON.stringify(window.rulesData));
+    const downloadAnchorNode = document.createElement("a");
+    downloadAnchorNode.setAttribute("href", dataStr);
+    downloadAnchorNode.setAttribute("download", "rulesData.json");
+    document.body.appendChild(downloadAnchorNode);
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+  });
+
 function visualizeTable(rulesData) {
+  window.rulesData = rulesData;
+  document.getElementById("downloadJsonButton").style.display = "inline-block";
+
   // Determine if "Secondary Rules" and "P-Value" columns should be displayed
   const hasSecondaryRules = rulesData.sorted_rules.some(
     (rule) => rule.secondaryRules && rule.secondaryRules.length > 0
@@ -426,9 +443,9 @@ document.addEventListener("DOMContentLoaded", function () {
     const columnNameInput = fieldset.querySelector(".column-name");
     const legend = fieldset.querySelector("legend");
 
-    columnNameInput.addEventListener('input', async () => {
+    columnNameInput.addEventListener("input", async () => {
       const value = columnNameInput.value.trim();
-      legend.textContent = value ? value : 'New Column';
+      legend.textContent = value ? value : "New Column";
 
       // Check if the uploaded file is set and column name is provided
       if (window.uploadedFile && value) {
@@ -440,10 +457,12 @@ document.addEventListener("DOMContentLoaded", function () {
             displayBoxPlot(data[value], fieldset, value);
           } else {
             // Handle case where the column does not exist
-            console.warn(`Column "${value}" not found in the uploaded CSV file.`);
+            console.warn(
+              `Column "${value}" not found in the uploaded CSV file.`
+            );
           }
         } catch (error) {
-          console.error('Error parsing CSV:', error);
+          console.error("Error parsing CSV:", error);
         }
       }
     });
@@ -490,76 +509,78 @@ async function parseCSV(csvString) {
     Papa.parse(csvString, {
       header: true,
       dynamicTyping: true,
-      complete: function(results) {
+      complete: function (results) {
         // Transform data into a column-based format
         const columns = {};
-        results.meta.fields.forEach(field => {
+        results.meta.fields.forEach((field) => {
           columns[field] = results.data
-            .map(row => row[field])
-            .filter(val => val != null && val !== '');
+            .map((row) => row[field])
+            .filter((val) => val != null && val !== "");
         });
         resolve(columns);
       },
-      error: function(err) {
+      error: function (err) {
         reject(err);
-      }
+      },
     });
   });
 }
 
 function displayBoxPlot(columnData, container, columnName) {
   // Remove existing canvas if any
-  const existingCanvas = container.querySelector('.boxplot-canvas');
+  const existingCanvas = container.querySelector(".boxplot-canvas");
   if (existingCanvas) {
     existingCanvas.remove();
   }
 
   // Create a canvas element
-  const canvas = document.createElement('canvas');
-  canvas.className = 'boxplot-canvas';
-  canvas.style.width = '100%';
+  const canvas = document.createElement("canvas");
+  canvas.className = "boxplot-canvas";
+  canvas.style.width = "100%";
   container.appendChild(canvas);
 
   // Adjust container styling if needed
-  container.style.position = 'relative';
+  container.style.position = "relative";
 
   // Create the box plot using Chart.js
-  new Chart(canvas.getContext('2d'), {
-    type: 'boxplot',
+  new Chart(canvas.getContext("2d"), {
+    type: "boxplot",
     data: {
       labels: [columnName],
-      datasets: [{
-        label: columnName,
-        data: [columnData],
-        backgroundColor: 'rgba(255, 204, 0, 0.5)',
-        borderColor: 'rgba(255, 204, 0, 1)',
-        borderWidth: 1
-      }],
+      datasets: [
+        {
+          label: columnName,
+          data: [columnData],
+          backgroundColor: "rgba(255, 204, 0, 0.5)",
+          borderColor: "rgba(255, 204, 0, 1)",
+          borderWidth: 1,
+        },
+      ],
     },
     options: {
-      indexAxis: 'y', // Make the box plot horizontal
+      indexAxis: "y", // Make the box plot horizontal
       responsive: false,
       maintainAspectRatio: false,
       plugins: {
         legend: {
-          display: false
+          display: false,
         },
         tooltip: {
-          enabled: true
-        }
+          enabled: true,
+        },
       },
       scales: {
         x: {
           display: true,
           title: {
             display: true,
-            text: columnName
-          }
+            text: columnName,
+          },
         },
         y: {
-          display: true
-        }
-      }
+          display: true,
+        },
+      },
     },
   });
 }

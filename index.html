@@ -62,7 +62,21 @@
         </div>
         <div id="main-content-container">
           <div id="tableContainer">
-            <h3 class="primary-color">Rules</h3>
+            <div class="d-flex align-items-center">
+              <h3 class="primary-color">Rules</h3>
+              <button
+                id="downloadJsonButton"
+                class="btn btn-primary ml-2 add-filter"
+                style="
+                  display: inline-block;
+                  margin-top: 4px;
+                  margin-bottom: 10px;
+                  margin-left: 30px;
+                "
+              >
+                Download ⬇
+              </button>
+            </div>
             <table
               id="rulesTable"
               class="display table table-striped"
@@ -641,7 +655,7 @@
     <button
       class="collapsible primary-color add-filter"
       onclick="toggleRightPane()"
-      style="height: 3rem;margin-top:0;"
+      style="height: 3rem; margin-top: 0"
     >
       Toggle Configuration
     </button>
@@ -649,7 +663,7 @@
     <footer class="footer mt-5 py-3 text-white text-center">
       <div class="container">
         <span
-          ><a href="https://martin-dallinger.me">By Martin Dallinger</a
+          ><a href="https://martin-dallinger.me">Martin Dallinger</a
           ><span class="separator">|</span
           ><a href="https://github.com/S0urC10ud/xai-fuzzy-regrules"
             >GitHub Project</a
