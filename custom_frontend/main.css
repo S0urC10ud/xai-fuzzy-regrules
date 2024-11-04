@@ -100,10 +100,10 @@ header {
   }
   .right-pane {
     position: absolute;
-    top: 60px; /* Adjust based on header height */
+    top: 0; /* Adjust based on header height */
     right: 0;
     width: 100%;
-    height: calc(100% - 60px);
+    height: calc(100%);
     display: none;
     background-color: #1e1e1e;
     z-index: 1000;
