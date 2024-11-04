@@ -1,3 +1,5 @@
+<img src="assets/icon.png" alt="Fuzzy Rule-Based Regression Icon" width="140" style="margin:10" align="left">
+
 # Fuzzy-Regression XAI
 Bachelor Thesis, Artificial Intelligence @ Johannes Kepler University\
 Author: Martin Dallinger (martin.dallinger@outlook.com)\
