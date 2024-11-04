@@ -344,9 +344,26 @@ document.addEventListener("DOMContentLoaded", function () {
     const columnNameInput = fieldset.querySelector(".column-name");
     const legend = fieldset.querySelector("legend");
 
-    columnNameInput.addEventListener("input", () => {
+    columnNameInput.addEventListener('input', async () => {
       const value = columnNameInput.value.trim();
-      legend.textContent = value ? value : "New Column";
+      legend.textContent = value ? value : 'New Column';
+
+      // Check if the uploaded file is set and column name is provided
+      if (window.uploadedFile && value) {
+        try {
+          // Parse the CSV data
+          const data = await parseCSV(window.uploadedFile);
+          if (data && data[value]) {
+            // Display box plot
+            displayBoxPlot(data[value], fieldset, value);
+          } else {
+            // Handle case where the column does not exist
+            console.warn(`Column "${value}" not found in the uploaded CSV file.`);
+          }
+        } catch (error) {
+          console.error('Error parsing CSV:', error);
+        }
+      }
     });
   });
   container.addEventListener("change", function (e) {
@@ -384,6 +401,87 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 });
+
+// Function to parse CSV data
+async function parseCSV(csvString) {
+  return new Promise((resolve, reject) => {
+    Papa.parse(csvString, {
+      header: true,
+      dynamicTyping: true,
+      complete: function(results) {
+        // Transform data into a column-based format
+        const columns = {};
+        results.meta.fields.forEach(field => {
+          columns[field] = results.data
+            .map(row => row[field])
+            .filter(val => val != null && val !== '');
+        });
+        resolve(columns);
+      },
+      error: function(err) {
+        reject(err);
+      }
+    });
+  });
+}
+
+function displayBoxPlot(columnData, container, columnName) {
+  // Remove existing canvas if any
+  const existingCanvas = container.querySelector('.boxplot-canvas');
+  if (existingCanvas) {
+    existingCanvas.remove();
+  }
+
+  // Create a canvas element
+  const canvas = document.createElement('canvas');
+  canvas.className = 'boxplot-canvas';
+  canvas.style.width = '100%';
+  container.appendChild(canvas);
+
+  // Adjust container styling if needed
+  container.style.position = 'relative';
+
+  // Create the box plot using Chart.js
+  new Chart(canvas.getContext('2d'), {
+    type: 'boxplot',
+    data: {
+      labels: [columnName],
+      datasets: [{
+        label: columnName,
+        data: [columnData],
+        backgroundColor: 'rgba(255, 204, 0, 0.5)',
+        borderColor: 'rgba(255, 204, 0, 1)',
+        borderWidth: 1
+      }],
+    },
+    options: {
+      indexAxis: 'y', // Make the box plot horizontal
+      responsive: false,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: false
+        },
+        tooltip: {
+          enabled: true
+        }
+      },
+      scales: {
+        x: {
+          display: true,
+          title: {
+            display: true,
+            text: columnName
+          }
+        },
+        y: {
+          display: true
+        }
+      }
+    },
+  });
+}
+
 document.querySelectorAll(".option-to-choose").forEach((option) => {
   option.addEventListener("click", async function () {
     const optionText = this.querySelector("p").innerText;

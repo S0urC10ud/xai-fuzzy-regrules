@@ -16,6 +16,9 @@
       src="lib/jquery.dataTables.js"
     ></script>
     <script src="lib/colResizable-1.6.js"></script>
+    <script src="lib/papaparse.min.js"></script>
+    <script src="lib/chart.js"></script>
+    <script src="lib/chartjs-chart-boxplot.js"></script>
   </head>
   <body>
     <header>
@@ -208,7 +211,8 @@
                 >Whitelist Rules
                 <span class="custom-tooltip"
                   >?<span class="custom-tooltiptext"
-                    >Rules that will definitely be included (although they might not be generated due to too few antecedents).</span
+                    >Rules that will definitely be included (although they might
+                    not be generated due to too few antecedents).</span
                   ></span
                 >
               </label>
@@ -283,7 +287,8 @@
                   >Dependency Threshold
                   <span class="custom-tooltip"
                     >?<span class="custom-tooltiptext"
-                      >Threshold for linear dependency detection via Gram-Schmidt residual norm</span
+                      >Threshold for linear dependency detection via
+                      Gram-Schmidt residual norm</span
                     ></span
                   >
                 </label>
@@ -301,7 +306,8 @@
                   >Significance Level
                   <span class="custom-tooltip"
                     >?<span class="custom-tooltiptext"
-                      >Alpha level for statistical significance; H0 is that the coefficient is 0</span
+                      >Alpha level for statistical significance; H0 is that the
+                      coefficient is 0</span
                     ></span
                   >
                 </label>
@@ -321,7 +327,8 @@
                   >Remove Insignificant Rules
                   <span class="custom-tooltip"
                     >?<span class="custom-tooltiptext"
-                      >Remove rules where H0 (coefficient=0) is not rejected if regularization is 0</span
+                      >Remove rules where H0 (coefficient=0) is not rejected if
+                      regularization is 0</span
                     ></span
                   >
                 </label>
@@ -388,15 +395,19 @@
             </fieldset>
             <fieldset class="nested-fieldset">
               <legend>Rule Priority Weights</legend>
-              <span class="fieldset-descriptor">Always used for sorting rules regarding linear dependencies. Can
-              be used for filtering.</span> <br/>
+              <span class="fieldset-descriptor"
+                >Always used for sorting rules regarding linear dependencies.
+                Can be used for filtering.</span
+              >
+              <br />
               <div class="row">
                 <div class="config-item col-6">
                   <label for="support_weight"
                     >Support Weight
                     <span class="custom-tooltip"
                       >?<span class="custom-tooltiptext"
-                        >Weight for rule support (how often it occurs) in priority calculation</span
+                        >Weight for rule support (how often it occurs) in
+                        priority calculation</span
                       ></span
                     >
                   </label>
@@ -414,7 +425,8 @@
                     >Leverage Weight
                     <span class="custom-tooltip"
                       >?<span class="custom-tooltiptext"
-                        >Weight for rule leverage (from rule mining) in priority calculation</span
+                        >Weight for rule leverage (from rule mining) in priority
+                        calculation</span
                       ></span
                     >
                   </label>
@@ -430,11 +442,11 @@
               <div class="row" style="margin-top: 10px">
                 <div class="config-item col-6">
                   <label for="num_antecedents_weight"
-                    >Num Antecedents Weight
+                    >Antecedents Weight
                     <span class="custom-tooltip"
                       >?<span class="custom-tooltiptext"
-                        >Weight for the number of antecedents (=weight * 1/num_antecedents) in priority
-                        calculation</span
+                        >Weight for the number of antecedents (=weight *
+                        1/num_antecedents) in priority calculation</span
                       ></span
                     >
                   </label>
@@ -449,10 +461,11 @@
 
                 <div class="config-item col-6">
                   <label for="whitelist_boolean_weight"
-                    >Whitelist Flag Weight
+                    >Whitelist Weight
                     <span class="custom-tooltip"
                       >?<span class="custom-tooltiptext"
-                        >Weight that will be added to the rule priority if the rule is whitelisted</span
+                        >Weight that will be added to the rule priority if the
+                        rule is whitelisted</span
                       ></span
                     >
                   </label>
@@ -475,7 +488,8 @@
                   >Regularization
                   <span class="custom-tooltip"
                     >?<span class="custom-tooltiptext"
-                      >Avoids singular matrix for inversion and fitting to many bad rules</span
+                      >Avoids singular matrix for inversion and fitting to many
+                      bad rules</span
                     ></span
                   >
                 </label>
@@ -526,7 +540,9 @@
 
           <div class="config-fieldset">
             <legend>Outlier Filtering</legend>
-            <span class="fieldset-descriptor">This is especially recommended for the target-variable</span>
+            <span class="fieldset-descriptor"
+              >This is especially recommended for the target-variable</span
+            >
             <div id="outlier-filters-container">
               <!-- Existing Outlier Filters -->
             </div>
@@ -585,7 +601,8 @@
                   >Only One Round of Statistical Removal
                   <span class="custom-tooltip"
                     >?<span class="custom-tooltiptext"
-                      >If false, statistical removal will be applied iteratively until nothing with a high p-Value remains</span
+                      >If false, statistical removal will be applied iteratively
+                      until nothing with a high p-Value remains</span
                     ></span
                   >
                 </label>
@@ -602,7 +619,9 @@
                   >Only One Round of Linearity Removal
                   <span class="custom-tooltip"
                     >?<span class="custom-tooltiptext"
-                      >If false, linearity removal will be applied until Gram-Schmidt does not have any small residual norm-vectors any more.</span
+                      >If false, linearity removal will be applied until
+                      Gram-Schmidt does not have any small residual norm-vectors
+                      any more.</span
                     ></span
                   >
                 </label>
