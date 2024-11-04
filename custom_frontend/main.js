@@ -40,42 +40,58 @@ worker.onmessage = function (event) {
 };
 
 function visualizeTable(rulesData) {
-  // Determine if "Secondary Rules" column should be displayed
+  // Determine if "Secondary Rules" and "P-Value" columns should be displayed
   const hasSecondaryRules = rulesData.sorted_rules.some(
     (rule) => rule.secondaryRules && rule.secondaryRules.length > 0
   );
-
-  // Determine if "P-Value" column should be displayed
   const hasPValue = rulesData.sorted_rules.some(
     (rule) => !isNaN(rule.pValue) && rule.pValue !== null
   );
 
-  // Define columns based on data
+  // Define columns with tooltips
   const columns = [
     {
       data: "title",
+      title:
+        "Rule</span>",
       width: "20rem",
     },
     {
       data: "coefficient",
+      title:
+        "Coefficient <span class='custom-tooltip'>?\
+        <span class='custom-tooltiptext'>Linear regression coefficient of this basis function.</span>\
+      </span>",
       render: function (data) {
         return parseFloat(data).toFixed(6);
       },
     },
     {
       data: "priority",
+      title:
+        "Priority <span class='custom-tooltip'>?\
+        <span class='custom-tooltiptext'>Computed priority (as specified by the config)</span>\
+      </span>",
       render: function (data) {
         return parseFloat(data).toFixed(6);
       },
     },
     {
       data: "support",
+      title:
+        "Support <span class='custom-tooltip'>?\
+        <span class='custom-tooltiptext'>Fraction of instances where this rule holds.</span>\
+      </span>",
       render: function (data) {
         return parseFloat(data).toFixed(6);
       },
     },
     {
       data: "leverage",
+      title:
+        "Leverage <span class='custom-tooltip'>?\
+        <span class='custom-tooltiptext'>Rule-Mining leverage value indicating the influence of the rule.</span>\
+      </span>",
       render: function (data) {
         return parseFloat(data).toFixed(6);
       },
@@ -85,6 +101,10 @@ function visualizeTable(rulesData) {
   if (hasSecondaryRules) {
     columns.push({
       data: "secondaryRules",
+      title:
+        "Secondary Rules <span class='custom-tooltip'>?\
+        <span class='custom-tooltiptext'>Additional related rules.</span>\
+      </span>",
       render: function (data) {
         return data.join(", ");
       },
@@ -94,6 +114,10 @@ function visualizeTable(rulesData) {
   if (hasPValue) {
     columns.push({
       data: "pValue",
+      title:
+        "P-Value <span class='custom-tooltip'>?\
+        <span class='custom-tooltiptext'>Statistical significance of the rule.</span>\
+      </span>",
       render: function (data) {
         return isNaN(data) ? "N/A" : parseFloat(data).toFixed(6);
       },
@@ -111,20 +135,17 @@ function visualizeTable(rulesData) {
   };
 
   let thead = "<thead><tr>";
-  columns.forEach(function (column, index) {
-    if (column.data === "title") {
-      thead += '<th style="width:20rem;">' + columnMap[column.data] + "</th>";
-    } else {
-      thead += "<th>" + columnMap[column.data] + "</th>";
-    }
+  columns.forEach(function (column) {
+    thead += `<th>${column.title}</th>`;
   });
   thead += "</tr></thead>";
 
   // Set the table header
   $("#rulesTable").html(thead);
 
+  // Initialize DataTable
   $("#rulesTable").DataTable().destroy();
-  $("#rulesTable").DataTable({
+  const table = $("#rulesTable").DataTable({
     data: rulesData.sorted_rules,
     columns: columns,
     order: [[1, "desc"]],
@@ -144,12 +165,21 @@ function visualizeTable(rulesData) {
     initComplete: function () {
       $("#rulesTable").colResizable({
         liveDrag: true,
-        resizeMode: "fit", // Options: 'fit', 'flex', 'overflow'
-        minWidth: 50, // Minimum width of a column in pixels
+        resizeMode: "fit",
+        minWidth: 50,
         gripInnerHtml: "<div class='grip'></div>",
         draggingClass: "dragging",
         hoverClass: "hover",
       });
+      // Initialize tooltips
+      $(".custom-tooltip").hover(
+        function () {
+          $(this).find(".custom-tooltiptext").fadeIn(200);
+        },
+        function () {
+          $(this).find(".custom-tooltiptext").fadeOut(200);
+        }
+      );
     },
   });
 
@@ -278,13 +308,13 @@ document.addEventListener("DOMContentLoaded", function () {
         <div class="config-row">
             <div class="config-item">
                 <label>Column Name
-                    <span class="custom-tooltip">?<span class="custom-tooltiptext">Name of the column for outlier filtering</span></span>
+                    <span class="custom-tooltip">?<span class="custom-tooltiptext">Name of the csv-column for outlier filtering</span></span>
                 </label>
                 <input type="text" class="column-name" name="outlier_new_column" placeholder="Enter column name">
             </div>
             <div class="config-item">
                 <label>Method
-                    <span class="custom-tooltip">?<span class="custom-tooltiptext">Outlier detection method</span></span>
+                    <span class="custom-tooltip">?<span class="custom-tooltiptext">Filtering strategy</span></span>
                 </label>
                 <select class="outlier-method" name="outlier_method">
                     <option value="VariableBounds">Variable Bounds</option>
@@ -510,6 +540,16 @@ function handleFileUpload(fileInput, fileNumber) {
     document.getElementById("uploadButton2").style.backgroundColor = "#ffcc00";
 
     runButton.classList.add("pulsing-button");
+
+    // if viewport width is less than 768px, toggle show the configuration pane
+    const rightPane = document.querySelector(".right-pane");
+
+    if (
+      (window.innerWidth <= 768 && rightPane.style.display === "none") ||
+      rightPane.style.display === ""
+    ) {
+      toggleRightPane();
+    }
   }
 }
 fileInput1.addEventListener("change", () => handleFileUpload(fileInput1, 1));
