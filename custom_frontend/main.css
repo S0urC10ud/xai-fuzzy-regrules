@@ -410,6 +410,15 @@ textarea:focus {
   text-align: left;
   border-bottom: 1px solid #ccc;
 }
+
+td {
+  overflow: visible !important;
+}
+
+td canvas {
+  background-color: #1e1e1e;
+}
+
 #qualityOfFit th {
   background-color: #333;
   color: #ffffff;
@@ -483,4 +492,35 @@ legend {
 
 .dragging {
   background-color: rgba(255, 204, 0, 0.2); /* Light yellow overlay */
+}
+
+.hover-item {
+  position: relative;
+  cursor: pointer;
+}
+
+.tooltip-chart {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 300px;
+  height: 200px;
+  display: none;
+  z-index: 100;
+}
+
+.hover-item:hover .tooltip-chart {
+  display: block;
+}
+
+.custom-tooltiptext {
+  /* Existing styles */
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease-in-out;
+}
+
+.custom-tooltip:hover .custom-tooltiptext {
+  opacity: 1;
+  visibility: visible;
 }
