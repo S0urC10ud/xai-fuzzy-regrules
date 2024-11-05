@@ -892,9 +892,36 @@ $(document).on("click", ".hover-item", function () {
         bounds.max,
         classes
       );
-      $(this).append('<div class="tooltip-chart"><canvas></canvas></div>');
+
+      const numFuzzySets = classes.length;
+
+      // Adjust size based on numFuzzySets
+      let width, height;
+      if (numFuzzySets === 3) {
+        width = 300;
+        height = 200;
+      } else if (numFuzzySets === 5) {
+        width = 400;
+        height = 250;
+      } else if (numFuzzySets === 5) {
+          width = 450;
+          height = 275;
+      } else if (numFuzzySets === 7) {
+        width = 500;
+        height = 300;
+      } else {
+        width = 300;
+        height = 200; // Default size
+      }
+
+      // Append the div with adjusted size
+      $(this).append(
+        `<div class="tooltip-chart" style="width:${width}px; height:${height}px;">
+          <canvas width="${width}" height="${height}"></canvas>
+        </div>`
+      );
       const ctx = $(this).find("canvas")[0].getContext("2d");
-      createFuzzificationChart(ctx, chartData, fuzzySet, variable, role); // Pass role
+      createFuzzificationChart(ctx, chartData, fuzzySet, variable, role);
     }
   }
 });
