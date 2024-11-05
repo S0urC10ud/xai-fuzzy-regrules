@@ -945,7 +945,6 @@ uploadButton2.addEventListener("click", () => {
   fileInput1.click();
 });
 function applyOutlierFiltering(data) {
-  debugger;
   const outlierFilters = getOutlierFiltering();
 
   // Create a copy of the data to avoid mutating the original
@@ -971,7 +970,6 @@ function applyOutlierFiltering(data) {
       if (filterConfig.method === "VariableBounds") {
         const { min, max } = filterConfig;
         if (value < min || value > max) {
-          debugger;
           exclude = true;
           break;
         }
