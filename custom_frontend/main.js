@@ -76,8 +76,6 @@ function visualizeTable(rulesData) {
   const hasPValue = rulesData.sorted_rules.some(
     (rule) => !isNaN(rule.pValue) && rule.pValue !== null
   );
-
-  // Extract all unique column names from the rules
   const columnNamesSet = new Set();
   rulesData.sorted_rules.forEach((rule) => {
     const columnsInRule = extractColumnNames(rule.title);
@@ -109,7 +107,6 @@ function visualizeTable(rulesData) {
       title: "Trend",
       width: "2rem",
       render: function (data, type, row) {
-        // Get the last word of the rule
         const lastWord = row.title.trim().split(" ").pop().toLowerCase();
         let emoji = "";
         switch (lastWord) {
@@ -220,11 +217,7 @@ function visualizeTable(rulesData) {
     thead += `<th>${column.title}</th>`;
   });
   thead += "</tr></thead>";
-
-  // Set the table header
   $("#rulesTable").html(thead);
-
-  // Initialize DataTable
   $("#rulesTable").DataTable().destroy();
   const table = $("#rulesTable").DataTable({
     data: rulesData.sorted_rules,
@@ -252,7 +245,6 @@ function visualizeTable(rulesData) {
         draggingClass: "dragging",
         hoverClass: "hover",
       });
-      // Initialize tooltips
       const tooltips = document.querySelectorAll(".custom-tooltip");
       tooltips.forEach(function (tooltip) {
         const tooltipText = tooltip.querySelector(".custom-tooltiptext");
@@ -294,8 +286,6 @@ function visualizeTable(rulesData) {
   });
   qualityHtml += "</table>";
   document.getElementById("qualityOfFit").innerHTML = qualityHtml;
-
-  // Populate Warnings
   const warnings = rulesData.warnings; // Adjust based on JSON structure
   let warningsHtml = "<ul>";
   warnings.forEach((warning) => {
@@ -311,8 +301,6 @@ function visualizeTable(rulesData) {
   });
   warningsHtml += "</ul>";
   document.getElementById("warnings").innerHTML = warningsHtml;
-
-  // Helper function to extract column names from rule text
   function extractColumnNames(ruleText) {
     const columnNames = [];
     const regex = /If ([^ ]+)/g;
@@ -322,8 +310,6 @@ function visualizeTable(rulesData) {
     }
     return columnNames;
   }
-
-  // Helper function to assign rainbow colors
   function generateRainbowColors(numColors) {
     const colors = [];
     for (let i = 0; i < numColors; i++) {
@@ -332,8 +318,6 @@ function visualizeTable(rulesData) {
     }
     return colors;
   }
-
-  // Helper function to color column names in rule text
   function colorColumnNames(ruleText, colorMap) {
     let coloredText = ruleText;
     Object.keys(colorMap).forEach((colName) => {
@@ -357,11 +341,7 @@ function toggleRightPane() {
   } else {
     rightPane.style.display = "none";
   }
-
-  // Add click animation class
   toggleButton.classList.add("click-animation");
-
-  // Remove the class after the animation ends
   setTimeout(function () {
     toggleButton.classList.remove("click-animation");
   }, 300); // Duration of the animation
@@ -456,24 +436,18 @@ document.addEventListener("DOMContentLoaded", function () {
         <button type="button" class="delete-filter btn btn-danger btn-sm">🗑️</button>
     `;
     container.appendChild(fieldset);
-    // Add event listener to the column-name input
     const columnNameInput = fieldset.querySelector(".column-name");
     const legend = fieldset.querySelector("legend");
 
     columnNameInput.addEventListener("input", async () => {
       const value = columnNameInput.value.trim();
       legend.textContent = value ? value : "New Column";
-
-      // Check if the uploaded file is set and column name is provided
       if (window.uploadedFile && value) {
         try {
-          // Parse the CSV data
           const data = await parseCSV(window.uploadedFile);
           if (data && data[value]) {
-            // Display box plot
             displayBoxPlot(data[value], fieldset, value);
           } else {
-            // Handle case where the column does not exist
             console.warn(
               `Column "${value}" not found in the uploaded CSV file.`
             );
@@ -519,8 +493,6 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 });
-
-// Function to parse CSV data
 async function parseCSV(csvString) {
   return new Promise((resolve, reject) => {
     Papa.parse(csvString, {
@@ -544,22 +516,15 @@ async function parseCSV(csvString) {
 }
 
 function displayBoxPlot(columnData, container, columnName) {
-  // Remove existing canvas if any
   const existingCanvas = container.querySelector(".boxplot-canvas");
   if (existingCanvas) {
     existingCanvas.remove();
   }
-
-  // Create a canvas element
   const canvas = document.createElement("canvas");
   canvas.className = "boxplot-canvas";
   canvas.style.width = "100%";
   container.appendChild(canvas);
-
-  // Adjust container styling if needed
   container.style.position = "relative";
-
-  // Create the box plot using Chart.js
   new Chart(canvas.getContext("2d"), {
     type: "boxplot",
     data: {
@@ -625,8 +590,6 @@ document
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-
-    // Hide modal after download
     $("#downloadModal").modal("hide");
   });
 
@@ -702,33 +665,66 @@ $("#downloadModal").on("hidden.bs.modal", async function () {
   document.getElementById("only_one_round_lin_removal").checked =
     config.rule_filters.only_one_round_of_linearity_removal ?? true;
 
-  console.log("Configuration pane updated with demo configuration.");
+  const outlierFilters = config.outlier_filtering;
+  if (outlierFilters && Object.keys(outlierFilters).length > 0) {
+    const container = document.getElementById("outlier-filters-container");
+    const addButton = document.getElementById("add-outlier-filter");
 
-  // Hide choice-container and show rules table
+    Object.entries(outlierFilters).forEach(([columnName, filterConfig]) => {
+      addButton.click();
+
+      const fieldsets = container.querySelectorAll("fieldset");
+      const lastFieldset = fieldsets[fieldsets.length - 1];
+
+      const columnNameInput = lastFieldset.querySelector(".column-name");
+      columnNameInput.value = columnName;
+
+      const legend = lastFieldset.querySelector("legend");
+      legend.textContent = columnName;
+
+      const methodSelect = lastFieldset.querySelector(".outlier-method");
+      methodSelect.value = filterConfig.method;
+
+      methodSelect.dispatchEvent(new Event("change"));
+
+      if (filterConfig.method === "VariableBounds") {
+        const minInput = lastFieldset.querySelector(
+          'input[name="outlier_min"]'
+        );
+        const maxInput = lastFieldset.querySelector(
+          'input[name="outlier_max"]'
+        );
+        minInput.value = filterConfig.min;
+        maxInput.value = filterConfig.max;
+      } else if (filterConfig.method === "IQR") {
+        const iqrInput = lastFieldset.querySelector(
+          'input[name="outlier_iqr_multiplier"]'
+        );
+        iqrInput.value = filterConfig.outlier_iqr_multiplier || 1.5;
+      }
+    });
+  }
+
+  console.log("Configuration pane updated with demo configuration.");
   document.getElementById("choice-container").style.display = "none";
   document.getElementById("main-content-container").style.display = "grid";
 
-  // Fetch and display rules
   const rulesResponse = await fetch("assets/biased_salaries.json");
   if (!rulesResponse.ok) {
     throw new Error("Failed to fetch biased salaries data");
   }
   const rulesData = await rulesResponse.json();
 
-  // Fetch the CSV data
   const csvResponse = await fetch("assets/biased_salaries.csv");
   if (!csvResponse.ok) {
     throw new Error("Failed to fetch biased salaries CSV data");
   }
   const csvText = await csvResponse.text();
 
-  // Parse CSV data
   const data = await parseCSV(csvText);
 
-  // Apply outlier filtering
   const filteredData = applyOutlierFiltering(data);
 
-  // Compute variable bounds from filtered data
   window.variableBounds = {};
   Object.keys(filteredData).forEach((variable) => {
     const values = filteredData[variable]
@@ -739,7 +735,6 @@ $("#downloadModal").on("hidden.bs.modal", async function () {
     window.variableBounds[variable] = { min, max };
   });
 
-  // Visualize the table
   visualizeTable(rulesData);
 });
 
@@ -876,8 +871,13 @@ function createFuzzificationChart(
   });
 }
 
-$(document).on("click", ".hover-item", function () {
-  if (!$(this).find(".tooltip-chart").length) {
+$(document).on("click", ".hover-item", function (event) {
+  event.stopPropagation();
+  const $this = $(this);
+
+  if ($this.find(".tooltip-chart").length) {
+    $this.find(".tooltip-chart").remove();
+  } else {
     const { variable, fuzzySet, role } = extractVariableAndFuzzySet(this);
     const classes =
       role === "consequent"
@@ -903,27 +903,32 @@ $(document).on("click", ".hover-item", function () {
       } else if (numFuzzySets === 5) {
         width = 400;
         height = 250;
-      } else if (numFuzzySets === 5) {
-          width = 450;
-          height = 275;
+      } else if (numFuzzySets === 6) {
+        width = 450;
+        height = 275;
       } else if (numFuzzySets === 7) {
         width = 500;
         height = 300;
       } else {
         width = 300;
-        height = 200; // Default size
+        height = 200;
       }
 
-      // Append the div with adjusted size
-      $(this).append(
-        `<div class="tooltip-chart" style="width:${width}px; height:${height}px;">
+
+      $this.append(
+        `<div class="tooltip-chart" style="width:${width}px; height:${height}px; position:absolute; z-index:1000;">
           <canvas width="${width}" height="${height}"></canvas>
         </div>`
       );
-      const ctx = $(this).find("canvas")[0].getContext("2d");
+
+      const ctx = $this.find("canvas")[0].getContext("2d");
       createFuzzificationChart(ctx, chartData, fuzzySet, variable, role);
     }
   }
+});
+
+$(document).on("mouseleave", ".hover-item", function () {
+  $(this).find(".tooltip-chart").remove();
 });
 
 const uploadButton1 = document.getElementById("uploadButton1");
@@ -940,13 +945,13 @@ uploadButton2.addEventListener("click", () => {
   fileInput1.click();
 });
 function applyOutlierFiltering(data) {
+  debugger;
   const outlierFilters = getOutlierFiltering();
 
   // Create a copy of the data to avoid mutating the original
   let filteredData = {};
   const dataLength = data[Object.keys(data)[0]].length; // Assuming all columns have the same length
 
-  // Initialize filteredData with empty arrays
   Object.keys(data).forEach((key) => {
     filteredData[key] = [];
   });
@@ -966,6 +971,7 @@ function applyOutlierFiltering(data) {
       if (filterConfig.method === "VariableBounds") {
         const { min, max } = filterConfig;
         if (value < min || value > max) {
+          debugger;
           exclude = true;
           break;
         }
@@ -988,7 +994,6 @@ function applyOutlierFiltering(data) {
     }
 
     if (!exclude) {
-      // Include this row
       Object.keys(data).forEach((key) => {
         filteredData[key].push(data[key][i]);
       });
@@ -1042,22 +1047,14 @@ function getOutlierFiltering() {
 
   return filters;
 }
-
-// Function to read file and store content
 function handleFileUpload(fileInput, fileNumber) {
   const file = fileInput.files[0];
   if (file) {
     const reader = new FileReader();
     reader.onload = async function (e) {
       window.uploadedFile = e.target.result;
-
-      // Parse CSV data
       const data = await parseCSV(window.uploadedFile);
-
-      // Apply outlier filtering
       const filteredData = applyOutlierFiltering(data);
-
-      // Compute variable bounds from filtered data
       window.variableBounds = {};
       Object.keys(filteredData).forEach((variable) => {
         const values = filteredData[variable]
@@ -1280,8 +1277,6 @@ document.getElementById("runButton")?.addEventListener("click", async () => {
     },
     include_intercept: document.getElementById("include_intercept").checked,
   };
-
-  // Store the config object for later use
   console.log("Configuration object created:", config);
 
   worker.postMessage({ config, uploadedFile: window.uploadedFile });
