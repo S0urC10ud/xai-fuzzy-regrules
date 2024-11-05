@@ -53,6 +53,18 @@ document
     downloadAnchorNode.remove();
   });
 
+function addHoverSpans(ruleText) {
+  const regex = /If (.*?)(?= AND| then)|then (.*)/g;
+  return ruleText.replace(regex, function (match, p1, p2) {
+    const content = p1 || p2;
+    const role = p1 ? "antecedent" : "consequent";
+    return match.replace(
+      content,
+      `<span class="hover-item" data-role="${role}">${content}</span>`
+    );
+  });
+}
+
 function visualizeTable(rulesData) {
   window.rulesData = rulesData;
   document.getElementById("downloadJsonButton").style.display = "inline-block";
@@ -87,7 +99,8 @@ function visualizeTable(rulesData) {
       title: "Rule",
       width: "min(25rem,30vw)",
       render: function (data, type, row) {
-        const coloredRule = colorColumnNames(row.title, columnColorMap);
+        const ruleWithSpans = addHoverSpans(row.title);
+        const coloredRule = colorColumnNames(ruleWithSpans, columnColorMap);
         return coloredRule;
       },
     },
@@ -240,14 +253,18 @@ function visualizeTable(rulesData) {
         hoverClass: "hover",
       });
       // Initialize tooltips
-      $(".custom-tooltip").hover(
-        function () {
-          $(this).find(".custom-tooltiptext").fadeIn(200);
-        },
-        function () {
-          $(this).find(".custom-tooltiptext").fadeOut(200);
-        }
-      );
+      const tooltips = document.querySelectorAll(".custom-tooltip");
+      tooltips.forEach(function (tooltip) {
+        const tooltipText = tooltip.querySelector(".custom-tooltiptext");
+        tooltip.addEventListener("mouseenter", function () {
+          tooltipText.style.opacity = "1";
+          tooltipText.style.visibility = "visible";
+        });
+        tooltip.addEventListener("mouseleave", function () {
+          tooltipText.style.opacity = "0";
+          tooltipText.style.visibility = "hidden";
+        });
+      });
     },
   });
 
@@ -602,7 +619,8 @@ document
   .getElementById("downloadButton")
   .addEventListener("click", function () {
     const link = document.createElement("a");
-    link.href = "https://github.com/S0urC10ud/xai-fuzzy-regrules/tree/main/example_unveiling_biases/biased_salaries";
+    link.href =
+      "https://github.com/S0urC10ud/xai-fuzzy-regrules/tree/main/example_unveiling_biases/biased_salaries";
     link.target = "_blank";
     document.body.appendChild(link);
     link.click();
@@ -611,6 +629,7 @@ document
     // Hide modal after download
     $("#downloadModal").modal("hide");
   });
+
 $("#downloadModal").on("hidden.bs.modal", async function () {
   const response = await fetch("assets/demo_configuration.json");
   if (!response.ok) {
@@ -696,7 +715,188 @@ $("#downloadModal").on("hidden.bs.modal", async function () {
   }
   const rulesData = await rulesResponse.json();
 
+  // Fetch the CSV data
+  const csvResponse = await fetch("assets/biased_salaries.csv");
+  if (!csvResponse.ok) {
+    throw new Error("Failed to fetch biased salaries CSV data");
+  }
+  const csvText = await csvResponse.text();
+
+  // Parse CSV data
+  const data = await parseCSV(csvText);
+
+  // Apply outlier filtering
+  const filteredData = applyOutlierFiltering(data);
+
+  // Compute variable bounds from filtered data
+  window.variableBounds = {};
+  Object.keys(filteredData).forEach((variable) => {
+    const values = filteredData[variable]
+      .map((val) => parseFloat(val))
+      .filter((val) => !isNaN(val));
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    window.variableBounds[variable] = { min, max };
+  });
+
+  // Visualize the table
   visualizeTable(rulesData);
+});
+
+function computeMembershipDegrees(x, min, max, classes) {
+  const allowedClasses = [
+    "verylow",
+    "low",
+    "mediumlow",
+    "medium",
+    "mediumhigh",
+    "high",
+    "veryhigh",
+  ];
+
+  const sortedClasses = classes
+    .filter((cls) => allowedClasses.includes(cls))
+    .sort((a, b) => allowedClasses.indexOf(a) - allowedClasses.indexOf(b));
+
+  if (classes.filter((cls) => !allowedClasses.includes(cls)).length > 0) {
+    throw new Error(
+      "Invalid (de-)fuzzification classes provided. Valid classes are: verylow, low, mediumlow, medium, mediumhigh, high, veryhigh."
+    );
+  }
+
+  const numClasses = sortedClasses.length;
+  if (![3, 5, 6, 7].includes(numClasses)) {
+    throw new Error("Number of classes must be either 3, 5, 6, or 7.");
+  }
+
+  const range = max - min;
+  const step = range / (numClasses - 1);
+
+  const peaks = Array.from({ length: numClasses }, (_, i) => min + i * step);
+
+  const triangles = peaks.map((peak, i) => {
+    const left = i === 0 ? min : peaks[i - 1];
+    const right = i === numClasses - 1 ? max : peaks[i + 1];
+    return { left, peak, right };
+  });
+
+  const triangle = (x, left, peak, right) => {
+    if (x === peak) return 1;
+    if (x < left || x > right) return 0;
+    if (x < peak) {
+      return (x - left) / (peak - left);
+    } else {
+      return (right - x) / (right - peak);
+    }
+  };
+
+  // Compute raw membership degrees
+  const rawDegrees = triangles.map(({ left, peak, right }) =>
+    triangle(x, left, peak, right)
+  );
+
+  // Ensure first and last class peak at min and max
+  rawDegrees[0] = x <= min ? 1 : rawDegrees[0];
+  rawDegrees[numClasses - 1] = x >= max ? 1 : rawDegrees[numClasses - 1];
+
+  // Normalize the degrees so that their sum is 1
+  const sumDegrees = rawDegrees.reduce((sum, degree) => sum + degree, 0);
+  const normalizedDegrees =
+    sumDegrees === 0
+      ? rawDegrees.map(() => 0)
+      : rawDegrees.map((degree) => degree / sumDegrees);
+
+  const membershipDegrees = {};
+  sortedClasses.forEach((cls, idx) => {
+    membershipDegrees[cls] = parseFloat(normalizedDegrees[idx].toFixed(4)); // Rounded for readability
+  });
+
+  return membershipDegrees;
+}
+
+function extractVariableAndFuzzySet(element) {
+  const text = $(element).text();
+  const parts = text.split(" is ");
+  return {
+    variable: parts[0].trim().replace("If ", ""),
+    fuzzySet: parts[1].trim(),
+    role: $(element).data("role") || "antecedent",
+  };
+}
+
+function getFuzzySets() {
+  return getNumericalFuzzification();
+}
+
+function getVariableBounds(variable) {
+  return window.variableBounds[variable];
+}
+
+function generateFuzzificationData(min, max, classes) {
+  const data = [];
+  const step = (max - min) / 100;
+  for (let x = min; x <= max; x += step) {
+    const degrees = computeMembershipDegrees(x, min, max, classes);
+    data.push({ x, degrees });
+  }
+  return data;
+}
+
+function createFuzzificationChart(
+  ctx,
+  chartData,
+  highlightSet,
+  variable,
+  role
+) {
+  const datasets = [];
+  let i = 0;
+  for (const cls of Object.keys(chartData[0].degrees)) {
+    datasets.push({
+      label: cls,
+      data: chartData.map((point) => ({ x: point.x, y: point.degrees[cls] })),
+      borderColor: cls === highlightSet ? "red" : "gray",
+      fill: false,
+    });
+    i++;
+  }
+  new Chart(ctx, {
+    type: "line",
+    data: { datasets },
+    options: {
+      scales: { x: { type: "linear" }, y: { max: 1, min: 0 } },
+      plugins: {
+        title: {
+          display: true,
+          text: `${variable}`,
+          align: "center",
+        },
+      },
+    },
+  });
+}
+
+$(document).on("click", ".hover-item", function () {
+  if (!$(this).find(".tooltip-chart").length) {
+    const { variable, fuzzySet, role } = extractVariableAndFuzzySet(this);
+    const classes =
+      role === "consequent"
+        ? getNumericalDefuzzification()
+        : getNumericalFuzzification();
+    const bounds = getVariableBounds(variable);
+
+    // Check if bounds are finite numbers - infinite for categorical data
+    if (isFinite(bounds.min) && isFinite(bounds.max)) {
+      const chartData = generateFuzzificationData(
+        bounds.min,
+        bounds.max,
+        classes
+      );
+      $(this).append('<div class="tooltip-chart"><canvas></canvas></div>');
+      const ctx = $(this).find("canvas")[0].getContext("2d");
+      createFuzzificationChart(ctx, chartData, fuzzySet, variable, role); // Pass role
+    }
+  }
 });
 
 const uploadButton1 = document.getElementById("uploadButton1");
@@ -712,47 +912,164 @@ uploadButton1.addEventListener("click", () => {
 uploadButton2.addEventListener("click", () => {
   fileInput1.click();
 });
+function applyOutlierFiltering(data) {
+  const outlierFilters = getOutlierFiltering();
+
+  // Create a copy of the data to avoid mutating the original
+  let filteredData = {};
+  const dataLength = data[Object.keys(data)[0]].length; // Assuming all columns have the same length
+
+  // Initialize filteredData with empty arrays
+  Object.keys(data).forEach((key) => {
+    filteredData[key] = [];
+  });
+
+  for (let i = 0; i < dataLength; i++) {
+    let exclude = false;
+
+    // Check each filter
+    for (let [columnName, filterConfig] of Object.entries(outlierFilters)) {
+      const value = parseFloat(data[columnName][i]);
+
+      if (isNaN(value)) {
+        exclude = true;
+        break;
+      }
+
+      if (filterConfig.method === "VariableBounds") {
+        const { min, max } = filterConfig;
+        if (value < min || value > max) {
+          exclude = true;
+          break;
+        }
+      } else if (filterConfig.method === "IQR") {
+        const columnData = data[columnName]
+          .map((val) => parseFloat(val))
+          .filter((val) => !isNaN(val));
+        const multiplier = filterConfig.outlier_iqr_multiplier || 1.5;
+        const sortedValues = columnData.sort((a, b) => a - b);
+        const q1 = getPercentile(sortedValues, 25);
+        const q3 = getPercentile(sortedValues, 75);
+        const iqr = q3 - q1;
+        const lowerBound = q1 - multiplier * iqr;
+        const upperBound = q3 + multiplier * iqr;
+        if (value < lowerBound || value > upperBound) {
+          exclude = true;
+          break;
+        }
+      }
+    }
+
+    if (!exclude) {
+      // Include this row
+      Object.keys(data).forEach((key) => {
+        filteredData[key].push(data[key][i]);
+      });
+    }
+  }
+
+  return filteredData;
+}
+
+function getPercentile(sortedArr, percentile) {
+  const index = (percentile / 100) * (sortedArr.length - 1);
+  const lower = Math.floor(index);
+  const upper = Math.ceil(index);
+  const weight = index % 1;
+
+  if (upper >= sortedArr.length) return sortedArr[lower];
+  return sortedArr[lower] * (1 - weight) + sortedArr[upper] * weight;
+}
+
+function getOutlierFiltering() {
+  const container = document.getElementById("outlier-filters-container");
+  const filters = {};
+
+  const fieldsets = container.querySelectorAll("fieldset");
+
+  fieldsets.forEach((fieldset) => {
+    const columnName = fieldset.querySelector(".column-name").value.trim();
+    const method = fieldset.querySelector(".outlier-method").value;
+    const filter = { method };
+
+    if (method === "VariableBounds") {
+      const min = parseFloat(
+        fieldset.querySelector('input[name="outlier_min"]').value
+      );
+      const max = parseFloat(
+        fieldset.querySelector('input[name="outlier_max"]').value
+      );
+      filter.min = min;
+      filter.max = max;
+    } else if (method === "IQR") {
+      const multiplier = parseFloat(
+        fieldset.querySelector('input[name="outlier_iqr_multiplier"]').value
+      );
+      filter.outlier_iqr_multiplier = multiplier;
+    }
+
+    if (columnName) {
+      filters[columnName] = filter;
+    }
+  });
+
+  return filters;
+}
 
 // Function to read file and store content
 function handleFileUpload(fileInput, fileNumber) {
   const file = fileInput.files[0];
   if (file) {
     const reader = new FileReader();
-    reader.onload = function (e) {
-      if (fileNumber === 1) {
-        window.uploadedFile = e.target.result;
-      } else {
-        window.uploadedFile = e.target.result;
+    reader.onload = async function (e) {
+      window.uploadedFile = e.target.result;
+
+      // Parse CSV data
+      const data = await parseCSV(window.uploadedFile);
+
+      // Apply outlier filtering
+      const filteredData = applyOutlierFiltering(data);
+
+      // Compute variable bounds from filtered data
+      window.variableBounds = {};
+      Object.keys(filteredData).forEach((variable) => {
+        const values = filteredData[variable]
+          .map((val) => parseFloat(val))
+          .filter((val) => !isNaN(val));
+        const min = Math.min(...values);
+        const max = Math.max(...values);
+        window.variableBounds[variable] = { min, max };
+      });
+
+      document.getElementById("runButton").disabled = false;
+      document.getElementById("uploadButton1").textContent = "Uploaded File✔️";
+      document.getElementById("uploadButton1").style.backgroundColor =
+        "#ffcc00";
+      document.getElementById("uploadButton1").style.color = "black";
+
+      document.getElementById("uploadButton2").childNodes[1].textContent = "✔️";
+      document.getElementById("uploadButton2").childNodes[3].textContent =
+        "Successfully read the file! Now configure and run!";
+      document.getElementById("uploadButton2").childNodes[3].style.color =
+        "black";
+      document.getElementById("uploadButton2").style.backgroundColor =
+        "#ffcc00";
+
+      runButton.classList.add("pulsing-button");
+
+      // If viewport width is less than 768px, toggle the configuration pane
+      const rightPane = document.querySelector(".right-pane");
+      if (
+        (window.innerWidth <= 768 && rightPane.style.display === "none") ||
+        rightPane.style.display === ""
+      ) {
+        toggleRightPane();
       }
     };
     reader.readAsText(file);
-
-    document.getElementById("runButton").disabled = false;
-    // Success message elements
-    document.getElementById("uploadButton1").textContent = "Uploaded File✔️";
-    document.getElementById("uploadButton1").style.backgroundColor = "#ffcc00";
-    document.getElementById("uploadButton1").style.color = "black";
-
-    document.getElementById("uploadButton2").childNodes[1].textContent = "✔️";
-    document.getElementById("uploadButton2").childNodes[3].textContent =
-      "Successfully read the file! Now configure and run!";
-    document.getElementById("uploadButton2").childNodes[3].style.color =
-      "black";
-    document.getElementById("uploadButton2").style.backgroundColor = "#ffcc00";
-
-    runButton.classList.add("pulsing-button");
-
-    // if viewport width is less than 768px, toggle show the configuration pane
-    const rightPane = document.querySelector(".right-pane");
-
-    if (
-      (window.innerWidth <= 768 && rightPane.style.display === "none") ||
-      rightPane.style.display === ""
-    ) {
-      toggleRightPane();
-    }
   }
 }
+
 fileInput1.addEventListener("change", () => handleFileUpload(fileInput1, 1));
 
 function getNumericalFuzzification() {
