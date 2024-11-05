@@ -602,8 +602,8 @@ document
   .getElementById("downloadButton")
   .addEventListener("click", function () {
     const link = document.createElement("a");
-    link.href = "assets/biased_salaries.csv";
-    link.download = "biased_salaries.csv";
+    link.href = "https://github.com/S0urC10ud/xai-fuzzy-regrules/tree/main/example_unveiling_biases/biased_salaries";
+    link.target = "_blank";
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
