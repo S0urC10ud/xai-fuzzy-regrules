@@ -13,7 +13,8 @@ More details (especially technical documentation) will follow in the next months
 
 # Web-App 
 
-Everything runs in your browser🎉: https://xai.martin-dallinger.me
+The web-app runs in your browser🎉. https://xai.martin-dallinger.me
+Note: Use chromium-based browsers for more advanced visualizations.
 
 ![Demo Overview](assets/demo_overview.png)
 
