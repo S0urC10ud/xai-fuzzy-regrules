@@ -3,7 +3,7 @@
     "target_var": "MEDV",
     "lasso":{
         "regularization": 1,
-        "max_lasso_iterations": 1000,
+        "max_lasso_iterations": 10000,
         "convergence_threshold": 1e-4
     },
     "rule_filters": {
@@ -16,8 +16,8 @@
         "only_one_round_of_statistical_removal": true,
         "only_one_round_of_linearity_removal": true,
         "rule_priority_filtering": {
-            "enabled":false,
-            "min_priority": 0
+            "enabled":true,
+            "min_priority": 0.2
         }
     },
     "numerical_fuzzification": ["verylow", "low", "medium", "high", "veryhigh"],
@@ -26,12 +26,16 @@
     "remove_low_variance": false,
     "include_intercept": true,
     "outlier_filtering": {
+        "MEDV": {
+            "method": "VariableBounds",
+            "min": 5,
+            "max": 50
+        }
     },
     "num_vars": 2,
     "whitelist": [
     ],
     "blacklist": [
-        
     ],
     "rule_priority_weights": {
         "support_weight": 1,
