@@ -120,7 +120,7 @@ Example request metadata:
     "l1_column_threshold": 0.1, // same as l1_row_threshold but column-wise 
     "dependency_threshold": 0.02, // if the residual from the Gram-Schmidt orthogonalization has a norm lower than this value, the vector is considered being linearly dependent - set to 0 to disable
     "significance_level": 0.05, // for the t-test with H0 that the coefficient Beta=0
-    "remove_insignificant_rules": false, // remove rules that are not statistically significant
+    "remove_insignificant_rules": false, // remove rules that are not statistically significant, requires compute_pvalues to be true
     "only_whitelist": false, // disables the rule generation and forces the system only to use the specified whitelist-rules
     "only_one_round_of_statistical_removal": false, // tradeoff runtime duration and how many rules get filtered
     "only_one_round_of_linearity_removal": false, // tradeoff runtime duration and how many rules get filtered
@@ -129,6 +129,7 @@ Example request metadata:
         "min_priority": 10 // all rules with a priority geq this value will survive (but intercept is exempted) - NOTE: Priorities can also be negative, because leverage may be negative
     }
   },
+  "compute_pvalues": false, // if you want pValues in the output (H0 = Rule not needed), set this to true - disadvantage: the computation take much longer (for each non-filtered basis function a model has to be fit)
   "numerical_fuzzification": ["low", "medium", "high"], // defines the fuzzy sets - possible values: verylow, low, mediumlow, medium, mediumhigh, high, veryhigh
   "numerical_defuzzification": ["verylow", "medium", "veryhigh"], // same as above
   "variance_threshold": 1e-5, // Columns with a variance smaller than this value can be removed, set to 0 to disable
