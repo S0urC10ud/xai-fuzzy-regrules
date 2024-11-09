@@ -1,10 +1,10 @@
-import { Matrix } from "ml-matrix";
+import { Matrix, inverse } from "ml-matrix";
 import { Metadata, Rule } from "../types/index";
 import { logWarning } from "../utils/logger";
-import expCDF from "@stdlib/stats-base-dists-exponential-cdf";
+import tCDF from "@stdlib/stats-base-dists-t-cdf";
 
 /**
- * Select vectors based on orthogonal basis and dependency threshold.
+ * Selects vectors based on orthogonalization and dependency threshold.
  */
 function selectVectors(
   vectors: number[][],
@@ -67,35 +67,35 @@ function selectVectors(
 }
 
 /**
- * Compute the dot product of two vectors.
+ * Computes the dot product of two vectors.
  */
 function dotProduct(v1: number[], v2: number[]): number {
   return v1.reduce((sum, val, i) => sum + val * v2[i], 0);
 }
 
 /**
- * Compute the Euclidean norm of a vector.
+ * Computes the Euclidean norm of a vector.
  */
 function norm(v: number[]): number {
   return Math.sqrt(dotProduct(v, v));
 }
 
 /**
- * Subtract vector v2 from v1.
+ * Subtracts one vector from another.
  */
 function vectorSubtract(v1: number[], v2: number[]): number[] {
   return v1.map((val, i) => val - v2[i]);
 }
 
 /**
- * Multiply a vector by a scalar.
+ * Multiplies a vector by a scalar.
  */
 function scalarMultiply(v: number[], scalar: number): number[] {
   return v.map((val) => val * scalar);
 }
 
 /**
- * Soft-thresholding operator for Lasso.
+ * Applies the soft-thresholding operator.
  */
 function softThresholding(value: number, lambda: number): number {
   if (value > lambda) {
@@ -108,7 +108,7 @@ function softThresholding(value: number, lambda: number): number {
 }
 
 /**
- * Perform Lasso regression using coordinate descent.
+ * Performs LASSO regression using coordinate descent.
  */
 function lassoCoordinateDescent(
   X: number[][],
@@ -117,8 +117,7 @@ function lassoCoordinateDescent(
   tol = 1e-4,
   maxIter = 10000,
   warnings: any[] = []
-): { beta: number[]; betaPath: number[][]; lambdaPath: number[] } {
-  const n = X.length;
+): number[] {
   const p = X[0].length;
   let beta = new Array(p).fill(0);
   let betaOld = new Array(p).fill(0);
@@ -132,10 +131,6 @@ function lassoCoordinateDescent(
   let converged = false;
   let iter = 0;
   let maxDiff = 0;
-
-  const betaPath: number[][] = [];
-  const lambdaPath: number[] = [];
-
   while (!converged && iter < maxIter) {
     iter++;
     for (let j = 0; j < p; j++) {
@@ -150,10 +145,6 @@ function lassoCoordinateDescent(
       // Update beta_j using the soft-thresholding operator
       beta[j] = softThresholding(residual, lambda) / z;
     }
-
-    // Record the beta coefficients
-    betaPath.push([...beta]);
-    lambdaPath.push(lambda);
 
     // Check convergence
     maxDiff = 0;
@@ -176,46 +167,71 @@ function lassoCoordinateDescent(
       warnings
     );
 
-  return { beta, betaPath, lambdaPath };
+  return beta;
 }
 
 /**
- * Compute the covariance test statistic T_k for Lasso.
+ * Estimates the precision matrix using node-wise LASSO.
+ * This is part of the Desparsified LASSO procedure.
  */
-function computeCovarianceStatistic(
+function estimatePrecisionMatrix(
   X: number[][],
-  y: number[],
-  betaFull: number[],
-  betaActive: number[],
-  sigmaSquared: number
-): number {
-  const n = y.length;
-  const XMatrix = new Matrix(X);
-  const yVector = new Matrix(y.map((v) => [v]));
+  lambdaNode: number,
+  tol = 1e-4,
+  maxIter = 10000,
+  warnings: any[] = []
+): Matrix {
+  const n = X.length;
+  const p = X[0].length;
+  const Theta = Matrix.zeros(p, p);
 
-  const yTy = yVector.transpose().mmul(yVector).get(0, 0);
-  const XBetaFull = XMatrix.mmul(new Matrix(betaFull.map((b) => [b])));
-  const XBetaActive = XMatrix.mmul(new Matrix(betaActive.map((b) => [b])));
+  for (let j = 0; j < p; j++) {
+    // Prepare the data for node-wise regression
+    const Xj = X.map((row) => row[j]);
+    const X_minus_j = X.map((row) => row.filter((_, idx) => idx !== j));
 
-  const innerProductFull = yVector.transpose().mmul(XBetaFull).get(0, 0);
-  const innerProductActive = yVector.transpose().mmul(XBetaActive).get(0, 0);
+    // Perform LASSO regression to predict Xj from X_minus_j
+    const beta_j = lassoCoordinateDescent(
+      X_minus_j,
+      Xj,
+      lambdaNode,
+      tol,
+      maxIter,
+      warnings
+    );
 
-  const T_k = (innerProductFull - innerProductActive) / sigmaSquared;
+    // Compute the residuals
+    const XjMatrix = new Matrix(Xj.map((v) => [v]));
+    const XMinusJMatrix = new Matrix(X_minus_j);
+    const predictions = XMinusJMatrix.mmul(new Matrix([beta_j]).transpose())
+      .to2DArray()
+      .map((row) => row[0]);
+    const residuals = XjMatrix.sub(new Matrix(predictions.map((v) => [v])))
+      .to2DArray()
+      .map((row) => row[0]);
 
-  return T_k;
+    // Compute the scaling factor
+    const residualSumOfSquares = residuals.reduce(
+      (sum, val) => sum + val * val,
+      0
+    );
+    const tau = residualSumOfSquares / n;
+
+    // Fill the Theta matrix
+    Theta.set(j, j, 1 / tau);
+    for (let k = 0; k < p; k++) {
+      if (k !== j) {
+        Theta.set(j, k, -beta_j[k < j ? k : k - 1]);
+      }
+    }
+  }
+
+  return Theta;
 }
 
 /**
- * Estimate sigma squared using the residuals.
+ * Performs regression with LASSO regularization and computes p-values using Desparsified LASSO.
  */
-function estimateSigmaSquared(y: number[], yHat: number[]): number {
-  const residuals = y.map((yi, i) => yi - yHat[i]);
-  const residualSumOfSquares = residuals.reduce((sum, r) => sum + r * r, 0);
-  const degreesOfFreedom = y.length - 1;
-  const sigmaSquared = residualSumOfSquares / degreesOfFreedom;
-  return sigmaSquared;
-}
-
 export function performRegression(
   finalX: number[][],
   finalY: number[],
@@ -249,7 +265,7 @@ export function performRegression(
 
     // Add warnings for the removed rules
     warnings.push({
-      "Removed Rules due to priority filtering": selectedRuleIndices
+      "Removed Rules": selectedRuleIndices
         .filter(
           (r) => allRules[r].priority < minPriority && !allRules[r].isIntercept
         )
@@ -284,6 +300,8 @@ export function performRegression(
   const lambda = metadata.lasso.regularization || 0;
   const yVector = finalY;
 
+  const warnCollector: any[] = [];
+
   // Prepare the submatrix for the selected features
   const subMatrixData: number[][] = finalX.map((row) =>
     activeIndices.map((col) => row[col])
@@ -295,8 +313,8 @@ export function performRegression(
   const lassoConvergenceTolerance =
     metadata.lasso.lasso_convergance_tolerance ?? 1e-4;
 
-  // Perform Lasso regression
-  const { beta, betaPath, lambdaPath } = lassoCoordinateDescent(
+  // Perform Lasso regression using coordinate descent
+  const coefficients = lassoCoordinateDescent(
     X,
     yVector,
     lambda,
@@ -305,111 +323,130 @@ export function performRegression(
     warnings
   );
 
-  // Compute the estimated sigma squared
-  const yHat = XMatrix.mmul(new Matrix(beta.map((b) => [b]))).getColumn(0);
-  const sigmaSquared = estimateSigmaSquared(yVector, yHat);
-
-  if (metadata.compute_pvalues) {
-    // Initialize the active set and compute p-values using the covariance test
-    const pValues: number[] = new Array(activeIndices.length).fill(1); // Default p-values to 1
-    const activeSet: number[] = [];
-
-    // We will compute T_k for each predictor entering the model
-    for (let k = 0; k < activeIndices.length; k++) {
-      // Active set before adding the k-th predictor
-      const indicesBeforeK = activeIndices.slice(0, k);
-      const indicesIncludingK = activeIndices.slice(0, k + 1);
-
-      // Prepare X matrices
-      const XActiveMatrix = new Matrix(
-        finalX.map((row) => indicesBeforeK.map((idx) => row[idx]))
-      );
-      const XFullMatrix = new Matrix(
-        finalX.map((row) => indicesIncludingK.map((idx) => row[idx]))
-      );
-
-      // Perform Lasso regression for the model including k-th predictor
-      const XActive = XActiveMatrix.to2DArray();
-      const XFull = XFullMatrix.to2DArray();
-
-      const { beta: betaActive } = lassoCoordinateDescent(
-        XActive,
-        yVector,
-        lambda,
-        lassoConvergenceTolerance,
-        maxLassoIterations,
-        warnings
-      );
-      const { beta: betaFull } = lassoCoordinateDescent(
-        XFull,
-        yVector,
-        lambda,
-        lassoConvergenceTolerance,
-        maxLassoIterations,
-        warnings
-      );
-
-      // Extend betaActive to match the size of betaFull (pad with zeros)
-      const betaActiveExtended = [...betaActive, 0];
-
-      // Compute the covariance statistic T_k
-      const T_k = computeCovarianceStatistic(
-        XFull,
-        yVector,
-        betaFull,
-        betaActiveExtended,
-        sigmaSquared
-      );
-
-      // Compute p-value using the exponential distribution
-      const pValue = 1 - expCDF(T_k, 1); // Exponential with mean 1
-
-      pValues[k] = pValue;
-
-      // Update the rule's pValue
-      const ruleIdx = activeIndices[k];
-      allRules[ruleIdx].pValue = pValue;
-      allRules[ruleIdx].coefficient = betaFull[betaFull.length - 1]; // Coefficient of the k-th predictor
-    }
-
-    // For the remaining predictors (if any), assign coefficient and pValue
-    for (let k = pValues.length; k < activeIndices.length; k++) {
-      const ruleIdx = activeIndices[k];
-      allRules[ruleIdx].pValue = null;
-      allRules[ruleIdx].coefficient = 0;
-    }
-
-    // Remove insignificant rules if required
-    if (metadata.rule_filters.remove_insignificant_rules) {
-      const significanceLevel = metadata.rule_filters.significance_level;
-      const insignificantIndices = activeIndices.filter(
-        (idx, i) => pValues[i] > significanceLevel
-      );
-      if (insignificantIndices.length > 0) {
-        warnings.push({
-          "Removed Insignificant Rules": insignificantIndices.map((idx) =>
-            allRules[idx].toString(metadata.target_var)
-          ),
-        });
-        activeIndices = activeIndices.filter(
-          (idx, i) => pValues[i] <= significanceLevel
-        );
-      }
-    }
-  } else {
-    // Set pValues to null and coefficients as computed
-    activeIndices.forEach((ruleIdx) => {
-      allRules[ruleIdx].pValue = null;
-      // Coefficient is already set from Lasso regression
-    });
-
-    // Set coefficients and p-values for non-selected rules to zero and null respectively
-    selectedRuleIndices.forEach((ruleIdx) => {
-      if (!activeIndices.includes(ruleIdx)) {
-        const rule = allRules[ruleIdx];
-        rule.coefficient = 0;
-        rule.pValue = null;
-      }
-    });
+  if (coefficients === null) {
+    const finalWarn = `Regression coefficients could not be computed.`;
+    logWarning(finalWarn, warnings);
+    throw new Error(`Regression solve failed: ${finalWarn}`);
   }
+
+  // Compute residuals
+  const predictedY = XMatrix.mmul(new Matrix([coefficients]).transpose());
+  const residualsMatrix = new Matrix(yVector.map((y) => [y])).sub(predictedY);
+  const residualSumOfSquares = residualsMatrix
+    .transpose()
+    .mmul(residualsMatrix)
+    .get(0, 0);
+  const degreesOfFreedom =
+    yVector.length - coefficients.filter((coef) => coef !== 0).length;
+
+  if (degreesOfFreedom <= 0) {
+    const finalWarn = `Degrees of freedom is less than or equal to zero. Consider choosing a higher dependency threshold, fewer rules, or a bigger dataset!`;
+    logWarning(finalWarn, warnings);
+    throw new Error(`Regression solve failed: ${finalWarn}`);
+  }
+
+  const sigmaSquared = residualSumOfSquares / degreesOfFreedom;
+
+  // Desparsified LASSO for p-values
+
+  let pValues: number[] | null = null;
+  if (lambda > 0) {
+    // Estimate the precision matrix using node-wise LASSO
+    const lambdaNode = lambda;
+    const Theta = estimatePrecisionMatrix(
+      X,
+      lambdaNode,
+      lassoConvergenceTolerance,
+      maxLassoIterations,
+      warnings
+    );
+
+    // Compute X^T * residual / n
+    const residualVector = residualsMatrix.to2DArray().map((row) => row[0]);
+    const XtResidualMatrix = new Matrix(
+      new Matrix(X).transpose().mmul(new Matrix(residualVector.map((v) => [v])))
+    );
+    const XtResidual = XtResidualMatrix.to2DArray().map((row) =>
+      row.map((val: number) => val / X.length)
+    ); // Fixed the .map on number error here
+
+    // Convert Theta to 2D array for matrix multiplication
+    const ThetaArray = Theta.to2DArray();
+
+    // Compute Theta * (X^T * residual / n)
+    const correction: number[] = ThetaArray.map((row) =>
+      row.reduce((sum, val, idx) => sum + val * XtResidual[idx][0], 0)
+    );
+
+    // Compute de-biased coefficients: beta_d = beta_Lasso + correction
+    const betaDebiased: number[] = coefficients.map(
+      (beta_j, idx) => beta_j + correction[idx]
+    );
+
+    // Compute standard errors: sqrt(Theta[j][j] * sigmaSquared / n)
+    const standardErrors: number[] = ThetaArray.map((row, idx) =>
+      row[idx] > 0 ? Math.sqrt((row[idx] * sigmaSquared) / X.length) : 0
+    );
+
+    // Compute t-statistics and p-values
+    const tStatistics = betaDebiased.map((beta_d, idx) =>
+      standardErrors[idx] !== 0 ? beta_d / standardErrors[idx] : 0
+    );
+    pValues = tStatistics.map(
+      (tStat) => 2 * (1 - tCDF(Math.abs(tStat), degreesOfFreedom))
+    );
+
+    // Note: The LASSO coefficients are retained as-is. The de-biased coefficients are used solely for p-value computation.
+  } else {
+    // When lambda == 0, perform standard OLS p-value computation
+    try {
+      const XtX = XMatrix.transpose().mmul(XMatrix);
+      let XtXInv: Matrix;
+      try {
+        XtXInv = inverse(XtX);
+      } catch (error) {
+        // Regularization to make XtX invertible
+        const identity = Matrix.eye(XtX.rows);
+        XtXInv = inverse(XtX.add(identity.mul(1e-8)));
+      }
+
+      const covarianceMatrix = XtXInv.mul(sigmaSquared);
+
+      // Compute standard errors
+      const standardErrors = covarianceMatrix
+        .diagonal()
+        .map((se) => (se > 0 ? Math.sqrt(se) : 0));
+
+      // Compute t-statistics and p-values
+      const tStatistics = coefficients.map((coef, idx) =>
+        standardErrors[idx] !== 0 ? coef / standardErrors[idx] : 0
+      );
+      pValues = tStatistics.map(
+        (tStat) => 2 * (1 - tCDF(Math.abs(tStat), degreesOfFreedom))
+      );
+    } catch (error) {
+      logWarning(
+        `Failed to compute p-values using OLS: ${(error as Error).message}`,
+        warnings
+      );
+      pValues = null;
+    }
+  }
+
+  // Initialize all coefficients and p-values to zero and one respectively
+  allRules.forEach((rule) => {
+    rule.coefficient = 0;
+    rule.pValue = null;
+  });
+
+  // Assign computed coefficients and p-values to the corresponding rules
+  activeIndices.forEach((ruleIdx, idx) => {
+    const rule = allRules[ruleIdx];
+    rule.coefficient = coefficients[idx];
+    if (pValues !== null && pValues[idx] !== undefined) {
+      rule.pValue = pValues[idx];
+    }
+  });
+
+  logWarning(warnCollector, warnings);
 }
