@@ -28,6 +28,7 @@ export interface Metadata {
             min_priority: number;
         }
     };
+    compute_pvalues: boolean;
     numerical_fuzzification: FuzzySet[];
     numerical_defuzzification: FuzzySet[];
     variance_threshold: number;

@@ -142,9 +142,9 @@
 
           <!-- Target Variable and Number of Antecedents -->
           <div class="row">
-            <div class="config-item col-6">
+            <div class="config-item col-5">
               <label for="num_vars"
-                >Max number of Antecedents
+                >Max number  Antecedents
                 <span class="custom-tooltip"
                   >?<span class="custom-tooltiptext"
                     >Upper bound of number of if-conditions to combine via AND
@@ -154,9 +154,9 @@
               </label>
               <input type="number" id="num_vars" name="num_vars" value="2" />
             </div>
-            <div class="config-item checkbox-item col-6">
+            <div class="config-item checkbox-item col-3">
               <label for="include_intercept"
-                >Include Intercept
+                >Use Intercept
                 <span class="custom-tooltip"
                   >?<span class="custom-tooltiptext"
                     >Determines if an intercept is used to offset the
@@ -169,6 +169,21 @@
                 id="include_intercept"
                 name="include_intercept"
                 checked
+              />
+            </div>
+            <div class="config-item checkbox-item col-4">
+              <label for="compute_pvalues"
+                >Compute pValues
+                <span class="custom-tooltip"
+                  >!<span class="custom-tooltiptext"
+                    >Note: This takes long if you do not filter many rules! For every basis function the regression has to be performed!</span
+                  ></span
+                >
+              </label>
+              <input
+                type="checkbox"
+                id="compute_pvalues"
+                name="compute_pvalues"
               />
             </div>
           </div>

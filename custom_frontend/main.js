@@ -605,7 +605,9 @@ $("#downloadModal").on("hidden.bs.modal", async function () {
   document.getElementById("target_var").value = config.target_var ?? "MEDV";
   document.getElementById("num_vars").value = config.num_vars ?? 2;
   document.getElementById("include_intercept").checked =
-    config.include_intercept ?? false;
+    config.include_intercept ?? true;
+  document.getElementById("compute_pvalues").checked =
+    config.compute_pvalues ?? false;
   document.getElementById("numerical_fuzzification").value =
     config.numerical_fuzzification.length ?? 5;
   document.getElementById("numerical_defuzzification").value =
@@ -1274,6 +1276,7 @@ document.getElementById("runButton")?.addEventListener("click", async () => {
       ),
     },
     include_intercept: document.getElementById("include_intercept").checked,
+    compute_pvalues: document.getElementById("compute_pvalues").checked
   };
   console.log("Configuration object created:", config);
 
