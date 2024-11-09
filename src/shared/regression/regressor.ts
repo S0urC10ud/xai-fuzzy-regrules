@@ -3,6 +3,9 @@ import { Metadata, Rule } from '../types/index';
 import { logWarning } from '../utils/logger';
 import tCDF from '@stdlib/stats-base-dists-t-cdf';
 
+/**
+ * Select vectors based on orthogonal basis and dependency threshold.
+ */
 function selectVectors(
     vectors: number[][],
     allRules: Rule[],
@@ -46,33 +49,47 @@ function selectVectors(
             orthogonalBasis.push(normalizedResidual);
         } else {
             const ruleTitle = allRules[i].toString(metadata.target_var);
-                ruledOutWarnings.push({
-                    "Rule": ruleTitle,
-                    "Residual Norm": parseFloat(residualNorm.toFixed(4))
-                }
-            );
+            ruledOutWarnings.push({
+                "Rule": ruleTitle,
+                "Residual Norm": parseFloat(residualNorm.toFixed(4))
+            });
         }
     }
     logWarning({"Removed due to low Gram-Schmidt residual norm (linear dependency)": ruledOutWarnings}, warnings);
     return keptIndices;
 }
 
+/**
+ * Compute the dot product of two vectors.
+ */
 function dotProduct(v1: number[], v2: number[]): number {
     return v1.reduce((sum, val, i) => sum + val * v2[i], 0);
 }
 
+/**
+ * Compute the Euclidean norm of a vector.
+ */
 function norm(v: number[]): number {
     return Math.sqrt(dotProduct(v, v));
 }
 
+/**
+ * Subtract vector v2 from v1.
+ */
 function vectorSubtract(v1: number[], v2: number[]): number[] {
     return v1.map((val, i) => val - v2[i]);
 }
 
+/**
+ * Multiply a vector by a scalar.
+ */
 function scalarMultiply(v: number[], scalar: number): number[] {
     return v.map(val => val * scalar);
 }
 
+/**
+ * Soft-thresholding operator for Lasso.
+ */
 function softThresholding(value: number, lambda: number): number {
     if (value > lambda) {
         return value - lambda;
@@ -83,6 +100,9 @@ function softThresholding(value: number, lambda: number): number {
     }
 }
 
+/**
+ * Perform Lasso regression using coordinate descent.
+ */
 function lassoCoordinateDescent(
     X: number[][],
     y: number[],
@@ -141,13 +161,65 @@ function lassoCoordinateDescent(
 }
 
 /**
+ * Perform Ordinary Least Squares (OLS) regression to compute p-values.
+ */
+function olsRegression(
+    X: number[][],
+    y: number[]
+): { coefficients: number[], pValues: number[] } {
+    const XMatrix = new Matrix(X);
+    const yMatrix = new Matrix(y.map(v => [v]));
+    const Xt = XMatrix.transpose();
+    let XtX = Xt.mmul(XMatrix).to2DArray();
+    let XtXInv: Matrix;
+    try {
+        XtXInv = inverse(Xt.mmul(XMatrix));
+    } catch (error) {
+        // Regularization to make XtX invertible
+        const identity = Matrix.eye(Xt.mmul(XMatrix).rows);
+        XtXInv = inverse(Xt.mmul(XMatrix).add(identity.mul(1e-8)));
+    }
+
+    const XtY = Xt.mmul(yMatrix).to2DArray();
+    const coefficients = XtXInv.mmul(XtY).to2DArray().map(row => row[0]);
+
+    // Compute predictions and residuals
+    const predictions = XMatrix.mmul(new Matrix(coefficients.map(c => [c])));
+    const residuals = yMatrix.sub(predictions);
+    const residualSumOfSquares = residuals.transpose().mmul(residuals).get(0, 0);
+    const degreesOfFreedom = X.length - coefficients.length;
+
+    if (degreesOfFreedom <= 0) {
+        throw new Error(`Degrees of freedom is less than or equal to zero.`);
+    }
+
+    const sigmaSquared = residualSumOfSquares / degreesOfFreedom;
+
+    // Compute covariance matrix
+    const covarianceMatrix = XtXInv.mul(sigmaSquared);
+
+    // Compute standard errors
+    const standardErrors = covarianceMatrix.diagonal().map(se => (se > 0 ? Math.sqrt(se) : 0));
+
+    // Compute t-statistics and p-values
+    const tStatistics = coefficients.map((coef, idx) =>
+        standardErrors[idx] !== 0 ? coef / standardErrors[idx] : 0
+    );
+    const pValues = tStatistics.map(tStat =>
+        2 * (1 - tCDF(Math.abs(tStat), degreesOfFreedom))
+    );
+
+    return { coefficients, pValues };
+}
+
+/**
  * Performs regression with Lasso regularization to optimize for sparsity
+ * and computes p-values using OLS on the selected predictors.
  * @param finalX - The design matrix with samples as rows and rules as columns.
  * @param finalY - The target vector.
  * @param allRules - Array of all possible rules.
  * @param metadata - Metadata containing regression parameters like regularization.
  * @param warnings - Array to collect warnings during the process.
- * @returns The regression coefficients array.
  */
 export function performRegression(
     finalX: number[][],
@@ -211,78 +283,87 @@ export function performRegression(
     const lambda = metadata.lasso.regularization || 0;
     const yVector = finalY;
 
-    const warnCollector: any[] = [];
-
-    // Prepare the submatrix for the selected features
-    const subMatrixData: number[][] = finalX.map(row => activeIndices.map(col => row[col]));
-    const XMatrix = new Matrix(subMatrixData);
-    const X = XMatrix.to2DArray();
+    // First Round Lasso to filter out small coefficients
+    const subMatrixDataFirstRound: number[][] = finalX.map(row => activeIndices.map(col => row[col]));
+    const XMatrixFirstRound = new Matrix(subMatrixDataFirstRound);
+    const XFirstRound = XMatrixFirstRound.to2DArray();
 
     const maxLassoIterations = metadata.lasso.max_lasso_iterations ?? 10000;
     const lassoConvergenceTolerance = metadata.lasso.lasso_convergance_tolerance ?? 1e-4;
 
-    // Perform Lasso regression using coordinate descent
-    const coefficients = lassoCoordinateDescent(X, yVector, lambda, lassoConvergenceTolerance, maxLassoIterations, warnings);
+    // Perform initial Lasso regression
+    const initialCoefficients = lassoCoordinateDescent(XFirstRound, yVector, lambda, lassoConvergenceTolerance, maxLassoIterations, warnings);
 
-    if (coefficients === null) {
-        const finalWarn = `Regression coefficients could not be computed.`;
+    // Filter out coefficients with absolute value < 1e-4
+    const filteredIndices = initialCoefficients
+        .map((coef, idx) => ({ coef, idx }))
+        .filter(item => Math.abs(item.coef) >= 1e-4)
+        .map(item => activeIndices[item.idx]);
+
+    if (filteredIndices.length === 0) {
+        const finalWarn = `All coefficients were filtered out after initial Lasso regression with lambda ${lambda}.`;
         logWarning(finalWarn, warnings);
         throw new Error(`Regression solve failed: ${finalWarn}`);
     }
 
-    // Compute predicted y values
-    const predictedY = XMatrix.mmul(new Matrix([coefficients]).transpose());
-    const residuals = new Matrix(yVector.map(y => [y])).sub(predictedY);
-    const residualSumOfSquares = residuals.transpose().mmul(residuals).get(0, 0);
-    const degreesOfFreedom = yVector.length - coefficients.filter(coef => coef !== 0).length;
+    activeIndices = filteredIndices;
 
-    if (degreesOfFreedom <= 0) {
-        const finalWarn = `Degrees of freedom is less than or equal to zero. Consider choosing a higher dependency threshold, fewer rules, or a bigger dataset!`;
+    // Prepare the submatrix for the filtered features
+    const subMatrixDataFiltered: number[][] = finalX.map(row => activeIndices.map(col => row[col]));
+    const XMatrixFiltered = new Matrix(subMatrixDataFiltered);
+    const XFiltered = XMatrixFiltered.to2DArray();
+
+    // Perform Lasso regression again on the filtered set to ensure sparsity
+    const finalLassoCoefficients = lassoCoordinateDescent(XFiltered, yVector, lambda, lassoConvergenceTolerance, maxLassoIterations, warnings);
+
+    // Identify non-zero coefficients after final Lasso
+    const nonZeroIndices = finalLassoCoefficients
+        .map((coef, idx) => ({ coef, idx }))
+        .filter(item => Math.abs(item.coef) >= 1e-4)
+        .map(item => activeIndices[item.idx]);
+
+    if (nonZeroIndices.length === 0) {
+        const finalWarn = `All coefficients were zero after final Lasso regression with lambda ${lambda}.`;
         logWarning(finalWarn, warnings);
         throw new Error(`Regression solve failed: ${finalWarn}`);
     }
 
-    const sigmaSquared = residualSumOfSquares / degreesOfFreedom;
+    activeIndices = nonZeroIndices;
 
-    // Approximate covariance matrix (Note: This is not exact for Lasso - hence excluded for lasso)
-    let pValues: number[]|null = null;
-    if(lambda == 0) {
-        const XtX = XMatrix.transpose().mmul(XMatrix);
-        let XtXInv: Matrix;
-        try {
-            XtXInv = inverse(XtX);
-        } catch (error) {
-            // Regularization to make XtX invertible
-            const identity = Matrix.eye(XtX.rows);
-            XtXInv = inverse(XtX.add(identity.mul(1e-8)));
+    // Prepare the submatrix for the final selected features
+    const subMatrixDataFinal: number[][] = finalX.map(row => activeIndices.map(col => row[col]));
+    const XMatrixFinal = new Matrix(subMatrixDataFinal);
+    const XFinal = XMatrixFinal.to2DArray();
+
+    // Perform Lasso regression one more time to get final coefficients
+    const finalCoefficients = lassoCoordinateDescent(XFinal, yVector, lambda, lassoConvergenceTolerance, maxLassoIterations, warnings);
+
+    // Perform OLS on the selected predictors to compute p-values
+    let pValues: number[] = [];
+    try {
+        const olsResult = olsRegression(XFinal, yVector);
+        // Align the coefficients from OLS with the Lasso coefficients
+        // This assumes that OLS coefficients are the best estimates after selection
+        for (let i = 0; i < activeIndices.length; i++) {
+            allRules[activeIndices[i]].coefficient = olsResult.coefficients[i];
+            allRules[activeIndices[i]].pValue = olsResult.pValues[i];
         }
-
-        const covarianceMatrix = XtXInv.mul(sigmaSquared);
-
-        // Compute standard errors
-        const standardErrors = covarianceMatrix.diagonal().map(se => (se > 0 ? Math.sqrt(se) : 0));
-
-        // Compute t-statistics and p-values
-        const tStatistics = coefficients.map((coef, idx) =>
-            standardErrors[idx] !== 0 ? coef / standardErrors[idx] : 0
-        );
-        pValues = tStatistics.map(tStat =>
-            2 * (1 - tCDF(Math.abs(tStat), degreesOfFreedom))
-        );
+    } catch (error) {
+        logWarning(`OLS regression failed: ${error}`, warnings);
+        // As a fallback, assign Lasso coefficients without p-values
+        activeIndices.forEach((ruleIdx, idx) => {
+            const rule = allRules[ruleIdx];
+            rule.coefficient = finalCoefficients[idx];
+            rule.pValue = null;
+        });
     }
 
-    // Initialize all coefficients and p-values to zero and one respectively
-    allRules.forEach(rule => {
-        rule.coefficient = 0;
+    // Set coefficients and p-values for non-selected rules to zero and null respectively
+    selectedRuleIndices.forEach(ruleIdx => {
+        if (!activeIndices.includes(ruleIdx)) {
+            const rule = allRules[ruleIdx];
+            rule.coefficient = 0;
+            rule.pValue = null;
+        }
     });
-
-    // Assign computed coefficients and p-values to the corresponding rules
-    activeIndices.forEach((ruleIdx, idx) => {
-        const rule = allRules[ruleIdx];
-        rule.coefficient = coefficients[idx];
-        if (pValues !== null)
-            rule.pValue = pValues[idx];
-    });
-
-    logWarning(warnCollector, warnings);
 }
