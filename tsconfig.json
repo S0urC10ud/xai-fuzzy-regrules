@@ -1,7 +1,6 @@
 {
     "compilerOptions": {
       "target": "es6",
-      "module": "esnext",
       "moduleResolution": "Bundler",
       "strict": true,
       "esModuleInterop": true,
