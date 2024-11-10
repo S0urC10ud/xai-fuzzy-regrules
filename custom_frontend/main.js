@@ -104,8 +104,10 @@ function visualizeTable(rulesData) {
     },
     {
       data: null,
-      title: "Trend",
-      width: "2rem",
+      title: "Trend <span class='custom-tooltip'>?\
+        <span class='custom-tooltiptext'>Visualizes the consequent of the rule.</span>\
+      </span>",
+      width: "4rem",
       render: function (data, type, row) {
         const lastWord = row.title.trim().split(" ").pop().toLowerCase();
         let emoji = "";
@@ -184,6 +186,16 @@ function visualizeTable(rulesData) {
         return parseFloat(data).toFixed(6);
       },
     },
+    {
+      data: "mostContributingCSVRows",
+      title:
+        "Most Affected Rows <span class='custom-tooltip'>?\
+        <span class='custom-tooltiptext'>CSV rows (represents line number - starting with 1) where this rule holds with the highest leverage.</span>\
+      </span>",
+      render: function (data) {
+        return data.join(", ");
+      },
+    }
   ];
 
   if (hasSecondaryRules) {
@@ -701,7 +713,6 @@ $("#downloadModal").on("hidden.bs.modal", async function () {
     throw new Error("Failed to fetch biased salaries data");
   }
   const rulesData = await rulesResponse.json();
-
   const csvResponse = await fetch("assets/biased_salaries.csv");
   if (!csvResponse.ok) {
     throw new Error("Failed to fetch biased salaries CSV data");
