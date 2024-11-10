@@ -329,124 +329,173 @@ export function performRegression(
     throw new Error(`Regression solve failed: ${finalWarn}`);
   }
 
-  // Compute residuals
-  const predictedY = XMatrix.mmul(new Matrix([coefficients]).transpose());
-  const residualsMatrix = new Matrix(yVector.map((y) => [y])).sub(predictedY);
-  const residualSumOfSquares = residualsMatrix
-    .transpose()
-    .mmul(residualsMatrix)
-    .get(0, 0);
-  const degreesOfFreedom =
-    yVector.length - coefficients.filter((coef) => coef !== 0).length;
+  // Define the threshold for coefficient significance
+  const significanceThreshold = 1e-5;
 
-  if (degreesOfFreedom <= 0) {
-    const finalWarn = `Degrees of freedom is less than or equal to zero. Consider choosing a higher dependency threshold, fewer rules, or a bigger dataset!`;
-    logWarning(finalWarn, warnings);
-    throw new Error(`Regression solve failed: ${finalWarn}`);
-  }
+  // Identify significant and insignificant coefficients
+  const significantIndices: number[] = [];
+  const filteredCoeffs = coefficients.filter((_, idx) => Math.abs(coefficients[idx]) >= significanceThreshold);
+  const tooLowCoefficients: string[] = [];
 
-  const sigmaSquared = residualSumOfSquares / degreesOfFreedom;
+  coefficients.forEach((coef, idx) => {
+    if (Math.abs(coef) >= significanceThreshold)
+      significantIndices.push(activeIndices[idx]);
+    else
+      tooLowCoefficients.push(allRules[activeIndices[idx]].toString(metadata.target_var));
+  });
 
-  // Desparsified LASSO for p-values
+  warnCollector.push({
+    "Removed from pValue-computation due to low coefficient (<1e-5)": tooLowCoefficients,
+  });
 
-  let pValues: number[] | null = null;
-  if (lambda > 0) {
-    // Estimate the precision matrix using node-wise LASSO
-    const lambdaNode = lambda;
-    const Theta = estimatePrecisionMatrix(
-      X,
-      lambdaNode,
-      lassoConvergenceTolerance,
-      maxLassoIterations,
-      warnings
-    );
+  activeIndices = significantIndices;
 
-    // Compute X^T * residual / n
-    const residualVector = residualsMatrix.to2DArray().map((row) => row[0]);
-    const XtResidualMatrix = new Matrix(
-      new Matrix(X).transpose().mmul(new Matrix(residualVector.map((v) => [v])))
-    );
-    const XtResidual = XtResidualMatrix.to2DArray().map((row) =>
-      row.map((val: number) => val / X.length)
-    ); // Fixed the .map on number error here
-
-    // Convert Theta to 2D array for matrix multiplication
-    const ThetaArray = Theta.to2DArray();
-
-    // Compute Theta * (X^T * residual / n)
-    const correction: number[] = ThetaArray.map((row) =>
-      row.reduce((sum, val, idx) => sum + val * XtResidual[idx][0], 0)
-    );
-
-    // Compute de-biased coefficients: beta_d = beta_Lasso + correction
-    const betaDebiased: number[] = coefficients.map(
-      (beta_j, idx) => beta_j + correction[idx]
-    );
-
-    // Compute standard errors: sqrt(Theta[j][j] * sigmaSquared / n)
-    const standardErrors: number[] = ThetaArray.map((row, idx) =>
-      row[idx] > 0 ? Math.sqrt((row[idx] * sigmaSquared) / X.length) : 0
-    );
-
-    // Compute t-statistics and p-values
-    const tStatistics = betaDebiased.map((beta_d, idx) =>
-      standardErrors[idx] !== 0 ? beta_d / standardErrors[idx] : 0
-    );
-    pValues = tStatistics.map(
-      (tStat) => 2 * (1 - tCDF(Math.abs(tStat), degreesOfFreedom))
-    );
-
-    // Note: The LASSO coefficients are retained as-is. The de-biased coefficients are used solely for p-value computation.
-  } else {
-    // When lambda == 0, perform standard OLS p-value computation
-    try {
-      const XtX = XMatrix.transpose().mmul(XMatrix);
-      let XtXInv: Matrix;
-      try {
-        XtXInv = inverse(XtX);
-      } catch (error) {
-        // Regularization to make XtX invertible
-        const identity = Matrix.eye(XtX.rows);
-        XtXInv = inverse(XtX.add(identity.mul(1e-8)));
-      }
-
-      const covarianceMatrix = XtXInv.mul(sigmaSquared);
-
-      // Compute standard errors
-      const standardErrors = covarianceMatrix
-        .diagonal()
-        .map((se) => (se > 0 ? Math.sqrt(se) : 0));
-
-      // Compute t-statistics and p-values
-      const tStatistics = coefficients.map((coef, idx) =>
-        standardErrors[idx] !== 0 ? coef / standardErrors[idx] : 0
-      );
-      pValues = tStatistics.map(
-        (tStat) => 2 * (1 - tCDF(Math.abs(tStat), degreesOfFreedom))
-      );
-    } catch (error) {
-      logWarning(
-        `Failed to compute p-values using OLS: ${(error as Error).message}`,
-        warnings
-      );
-      pValues = null;
-    }
-  }
-
-  // Initialize all coefficients and p-values to zero and one respectively
+  // Initialize all coefficients and p-values to zero and null respectively
   allRules.forEach((rule) => {
     rule.coefficient = 0;
     rule.pValue = null;
   });
 
-  // Assign computed coefficients and p-values to the corresponding rules
-  activeIndices.forEach((ruleIdx, idx) => {
-    const rule = allRules[ruleIdx];
-    rule.coefficient = coefficients[idx];
-    if (pValues !== null && pValues[idx] !== undefined) {
-      rule.pValue = pValues[idx];
+  if (activeIndices.length === 0) {
+    logWarning(
+      `All coefficients are below the significance threshold (${significanceThreshold}). No p-values computed.`,
+      warnings
+    );
+    return;
+  }
+
+  const lambdaParam = metadata.compute_pvalues ? lambda : 0;
+
+  if (metadata.compute_pvalues) {
+    // Prepare the submatrix for significant features
+    const significantSubMatrixData: number[][] = finalX.map((row) =>
+      activeIndices.map((col) => row[col])
+    );
+    const significantXMatrix = new Matrix(significantSubMatrixData);
+    const significantX = significantXMatrix.to2DArray();
+
+    // Compute residuals
+    const predictedY = significantXMatrix.mmul(new Matrix([coefficients.filter((_, idx) => Math.abs(coefficients[idx]) >= significanceThreshold)].flatMap(c => [c])).transpose());
+    const residualsMatrix = new Matrix(yVector.map((y) => [y])).sub(predictedY);
+    const residualSumOfSquares = residualsMatrix
+      .transpose()
+      .mmul(residualsMatrix)
+      .get(0, 0);
+    const degreesOfFreedom =
+      yVector.length - coefficients.filter((coef) => Math.abs(coef) >= significanceThreshold).length;
+
+    if (degreesOfFreedom <= 0) {
+      const finalWarn = `Degrees of freedom is less than or equal to zero. Consider choosing a higher dependency threshold, fewer rules, or a bigger dataset!`;
+      logWarning(finalWarn, warnings);
+      throw new Error(`Regression solve failed: ${finalWarn}`);
     }
-  });
+
+    const sigmaSquared = residualSumOfSquares / degreesOfFreedom;
+
+    let pValues: number[] | null = null;
+    if (lambdaParam > 0 && activeIndices.length > 0) {
+      // Estimate the precision matrix using node-wise LASSO
+      const lambdaNode = lambdaParam;
+      const Theta = estimatePrecisionMatrix(
+        significantX,
+        lambdaNode,
+        lassoConvergenceTolerance,
+        maxLassoIterations,
+        warnings
+      );
+
+      // Compute X^T * residual / n
+      const residualVector = residualsMatrix.to2DArray().map((row) => row[0]);
+      const XtResidualMatrix = new Matrix(
+        new Matrix(significantX).transpose().mmul(new Matrix(residualVector.map((v) => [v])))
+      );
+      const XtResidual = XtResidualMatrix.to2DArray().map((row) =>
+        row.map((val: number) => val / X.length)
+      );
+
+      // Convert Theta to 2D array for matrix multiplication
+      const ThetaArray = Theta.to2DArray();
+
+      // Compute Theta * (X^T * residual / n)
+      const correction: number[] = ThetaArray.map((row) =>
+        row.reduce((sum, val, idx) => sum + val * XtResidual[idx][0], 0)
+      );
+
+      // Compute de-biased coefficients: beta_d = beta_Lasso + correction
+      const betaDebiased: number[] = coefficients
+        .filter((_, idx) => Math.abs(coefficients[idx]) >= significanceThreshold)
+        .map((beta_j, idx) => beta_j + correction[idx]);
+
+      // Compute standard errors: sqrt(Theta[j][j] * sigmaSquared / n)
+      const standardErrors: number[] = ThetaArray.map((row, idx) =>
+        row[idx] > 0 ? Math.sqrt((row[idx] * sigmaSquared) / X.length) : 0
+      );
+
+      // Compute t-statistics and p-values
+      const tStatistics = betaDebiased.map((beta_d, idx) =>
+        standardErrors[idx] !== 0 ? beta_d / standardErrors[idx] : 0
+      );
+      pValues = tStatistics.map(
+        (tStat) => 2 * (1 - tCDF(Math.abs(tStat), degreesOfFreedom))
+      );
+    } else if (lambdaParam === 0 && activeIndices.length > 0) {
+      try {
+        const XtX = new Matrix(significantX).transpose().mmul(new Matrix(significantX));
+        let XtXInv: Matrix;
+        try {
+          XtXInv = inverse(XtX);
+        } catch (error) {
+          const identity = Matrix.eye(XtX.rows);
+          XtXInv = inverse(XtX.add(identity.mul(1e-8)));
+        }
+
+        const covarianceMatrix = XtXInv.mul(sigmaSquared);
+
+        // Compute standard errors
+        const standardErrors = covarianceMatrix
+          .diagonal()
+          .map((se) => (se > 0 ? Math.sqrt(se) : 0));
+
+        // Compute t-statistics and p-values
+        const tStatistics = coefficients
+          .filter((_, idx) => Math.abs(coefficients[idx]) >= significanceThreshold)
+          .map((coef, idx) =>
+            standardErrors[idx] !== 0 ? coef / standardErrors[idx] : 0
+          );
+        pValues = tStatistics.map(
+          (tStat) => 2 * (1 - tCDF(Math.abs(tStat), degreesOfFreedom))
+        );
+      } catch (error) {
+        logWarning(
+          `Failed to compute p-values using OLS: ${(error as Error).message}`,
+          warnings
+        );
+        pValues = null;
+      }
+    }
+
+    // Assign computed coefficients and p-values to the corresponding rules
+    activeIndices.forEach((ruleIdx, idx) => {
+      const rule = allRules[ruleIdx];
+      rule.coefficient = filteredCoeffs[idx];
+      if (pValues !== null && pValues[idx] !== undefined) {
+        rule.pValue = pValues[idx];
+      }
+    });
+  } else {
+    // Assign coefficients without computing p-values
+    let counter = 0;
+    activeIndices.forEach((ruleIdx, idx) => {
+      const rule = allRules[ruleIdx];
+      if(Math.abs(filteredCoeffs[idx]) < significanceThreshold) {
+        throw new Error(`Regression solve failed: Coefficient ${coefficients[idx]} is below the significance threshold ${significanceThreshold}.`);
+      }
+
+      rule.coefficient = filteredCoeffs[idx];
+      rule.pValue = null;
+      counter += 1;
+    });
+  }
 
   logWarning(warnCollector, warnings);
 }
