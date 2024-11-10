@@ -91,7 +91,7 @@ function visualizeTable(rulesData) {
   });
 
   // Define columns with tooltips
-  const columns = [
+  let columns = [
     {
       data: "title",
       title: "Rule",
@@ -145,6 +145,16 @@ function visualizeTable(rulesData) {
       },
     },
     {
+      data: "pValue",
+      title:
+        "P-Value <span class='custom-tooltip'>?\
+        <span class='custom-tooltiptext'>Statistical significance of the rule.</span>\
+      </span>",
+      render: function (data) {
+        return isNaN(data) ? "N/A" : parseFloat(data).toFixed(6);
+      },
+    },
+    {
       data: "priority",
       title:
         "Priority <span class='custom-tooltip'>?\
@@ -189,28 +199,9 @@ function visualizeTable(rulesData) {
     });
   }
 
-  if (hasPValue) {
-    columns.push({
-      data: "pValue",
-      title:
-        "P-Value <span class='custom-tooltip'>?\
-        <span class='custom-tooltiptext'>Statistical significance of the rule.</span>\
-      </span>",
-      render: function (data) {
-        return isNaN(data) ? "N/A" : parseFloat(data).toFixed(6);
-      },
-    });
-  }
+  if (!hasPValue)
+    columns = columns.filter((col) => col.data !="pValue");
 
-  const columnMap = {
-    title: "Rule",
-    coefficient: "Coefficient",
-    priority: "Priority",
-    support: "Support",
-    leverage: "Leverage",
-    secondaryRules: "Secondary Rules",
-    pValue: "P-Value",
-  };
 
   let thead = "<thead><tr>";
   columns.forEach(function (column) {
@@ -219,7 +210,7 @@ function visualizeTable(rulesData) {
   thead += "</tr></thead>";
   $("#rulesTable").html(thead);
   $("#rulesTable").DataTable().destroy();
-  const table = $("#rulesTable").DataTable({
+  $("#rulesTable").DataTable({
     data: rulesData.sorted_rules,
     columns: columns,
     order: [[2, "desc"]],
