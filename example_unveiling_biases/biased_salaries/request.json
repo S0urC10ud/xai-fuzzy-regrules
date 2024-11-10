@@ -1,5 +1,6 @@
 {
     "target_var": "Salary",
+    "compute_pvalues": true,
     "outlier_filtering": {
         "Salary":
         {
@@ -10,8 +11,8 @@
     },
     "split_char": ";",
     "lasso": {
-        "regularization": 10,
-        "max_lasso_iterations": 1000,
+        "regularization": 1,
+        "max_lasso_iterations": 10000,
         "lasso_convergance_tolerance": 1e-4
     },
     "rule_filters": {
@@ -24,8 +25,8 @@
         "only_one_round_of_statistical_removal": true,
         "only_one_round_of_linearity_removal": true,
         "rule_priority_filtering": {
-           "enabled": false,
-           "min_priority": 0.3
+           "enabled": true,
+           "min_priority": 0.04
         }
     },
     "numerical_fuzzification": ["veryhigh", "high",  "medium",  "low", "verylow"],
@@ -35,6 +36,7 @@
     "whitelist": [],
     "blacklist": [],
     "remove_low_variance": false,
+    "generate_fuzzification_chart": false,
     "include_intercept": true,
     "rule_priority_weights": {
         "support_weight": 1,
