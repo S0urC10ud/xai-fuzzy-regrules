@@ -21,8 +21,6 @@ export interface Metadata {
         significance_level: number;
         remove_insignificant_rules: boolean;
         only_whitelist?: boolean;
-        only_one_round_of_statistical_removal?: boolean;
-        only_one_round_of_linearity_removal?: boolean;
         rule_priority_filtering?: {
             enabled: boolean;
             min_priority: number;

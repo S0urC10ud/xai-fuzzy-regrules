@@ -144,7 +144,7 @@
           <div class="row">
             <div class="config-item col-5">
               <label for="num_vars"
-                >Max number  Antecedents
+                >Antecedent-Combinations
                 <span class="custom-tooltip"
                   >?<span class="custom-tooltiptext"
                     >Upper bound of number of if-conditions to combine via AND
@@ -621,48 +621,6 @@
               />
             </div>
           </div>
-
-          <fieldset class="config-fieldset">
-            <legend>Advanced</legend>
-            <div class="row">
-              <div class="config-item checkbox-item col-6">
-                <label for="only_one_round_stat_removal"
-                  >Only One Round of Statistical Removal
-                  <span class="custom-tooltip"
-                    >?<span class="custom-tooltiptext"
-                      >If false, statistical removal will be applied iteratively
-                      until nothing with a high p-Value remains</span
-                    ></span
-                  >
-                </label>
-                <input
-                  type="checkbox"
-                  id="only_one_round_stat_removal"
-                  name="only_one_round_stat_removal"
-                  checked="checked"
-                />
-              </div>
-
-              <div class="config-item checkbox-item col-6">
-                <label for="only_one_round_lin_removal"
-                  >Only One Round of Linearity Removal
-                  <span class="custom-tooltip"
-                    >?<span class="custom-tooltiptext"
-                      >If false, linearity removal will be applied until
-                      Gram-Schmidt does not have any small residual norm-vectors
-                      any more.</span
-                    ></span
-                  >
-                </label>
-                <input
-                  type="checkbox"
-                  id="only_one_round_lin_removal"
-                  name="only_one_round_lin_removal"
-                  checked="checked"
-                />
-              </div>
-            </div>
-          </fieldset>
         </form>
       </div>
     </div>
