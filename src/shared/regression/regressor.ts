@@ -263,9 +263,8 @@ export function performRegression(
     const minPriority =
       metadata.rule_filters.rule_priority_filtering.min_priority;
 
-    // Add warnings for the removed rules
     warnings.push({
-      "Removed Rules": selectedRuleIndices
+      "Removed Rules from priority filtering": selectedRuleIndices
         .filter(
           (r) => allRules[r].priority < minPriority && !allRules[r].isIntercept
         )
@@ -314,7 +313,7 @@ export function performRegression(
     metadata.lasso.lasso_convergance_tolerance ?? 1e-4;
 
   // Perform Lasso regression using coordinate descent
-  const coefficients = lassoCoordinateDescent(
+  let coefficients = lassoCoordinateDescent(
     X,
     yVector,
     lambda,
@@ -334,7 +333,7 @@ export function performRegression(
 
   // Identify significant and insignificant coefficients
   const significantIndices: number[] = [];
-  const filteredCoeffs = coefficients.filter((_, idx) => Math.abs(coefficients[idx]) >= significanceThreshold);
+  let filteredCoeffs = coefficients.filter((_, idx) => Math.abs(coefficients[idx]) >= significanceThreshold);
   const tooLowCoefficients: string[] = [];
 
   coefficients.forEach((coef, idx) => {
@@ -438,6 +437,39 @@ export function performRegression(
       pValues = tStatistics.map(
         (tStat) => 2 * (1 - tCDF(Math.abs(tStat), degreesOfFreedom))
       );
+
+      if (metadata.rule_filters.remove_insignificant_rules) {
+        const significanceLevel = metadata.rule_filters.significance_level;
+        const filteredIndices: number[] = [];
+        const filteredCoeffsV2: number[] = [];
+        const filteredPvalues: number[] = [];
+        const insignificantRules: object[] = [];
+        pValues.forEach((pValue, idx) => {
+          if (pValue !== null && pValue < significanceLevel) {
+            filteredIndices.push(activeIndices[idx]);
+            filteredCoeffsV2.push(filteredCoeffs[idx]);
+            filteredPvalues.push(pValue);
+          } else {
+            insignificantRules.push({
+              title: allRules[activeIndices[idx]].toString(metadata.target_var),
+              leverage: allRules[activeIndices[idx]].leverage,
+              support: allRules[activeIndices[idx]].support,
+              coefficient: filteredCoeffs[idx],
+              pValue: pValue
+            });
+          }
+        });      
+        
+        if (insignificantRules.length > 0) {
+          warnings.push({
+            "Removed Insignificant Rules": insignificantRules
+          });
+        }
+
+        activeIndices = filteredIndices;
+        filteredCoeffs = filteredCoeffsV2;
+        pValues = filteredPvalues;
+      }
     } else if (lambdaParam === 0 && activeIndices.length > 0) {
       try {
         const XtX = new Matrix(significantX).transpose().mmul(new Matrix(significantX));

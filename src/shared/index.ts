@@ -17,8 +17,8 @@ export function main(metadata: Metadata, data: string): EvaluationMetrics {
     if(metadata.rule_filters.dependency_threshold > 0.1)
         warnings.push("High dependency threshold detected, consider setting this value to < 0.1 for better results.");
         
-    if(metadata.lasso.regularization > 0 && metadata.rule_filters.remove_insignificant_rules)
-        throw new Error("Cannot use Lasso regularization and remove insignificant rules at the same time.");
+    if(metadata.rule_filters.remove_insignificant_rules && !metadata.compute_pvalues)
+        throw new Error("Cannot remove insignificant rules without computing p-values - please activat metadata.compute_pvalues");
 
     const { records, numericalKeys, categoricalKeys, target_mean, target_std } = executeDataPipeline(data, metadata, warnings);
     const variableBounds: { [key: string]: { min: number; max: number } } = {};
@@ -97,7 +97,16 @@ export function main(metadata: Metadata, data: string): EvaluationMetrics {
 
     return {
         ...metrics,
-        sorted_rules: outputRules.map(r=>{return {
+        sorted_rules: outputRules.filter(i => {
+            if (i.coefficient === 0)
+                return false;
+            if (metadata.rule_filters.remove_insignificant_rules){
+                if (i.pValue === null || i.pValue === undefined)
+                    return false;
+                return i.pValue <= metadata.rule_filters.significance_level;
+            }
+            return true;
+        }).map(r=>{return {
             title: r.toString(metadata.target_var),
             coefficient: r.coefficient,
             isWhitelist: r.isWhitelist,
