@@ -1,8 +1,8 @@
 {
-  "mean_absolute_error": 0.11279222779846908,
-  "root_mean_squared_error": 0.14136594047426296,
+  "mean_absolute_error": 1139.3825486742114,
+  "root_mean_squared_error": 1428.0229116591584,
   "r_squared": 0.9787421139461465,
-  "mean_absolute_percentage_error": 1.1411657117277394,
+  "mean_absolute_percentage_error": 2.702822981015762,
   "sorted_rules": [
     {
       "title": "Intercept",

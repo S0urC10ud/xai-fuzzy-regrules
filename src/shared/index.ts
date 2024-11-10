@@ -7,6 +7,10 @@ import { prepareDefuzzification } from './pipeline/defuzzificationPipeline';
 import { performInference } from './utils/fuzzy_inference';
 import { executeRulePipeline } from './pipeline/rulePipeline';
 
+function fix_scaling(x: number[], target_mean: number, target_std: number): number[] {
+    return x.map(v => ((v-10) * target_std)+target_mean);
+}
+
 export function main(metadata: Metadata, data: string): EvaluationMetrics {
     const warnings: any[] = [];
 
@@ -16,7 +20,7 @@ export function main(metadata: Metadata, data: string): EvaluationMetrics {
     if(metadata.lasso.regularization > 0 && metadata.rule_filters.remove_insignificant_rules)
         throw new Error("Cannot use Lasso regularization and remove insignificant rules at the same time.");
 
-    const { records, numericalKeys, categoricalKeys } = executeDataPipeline(data, metadata, warnings);
+    const { records, numericalKeys, categoricalKeys, target_mean, target_std } = executeDataPipeline(data, metadata, warnings);
     const variableBounds: { [key: string]: { min: number; max: number } } = {};
 
     numericalKeys.forEach(key => {
@@ -84,7 +88,7 @@ export function main(metadata: Metadata, data: string): EvaluationMetrics {
     for (let i = 0; i < regressionX.length; i++)
         y_pred.push(finalRules.reduce((sum, rule, idx) => sum + regressionX[i][rule.columnIndex] * (rule.coefficient ? rule.coefficient : 0), 0));
 
-    const metrics = executeEvaluationPipeline(y, y_pred);
+    const metrics = executeEvaluationPipeline(fix_scaling(y, target_mean, target_std), fix_scaling(y_pred, target_mean, target_std));
 
     const outputRules = [];
     if(intercept!==undefined)

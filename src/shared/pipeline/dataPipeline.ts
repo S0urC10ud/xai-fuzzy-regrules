@@ -7,7 +7,7 @@ export function executeDataPipeline(
     data: string,
     metadata: Metadata,
     warnings: any[]
-): { records: Record[]; numericalKeys: string[]; categoricalKeys: string[] } {
+): { records: Record[]; numericalKeys: string[]; categoricalKeys: string[], target_mean: number, target_std: number } {
     let records: Record[] = parseCSV(data, metadata.split_char);
 
     // standardize the target variable
@@ -53,5 +53,5 @@ export function executeDataPipeline(
     records = updatedRecords;
     numericalKeys = filteredKeys;
 
-    return { records, numericalKeys, categoricalKeys };
+    return { records, numericalKeys, categoricalKeys, target_mean, target_std };
 }
