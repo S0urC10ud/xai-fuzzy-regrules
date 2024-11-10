@@ -9,6 +9,7 @@ export interface Metadata {
         };
     };
     split_char: string;
+    return_contributions: boolean;
     lasso: {
         regularization: number;
         max_lasso_iterations?: number;
@@ -64,6 +65,7 @@ export class Rule {
     coefficient: number | null = null;
     pValue: number | null = null;
     secondaryRules: string[] = [];
+    mostContributions: number[] = [];
 
     constructor(
         antecedents: { variable: string; fuzzySet: string }[],
@@ -114,4 +116,5 @@ export type EvaluationMetrics = {
     r_squared: number;
     mean_absolute_percentage_error: number;
     warnings: any[];
+    contribution_matrix: number[][];
 };
