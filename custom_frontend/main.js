@@ -652,12 +652,6 @@ $("#downloadModal").on("hidden.bs.modal", async function () {
   document.getElementById("variance_threshold").value =
     config.variance_threshold ?? 0.00001;
 
-  // Advanced Settings
-  document.getElementById("only_one_round_stat_removal").checked =
-    config.rule_filters.only_one_round_of_statistical_removal ?? true;
-  document.getElementById("only_one_round_lin_removal").checked =
-    config.rule_filters.only_one_round_of_linearity_removal ?? true;
-
   const outlierFilters = config.outlier_filtering;
   if (outlierFilters && Object.keys(outlierFilters).length > 0) {
     const container = document.getElementById("outlier-filters-container");
@@ -1227,12 +1221,6 @@ document.getElementById("runButton")?.addEventListener("click", async () => {
         "remove_insignificant_rules"
       ).checked,
       only_whitelist: document.getElementById("only_whitelist").checked,
-      only_one_round_of_statistical_removal: document.getElementById(
-        "only_one_round_stat_removal"
-      ).checked,
-      only_one_round_of_linearity_removal: document.getElementById(
-        "only_one_round_lin_removal"
-      ).checked,
       rule_priority_filtering: {
         enabled: document.getElementById("rule_priority_enabled").checked,
         min_priority: parseFloat(document.getElementById("min_priority").value),

@@ -13,8 +13,6 @@
         "significance_level": 0.05,
         "remove_insignificant_rules": false,
         "only_whitelist": false,
-        "only_one_round_of_statistical_removal": true,
-        "only_one_round_of_linearity_removal": true,
         "rule_priority_filtering": {
           "enabled":false,
           "min_priority": 0
