@@ -27,8 +27,7 @@ function selectVectors(
     for (let j = 0; j < orthogonalBasis.length; j++) {
       const basisVector = orthogonalBasis[j];
       const projectionCoefficient =
-        dotProduct(residual, basisVector) /
-        dotProduct(basisVector, basisVector);
+        dotProduct(residual, basisVector) / dotProduct(basisVector, basisVector);
       const projection = scalarMultiply(basisVector, projectionCoefficient);
       residual = vectorSubtract(residual, projection);
 
@@ -42,9 +41,6 @@ function selectVectors(
     // If the residual norm is greater than the threshold, keep the vector
     if (residualNorm > threshold) {
       keptIndices.push(i);
-      // Store the basis vectors that ruled out linear dependency for the current vector
-      // (Not used further in this implementation, but kept for potential extensions)
-      
       // Normalize the residual and add it to the orthogonal basis
       const normalizedResidual = scalarMultiply(residual, 1 / residualNorm);
       orthogonalBasis.push(normalizedResidual);
@@ -109,6 +105,7 @@ function softThresholding(value: number, lambda: number): number {
 
 /**
  * Performs LASSO regression using coordinate descent.
+ * Now centers X and y before performing Lasso.
  */
 function lassoCoordinateDescent(
   X: number[][],
@@ -117,12 +114,16 @@ function lassoCoordinateDescent(
   tol = 1e-4,
   maxIter = 10000,
   warnings: any[] = []
-): number[] {
+): { beta: number[]; intercept: number } {
   const p = X[0].length;
+
+  // Center X and y
+  const { centeredX, centeredY, meanX, meanY } = centerData(X, y);
+
   let beta = new Array(p).fill(0);
   let betaOld = new Array(p).fill(0);
-  const XMatrix = new Matrix(X);
-  const yVector = new Matrix(y.map((v) => [v]));
+  const XMatrix = new Matrix(centeredX);
+  const yVector = new Matrix(centeredY.map((v) => [v]));
 
   // Precompute X^T X and X^T y
   const XtX = XMatrix.transpose().mmul(XMatrix).to2DArray();
@@ -167,7 +168,70 @@ function lassoCoordinateDescent(
       warnings
     );
 
-  return beta;
+  // Compute intercept
+  const intercept =
+    meanY - meanX.reduce((sum, val, j) => sum + val * beta[j], 0);
+
+  return { beta, intercept };
+}
+
+function standardizeData(X:number[][], y: number[]) {
+  const n = X.length;
+  const p = X[0].length;
+
+  // Center X and y
+  const { centeredX, centeredY } = centerData(X, y);
+
+  // Compute standard deviations
+  const stdX = new Array(p).fill(0);
+  for (let j = 0; j < p; j++) {
+    stdX[j] = Math.sqrt(centeredX.reduce((sum, row) => sum + row[j] ** 2, 0) / (n - 1));
+  }
+
+  // Standardize X
+  const standardizedX = centeredX.map(row => row.map((val, j) => val / stdX[j]));
+
+  // Compute standard deviation of y
+  const stdY = Math.sqrt(centeredY.reduce((sum, val) => sum + val ** 2, 0) / (n - 1));
+
+  // Standardize y
+  const standardizedY = centeredY.map(val => val / stdY);
+
+  return { standardizedX, standardizedY, stdX, stdY };
+}
+
+
+/**
+ * Centers X and y by subtracting the mean.
+ */
+function centerData(X: number[][], y: number[]): {
+  centeredX: number[][];
+  centeredY: number[];
+  meanX: number[];
+  meanY: number;
+} {
+  const n = X.length;
+  const p = X[0].length;
+
+  // Compute mean of each column in X
+  const meanX = new Array(p).fill(0);
+  for (let j = 0; j < p; j++) {
+    for (let i = 0; i < n; i++) {
+      meanX[j] += X[i][j];
+    }
+    meanX[j] /= n;
+  }
+
+  // Center X
+  const centeredX = X.map((row) => row.map((val, j) => val - meanX[j]));
+
+  // Compute mean of y
+  const meanY = y.reduce((sum, val) => sum + val, 0) / n;
+
+  // Center y
+  const centeredY = y.map((val) => val - meanY);
+
+  return { centeredX, centeredY, meanX, meanY };
 }
 
 export function performRegression(
@@ -189,7 +253,10 @@ export function performRegression(
       warnings
     );
   } else {
-    selectedRuleIndices = Array.from({ length: finalX[0].length }, (_, i) => i);
+    selectedRuleIndices = Array.from(
+      { length: finalX[0].length },
+      (_, i) => i
+    );
   }
   if (selectedRuleIndices.length === 0) {
     const finalWarn = `No rules selected after vector selection with dependency threshold ${metadata.rule_filters.dependency_threshold}.`;
@@ -239,30 +306,10 @@ export function performRegression(
 
   // Identify intercept index
   const interceptIndex = allRules.findIndex((rule) => rule.isIntercept);
-  let interceptEstimate = 0;
   let interceptIncluded = false;
 
   if (interceptIndex !== -1 && activeIndices.includes(interceptIndex)) {
     interceptIncluded = true;
-
-    // Estimate intercept using OLS
-    const ones = new Array(finalX.length).fill(1);
-    const XIntercept = ones.map(() => [1]); // Column of ones
-    const XInterceptMatrix = new Matrix(XIntercept);
-    const YMatrix = new Matrix(yVector.map((v) => [v]));
-
-    try {
-      const XtXIntercept = XInterceptMatrix.transpose().mmul(XInterceptMatrix);
-      const XtYIntercept = XInterceptMatrix.transpose().mmul(YMatrix).getColumn(0);
-      const betaIntercept = inverse(XtXIntercept).mmul(new Matrix([XtYIntercept])).getColumn(0);
-      interceptEstimate = betaIntercept[0];
-    } catch (error) {
-      logWarning(
-        `Failed to estimate intercept using OLS: ${(error as Error).message}`,
-        warnings
-      );
-      throw new Error(`Regression solve failed: Failed to estimate intercept.`);
-    }
 
     // Remove intercept from activeIndices to exclude it from Lasso and debiasing
     activeIndices = activeIndices.filter((idx) => idx !== interceptIndex);
@@ -281,7 +328,7 @@ export function performRegression(
     metadata.lasso.lasso_convergance_tolerance ?? 1e-4;
 
   // Perform Lasso regression using coordinate descent
-  let coefficients = lassoCoordinateDescent(
+  const lassoResult = lassoCoordinateDescent(
     X,
     yVector,
     lambda,
@@ -289,26 +336,33 @@ export function performRegression(
     maxLassoIterations,
     warnings
   );
-  
+
+  const coefficients = lassoResult.beta;
+  let interceptEstimate = lassoResult.intercept;
+
+  if (interceptIncluded) {
+    // Assign intercept coefficient
+    allRules[interceptIndex].coefficient = interceptEstimate;
+    allRules[interceptIndex].pValue = null; // Intercept p-value can be computed separately if needed
+  }
+
   if (coefficients === null) {
     const finalWarn = `Regression coefficients could not be computed.`;
     logWarning(finalWarn, warnings);
     throw new Error(`Regression solve failed: ${finalWarn}`);
   }
-  
+
   // Define the threshold for coefficient significance
-  const significanceThreshold = 1e-5;
-  
-  // **Corrected Code Starts Here**
-  
-  // Identify significant and insignificant coefficients
+  const coefficientExistenceThreshold = 1e-5;
+
+  // Identify significant coefficients
   const significantIndices: number[] = [];
   let filteredCoeffs: number[] = [];
   const tooLowCoefficients: string[] = [];
-  
+
   // Filter coefficients and update significantIndices and filteredCoeffs
   coefficients.forEach((coef, idx) => {
-    if (Math.abs(coef) >= significanceThreshold) {
+    if (Math.abs(coef) >= coefficientExistenceThreshold) {
       significantIndices.push(predictorsIndices[idx]); // Map back to original indices
       filteredCoeffs.push(coef);
     } else {
@@ -317,37 +371,31 @@ export function performRegression(
       );
     }
   });
-  
+
   warnCollector.push({
     "Removed from pValue-computation due to low coefficient (<1e-5)":
       tooLowCoefficients,
   });
-  
+
   // Update activeIndices and coefficients
   activeIndices = significantIndices;
-  
-  // **Ensure filteredCoeffs is used moving forward**
-  
+
   // Initialize all coefficients and p-values to zero and null respectively
   allRules.forEach((rule) => {
-    rule.coefficient = 0;
-    rule.pValue = null;
+    if (!rule.isIntercept) {
+      rule.coefficient = 0;
+      rule.pValue = null;
+    }
   });
-  
-  // Assign intercept if present
-  if (interceptIncluded) {
-    allRules[interceptIndex].coefficient = interceptEstimate;
-    // P-value for intercept can be computed separately if needed
-  }
-  
+
   if (activeIndices.length === 0) {
     logWarning(
-      `All coefficients are below the significance threshold (${significanceThreshold}). No p-values computed.`,
+      `All coefficients are below the significance threshold (${coefficientExistenceThreshold}). No p-values computed.`,
       warnings
     );
     return;
   }
-  
+
   if (metadata.compute_pvalues) {
     // Prepare the submatrix for significant features
     const significantSubMatrixData: number[][] = finalX.map((row) =>
@@ -355,85 +403,78 @@ export function performRegression(
     );
     const significantXMatrix = new Matrix(significantSubMatrixData);
     const significantX = significantXMatrix.to2DArray();
-  
-    // **Construct X_design matrix including intercept**
-    const X_design_data = finalX.map((row) => {
-      const rowData = [];
-      if (interceptIncluded) {
-        rowData.push(1); // Intercept term
-      }
-      activeIndices.forEach((colIdx) => {
-        rowData.push(row[colIdx]);
-      });
-      return rowData;
-    });
-    const X_design = new Matrix(X_design_data);
-  
-    // **Use betaWithIntercept**
-    const betaWithIntercept = interceptIncluded
-      ? [interceptEstimate, ...filteredCoeffs]
-      : filteredCoeffs;
-  
+
+    // Center significant X and y
+    const { centeredX, centeredY, meanX, meanY } = centerData(
+      significantX,
+      yVector
+    );
+
+    // Recompute intercept using centered y and x
+    if (interceptIncluded) {
+      interceptEstimate = meanY - meanX.reduce((sum, val, j) => sum + val * filteredCoeffs[j], 0);
+      allRules[interceptIndex].coefficient = interceptEstimate;
+    }
+
     // Compute predicted Y values
-    const betaMatrix = new Matrix(betaWithIntercept.map((b) => [b]));
-    const predictedYMatrix = X_design.mmul(betaMatrix);
-    const predictedY = predictedYMatrix.getColumn(0);
-  
-    // Compute residuals
-    const residuals = yVector.map((y, i) => y - predictedY[i]);
-  
+    const predictedY = centeredX.map((row) =>
+      row.reduce((sum, val, idx) => sum + val * filteredCoeffs[idx], 0)
+    );
+
+    const residuals = centeredY.map((y, i) => y - predictedY[i]);
+
     const degreesOfFreedom = yVector.length - filteredCoeffs.length - (interceptIncluded ? 1 : 0);
-  
+
     if (degreesOfFreedom <= 0) {
       const finalWarn = `Degrees of freedom is less than or equal to zero. Consider choosing a higher dependency threshold, fewer rules, or a bigger dataset!`;
       logWarning(finalWarn, warnings);
       throw new Error(`Regression solve failed: ${finalWarn}`);
     }
-  
+
     // Compute residual variance
     const residualSumOfSquares = residuals.reduce((sum, r) => sum + r * r, 0);
     const sigmaSquared = residualSumOfSquares / degreesOfFreedom;
-  
+
     let pValues: number[] | null = null;
-    if (metadata.lasso.regularization > 0 && activeIndices.length > 0) {
+    if (lambda > 0 && activeIndices.length > 0) {
       // Compute p-values using debiased Lasso
-  
-      // Compute Sigma = (1/n) X^T X
-      const Sigma = computeSampleCovariance(significantX, yVector.length); // (p x p) matrix
-  
-      // Compute Theta using nodewise Lasso
-      const Theta = computeDebiasingMatrix(significantX, metadata.lasso.regularization, warnings);
-  
+
+      // Compute Sigma = (1/n) X^T X (with centered X)
+      const Sigma = computeSampleCovariance(centeredX, yVector.length);
+
+
+      const lambdaNodewise = 1.1 * Math.sqrt(Math.log(X[0].length) / yVector.length); // ratio of p and n
+      // Compute Theta using nodewise Lasso (with centered X)
+      const Theta = computeDebiasingMatrix(centeredX, lambdaNodewise, warnings);
+
       // Compute debiased estimator: betaLasso + Theta * (X^T residuals) / n
       const debiasedBeta = computeDebiasedEstimator(
         filteredCoeffs,
         Theta,
-        significantX,
+        centeredX,
         residuals,
         yVector.length
       );
-  
+
       // Estimate asymptotic variance Omega = Theta * Sigma * Theta^T
       const Omega = Theta.mmul(Sigma).mmul(Theta.transpose());
-  
+
       // Compute standard errors
       const standardErrors = Omega.diagonal().map(
-        (se) => Math.sqrt(se * sigmaSquared / yVector.length)
+        (se) => Math.sqrt(se * sigmaSquared / yVector.length) // Divide by n to get standard error for Lasso, n-p for OLS
       );
-  
+
       // Compute z-statistics
       const zStatistics = debiasedBeta.map((beta, idx) =>
         standardErrors[idx] !== 0 ? beta / standardErrors[idx] : 0
       );
-  
+
       // Compute p-values using standard normal distribution
       pValues = zStatistics.map((z) => 2 * (1 - normalCDF(Math.abs(z), 0, 1)));
-    } else if (
-      metadata.lasso.regularization === 0 &&
-      activeIndices.length > 0
-    ) {
+    } else if (lambda === 0 && activeIndices.length > 0) {
       try {
-        const XtX = X_design.transpose().mmul(X_design);
+        const XMatrix = new Matrix(centeredX);
+        const XtX = XMatrix.transpose().mmul(XMatrix);
         let XtXInv: Matrix;
         try {
           XtXInv = inverse(XtX);
@@ -441,15 +482,14 @@ export function performRegression(
           const identity = Matrix.eye(XtX.rows).mul(1e-8);
           XtXInv = inverse(XtX.clone().add(identity));
         }
-  
+
         const covarianceMatrix = XtXInv.mul(sigmaSquared);
-  
+
         // Compute standard errors
         const standardErrors = covarianceMatrix
           .diagonal()
-          .slice(interceptIncluded ? 1 : 0) // Exclude intercept if present
           .map((se) => (se > 0 ? Math.sqrt(se) : 0));
-  
+
         // Compute t-statistics and p-values
         const tStatistics = filteredCoeffs.map((coef, idx) =>
           standardErrors[idx] !== 0 ? coef / standardErrors[idx] : 0
@@ -465,7 +505,7 @@ export function performRegression(
         pValues = null;
       }
     }
-  
+
     if (metadata.rule_filters.remove_insignificant_rules && pValues !== null) {
       const significanceLevel = metadata.rule_filters.significance_level;
       const filteredIndices: number[] = [];
@@ -487,18 +527,18 @@ export function performRegression(
           });
         }
       });
-  
+
       if (insignificantRules.length > 0) {
         warnings.push({
           "Removed Insignificant Rules": insignificantRules,
         });
       }
-  
+
       activeIndices = filteredIndices;
       filteredCoeffs = filteredCoeffsV2;
       pValues = filteredPvalues;
     }
-  
+
     // Assign computed coefficients and p-values to the corresponding rules
     activeIndices.forEach((ruleIdx, idx) => {
       const rule = allRules[ruleIdx];
@@ -513,24 +553,23 @@ export function performRegression(
     // Assign coefficients without computing p-values
     activeIndices.forEach((ruleIdx, idx) => {
       const rule = allRules[ruleIdx];
-      if (Math.abs(filteredCoeffs[idx]) < significanceThreshold) {
+      if (Math.abs(filteredCoeffs[idx]) < coefficientExistenceThreshold) {
         throw new Error(
-          `Regression solve failed: Coefficient ${filteredCoeffs[idx]} is below the significance threshold ${significanceThreshold}.`
+          `Regression solve failed: Coefficient ${filteredCoeffs[idx]} is below the significance threshold ${coefficientExistenceThreshold}.`
         );
       }
-  
+
       rule.coefficient = filteredCoeffs[idx];
       rule.pValue = null;
     });
   }
-  
+
   logWarning(warnCollector, warnings);
 }
 
-// New functions added for debiased Lasso
-
 /**
  * Computes the sample covariance matrix Sigma = (1/n) X^T X
+ * Uses centered X.
  */
 function computeSampleCovariance(X: number[][], n: number): Matrix {
   const XMatrix = new Matrix(X);
@@ -541,10 +580,11 @@ function computeSampleCovariance(X: number[][], n: number): Matrix {
 
 /**
  * Computes the debiasing matrix Theta using nodewise Lasso
+ * Uses centered X.
  */
 function computeDebiasingMatrix(
   X: number[][],
-  lambda: number,
+  lambdaNodewise: number,
   warnings: any[]
 ): Matrix {
   const n = X.length;
@@ -558,53 +598,53 @@ function computeDebiasingMatrix(
     // Get X_{-j}
     const X_minus_j = X.map((row) => row.filter((_, idx) => idx !== j));
 
+    // Standardize X_j and X_{-j}
+    const {
+      standardizedX: X_minus_j_std,
+      standardizedY: X_j_std,
+      stdX: stdX_minus_j,
+      stdY: sigmaX_j,
+    } = standardizeData(X_minus_j, X_j);
+
     // Perform Lasso regression of X_j onto X_{-j}
-    const gamma = lassoCoordinateDescent(
-      X_minus_j,
-      X_j,
-      lambda,
+    const result = lassoCoordinateDescent(
+      X_minus_j_std,
+      X_j_std,
+      lambdaNodewise,
       1e-4,
       10000,
       warnings
     );
-
-    if (gamma.length !== p - 1) {
-      logWarning(
-        `Nodewise Lasso for variable ${j} returned incorrect number of coefficients.`,
-        warnings
-      );
-      throw new Error(`Debiasing failed for variable ${j}.`);
-    }
+    const gamma = result.beta;
 
     // Compute residuals
-    const X_j_pred = X_minus_j.map((row) =>
+    const X_j_pred = X_minus_j_std.map((row) =>
       row.reduce((sum, val, idx) => sum + val * gamma[idx], 0)
     );
-    const residuals = X_j.map((val, idx) => val - X_j_pred[idx]);
+    const residuals = X_j_std.map((val, idx) => val - X_j_pred[idx]);
 
     // Compute residual variance
-    const tau_j_squared =
+    let tau_j_squared =
       residuals.reduce((sum, val) => sum + val * val, 0) / n;
 
-    if (tau_j_squared === 0) {
-      // Handle division by zero
-      logWarning(
-        `Residual variance is zero for variable ${j}. Setting Theta[j][j] to a large value.`,
-        warnings
-      );
-      Theta.set(j, j, 1e8); // Assign a large value to indicate near-zero variance
-    } else {
-      // Set Theta[j][j]
-      Theta.set(j, j, 1 / tau_j_squared);
+    // Add small constant to avoid division by zero
+    const delta = 1e-6;
+    tau_j_squared = Math.max(tau_j_squared, delta);
 
-      // Set Theta[j][k] for k != j
-      let idxInGamma = 0;
-      for (let k = 0; k < p; k++) {
-        if (k !== j) {
-          const gamma_k = gamma[idxInGamma];
-          Theta.set(j, k, -gamma_k / tau_j_squared);
-          idxInGamma++;
-        }
+    // Scale back gamma coefficients
+    // Use stdX_minus_j (standard deviations of X_{-j})
+    const gammaScaled = gamma.map((g, idx) => g * (sigmaX_j / stdX_minus_j[idx]));
+
+    // Set Theta[j][j]
+    Theta.set(j, j, 1 / tau_j_squared);
+
+    // Set Theta[j][k] for k != j
+    let idxInGamma = 0;
+    for (let k = 0; k < p; k++) {
+      if (k !== j) {
+        const gamma_k = gammaScaled[idxInGamma];
+        Theta.set(j, k, -gamma_k / tau_j_squared);
+        idxInGamma++;
       }
     }
   }
@@ -614,6 +654,7 @@ function computeDebiasingMatrix(
 
 /**
  * Computes the debiased estimator: beta + Theta * (X^T residuals) / n
+ * Uses centered X and residuals.
  */
 function computeDebiasedEstimator(
   beta: number[],
