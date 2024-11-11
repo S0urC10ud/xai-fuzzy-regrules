@@ -171,7 +171,7 @@ export function main(metadata: Metadata, data: string): EvaluationMetrics {
         priority: rule.priority,
         pValue: rule.pValue,
         secondaryRules: rule.secondaryRules,
-        mostContributingCSVRows: rule.mostContributions.map(row => row + 2) // as we start counting at 0 and the first row is the header
+        mostAffectedCsvRows: rule.mostContributions.map(row => row + 2) // as we start counting at 0 and the first row is the header
     }));
 
     const return_dict = {

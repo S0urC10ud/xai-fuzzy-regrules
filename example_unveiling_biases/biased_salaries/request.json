@@ -11,7 +11,7 @@
     },
     "split_char": ";",
     "lasso": {
-        "regularization": 1,
+        "regularization": 2,
         "max_lasso_iterations": 10000,
         "lasso_convergance_tolerance": 1e-4
     },
