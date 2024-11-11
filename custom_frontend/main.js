@@ -186,12 +186,14 @@ function visualizeTable(rulesData) {
       },
     },
     {
-      data: "mostContributingCSVRows",
+      data: "mostAffectedCsvRows",
       title:
         "Most Affected Rows <span class='custom-tooltip'>?\
         <span class='custom-tooltiptext'>CSV rows (represents line number - starting with 1) where this rule holds with the highest leverage.</span>\
       </span>",
       render: function (data) {
+        if(data == undefined)
+          return "N/A";
         return data.join(", ");
       },
     }

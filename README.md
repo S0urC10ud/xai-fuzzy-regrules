@@ -105,41 +105,41 @@ Example request metadata:
 ```json
 {
   "split_char": ";", // split character for the CSV-file
-  "target_var": "MEDV", // target column from csv file to explain
+  "target_var": "Salary", // target column from csv file to explain
   "lasso": {
-    "regularization": 0.00001, // to avoid a singular matrix for inversion - should not be necessary when correctly removing linear dependencies
+    "regularization": 1, // to avoid a singular matrix for inversion - should not be necessary when correctly removing linear dependencies
     "max_lasso_iterations": 10000, // default is 10000 - lasso is applied iteratively until convergence or until this max-iterations-counter is hit
-    "lasso_convergance_tolerance" // default is 1e-4, this is the threshold for the absolute value of difference between beta[i-1] and beta[i] until we say it converged
+    "lasso_convergance_tolerance": 1e-4 // default is 1e-4, this is the threshold for the absolute value of difference between beta[i-1] and beta[i] until we say it converged
   },
   "rule_filters": {
     "l1_row_threshold": 0.1, // row/(2*threshold) will be serialized to a string and checked for duplicates
     "l1_column_threshold": 0.1, // same as l1_row_threshold but column-wise 
-    "dependency_threshold": 0.02, // if the residual from the Gram-Schmidt orthogonalization has a norm lower than this value, the vector is considered being linearly dependent - set to 0 to disable
+    "dependency_threshold": 0, // if the residual from the Gram-Schmidt orthogonalization has a norm lower than this value, the vector is considered being linearly dependent - set to 0 to disable
     "significance_level": 0.05, // for the lasso-test with H0 that the coefficient Beta=0
     "remove_insignificant_rules": false, // remove rules that are not statistically significant, requires compute_pvalues to be true
     "only_whitelist": false, // disables the rule generation and forces the system only to use the specified whitelist-rules
     "rule_priority_filtering": {
         "enabled": true, // default: false,  filters for minimum rule priority (computation described in rule_priority_weights), 
-        "min_priority": 10 // all rules with a priority geq this value will survive (but intercept is exempted) - NOTE: Priorities can also be negative, because leverage may be negative
+        "min_priority": 0.04 // all rules with a priority geq this value will survive (but intercept is exempted) - NOTE: Priorities can also be negative, because leverage may be negative
     }
   },
-  "compute_pvalues": false, // if you want pValues in the output (H0 = Rule not needed), set this to true - disadvantage: the computation take much longer (for each non-filtered basis function a model has to be fit)
-  "numerical_fuzzification": ["low", "medium", "high"], // defines the fuzzy sets - possible values: verylow, low, mediumlow, medium, mediumhigh, high, veryhigh
-  "numerical_defuzzification": ["verylow", "medium", "veryhigh"], // same as above
+  "compute_pvalues": true, // if you want pValues in the output (H0 = Rule not needed), set this to true - disadvantage: the computation take much longer (for each non-filtered basis function a model has to be fit)
+  "numerical_fuzzification": ["veryhigh", "high",  "medium",  "low", "verylow"], // defines the fuzzy sets - possible values: verylow, low, mediumlow, medium, mediumhigh, high, veryhigh
+  "numerical_defuzzification": ["veryhigh", "high",  "medium",  "low", "verylow"], // same as above
   "return_contributions": false, // default: false, returns the contribution matrix from regression shaped [rules][records] containing row-normalized contributions
   "variance_threshold": 1e-5, // Columns with a variance smaller than this value can be removed, set to 0 to disable
   "remove_low_variance": false, // Defaults to false, toggles only warn vs. actually remove columns below variance threshold
   "include_intercept": true, // Defaults to true; Determines, whether at absolute 0 the model should be forced to go to 0 or if an intercept can be used to offset it - this parameter cannot be removed from colinearities or the significance-test
   "outlier_filtering": {
-    "AGE": { // column name
+    "Salary": { // column name
       "method": "VariableBounds",
-      "min": 0,
-      "max": 100
-    },
-    "TAX": { 
-      "method": "IQR",
-      "outlier_iqr_multiplier": 4
+      "min": 25000,
+      "max": 85000
     }
+    //another example: "TAX": { 
+    //  "method": "IQR",
+    //  "outlier_iqr_multiplier": 4
+    //}
   },
   "num_vars": 2, // number of antecedents to combine - will scale compute quadratically
   "whitelist": [ // these rules will definitely be included
@@ -153,173 +153,227 @@ Example request metadata:
   "rule_priority_weights": { // weighting for ordering the rules - the order is important for the linear dependency threshold removal
     "support_weight": 1, // support_weight * rule.support (see association rule mining theory) +
     "leverage_weight": 10, //  leverage_weight * rule.leverage (see association rule mining theory) +
-    "num_antecedents_weight": 1, // num_antecedents_weight * (1 / numAntecedents) + 
+    "num_antecedents_weight": 0, // num_antecedents_weight * (1 / numAntecedents) + 
     "whitelist_boolean_weight": 1000 // + whitelist_boolean_weight if the rule is a whitelisted rule
   },
 }
 ```
 
-Example response/result for the Boston housing dataset:
+Example response/result for the biased_salaries dataset (in example_unveiling_biases):
 
 ```json
 {
-    "mean_absolute_error": 0.8471479103019413,
-    "root_mean_squared_error": 1.1770638617902667,
-    "r_squared": 0.9835212780078919,
-    "mean_absolute_percentage_error": 4.445211660386882,
+    "mean_absolute_error": 1146.3913891140153,
+    "root_mean_squared_error": 1437.1583491639678,
+    "r_squared": 0.9784692594108033,
+    "mean_absolute_percentage_error": 2.718759531208799,
     "sorted_rules": [
         {
             "title": "Intercept",
-            "coefficient": 10.48345290204791,
+            "coefficient": 10.438564951856518,
             "isWhitelist": true,
             "support": 0,
             "leverage": 0,
             "priority": 0,
-            "pValue": 0.8698225598608367,
-            "secondaryRules": []
+            "pValue": null,
+            "secondaryRules": [],
+            "mostAffectedCsvRows": []
         },
         {
-            "title": "If CRIM is high then MEDV is verylow",
-            "coefficient": 22.158245498984996,
+            "title": "If HiringManager is B AND If Gender is other then Salary is high",
+            "coefficient": 0.15621443630865187,
             "isWhitelist": false,
-            "support": 0.005988023952095809,
-            "leverage": 0.004649383866996546,
-            "priority": 1.058469886574157,
-            "pValue": 0.014328487105502719,
-            "secondaryRules": [
-                "If CRIM is high AND If ZN is low then MEDV is verylow",
-                "If CRIM is high AND If CHAS is low then MEDV is verylow",
-                "If CRIM is high AND If RAD is high then MEDV is verylow",
-                "If CRIM is high AND If TAX is high then MEDV is verylow"
+            "support": 0.0050217609641781055,
+            "leverage": 0.004312964706227824,
+            "priority": 0.04815140802645635,
+            "pValue": 0,
+            "secondaryRules": [],
+            "mostAffectedCsvRows": [
+                1398,
+                2084,
+                2703,
+                1955,
+                747,
+                2875,
+                697,
+                220,
+                519,
+                2032
             ]
         },
         {
-            "title": "If NOX is low then MEDV is veryhigh",
-            "coefficient": 12.332376652806392,
+            "title": "If JobPosition is management then Salary is high",
+            "coefficient": 0.12827094712560508,
             "isWhitelist": false,
-            "support": 0.029940119760479042,
-            "leverage": 0.004442213377635947,
-            "priority": 1.1043023732973176,
-            "pValue": 0.00007447071149968565,
-            "secondaryRules": []
-        },
-        {
-            "title": "If AGE is medium then MEDV is veryhigh",
-            "coefficient": 6.888549572472112,
-            "isWhitelist": false,
-            "support": 0.023952095808383235,
-            "leverage": -0.0006533838510603511,
-            "priority": 1.0413703531061629,
-            "pValue": 0.005897984894014829,
-            "secondaryRules": []
-        },
-        {
-            "title": "If PTRATIO is low then MEDV is veryhigh",
-            "coefficient": 6.310368076764203,
-            "isWhitelist": false,
-            "support": 0.033932135728542916,
-            "leverage": 0.02653774287751842,
-            "priority": 1.33324170023227,
-            "pValue": 0.5002152617430908,
-            "secondaryRules": [
-                "If CRIM is low AND If PTRATIO is low then MEDV is veryhigh"
+            "support": 0.05222631402745229,
+            "leverage": 0.04440870824123596,
+            "priority": 0.4963133964398119,
+            "pValue": 0.5402194952880761,
+            "secondaryRules": [],
+            "mostAffectedCsvRows": [
+                2101,
+                1878,
+                637,
+                1373,
+                2175,
+                2494,
+                2673,
+                2024,
+                2614,
+                1625
             ]
         },
         {
-            "title": "If INDUS is high AND If TAX is medium then MEDV is verylow",
-            "coefficient": 6.085750330758465,
+            "title": "If UniversityReputation is veryhigh then Salary is medium",
+            "coefficient": 0.07444006501921702,
             "isWhitelist": false,
-            "support": 0.031936127744510975,
-            "leverage": 0.011856526468022037,
-            "priority": 0.6824375201692423,
-            "pValue": 0.12692183753826303,
-            "secondaryRules": []
+            "support": 0.09005691329092735,
+            "leverage": 0.04015234412170404,
+            "priority": 0.4915803545079678,
+            "pValue": 0.6993551771227084,
+            "secondaryRules": [],
+            "mostAffectedCsvRows": [
+                171,
+                2959,
+                2971,
+                2582,
+                1840,
+                282,
+                495,
+                2873,
+                1367,
+                1131
+            ]
         },
         {
-            "title": "If RM is high then MEDV is veryhigh",
-            "coefficient": 6.006023886928234,
-            "isWhitelist": true,
-            "support": 0.04790419161676647,
-            "leverage": 0.044334484723168435,
-            "priority": 101.53915323046522,
-            "pValue": 0.08148015949236465,
-            "secondaryRules": []
-        },
-        {
-            "title": "If INDUS is low AND If B is high then MEDV is veryhigh",
-            "coefficient": 5.508659764757984,
+            "title": "If HiringManager is A then Salary is medium",
+            "coefficient": 0.06186564613038564,
             "isWhitelist": false,
-            "support": 0.043912175648702596,
-            "leverage": 0.02019912271265852,
-            "priority": 0.7898155784239904,
-            "pValue": 0.18740070573307377,
-            "secondaryRules": []
-        },
-        {
-            "title": "If CRIM is medium then MEDV is verylow",
-            "coefficient": 5.270527930879079,
-            "isWhitelist": false,
-            "support": 0.021956087824351298,
-            "leverage": 0.01660152748395425,
-            "priority": 1.2099274504882451,
-            "pValue": 0.332045349875171,
-            "secondaryRules": []
+            "support": 0.0746568463341145,
+            "leverage": 0.03921736967770954,
+            "priority": 0.46683054311121,
+            "pValue": 0.13624170116805234,
+            "secondaryRules": [],
+            "mostAffectedCsvRows": [
+                566,
+                2972,
+                295,
+                1893,
+                2733,
+                489,
+                1186,
+                634,
+                2058,
+                2137
+            ]
         },
         ...
-        {
-            "title": "If NOX is medium then MEDV is verylow",
-            "coefficient": -12.136961933387964,
+                    "title": "If Experience is medium then Salary is medium",
+            "coefficient": -0.060380365296388974,
             "isWhitelist": false,
-            "support": 0.1996007984031936,
-            "leverage": 0.07599969721236172,
-            "priority": 2.1591985689300044,
-            "pValue": 0.0001328508728710709,
-            "secondaryRules": []
+            "support": 0.14328757951121526,
+            "leverage": 0.012699938770494051,
+            "priority": 0.27028696721615575,
+            "pValue": 0.31524925552392524,
+            "secondaryRules": [],
+            "mostAffectedCsvRows": [
+                1064,
+                2778,
+                1193,
+                2917,
+                80,
+                2631,
+                1153,
+                673,
+                2344,
+                687
+            ]
         },
         {
-            "title": "If RAD is low AND If PTRATIO is low then MEDV is veryhigh",
-            "coefficient": -13.864127070210554,
+            "title": "If UniversityReputation is verylow then Salary is verylow",
+            "coefficient": -0.07684795806488968,
             "isWhitelist": false,
-            "support": 0.033932135728542916,
-            "leverage": 0.02653774287751842,
-            "priority": 0.8332417002322701,
-            "pValue": 0.242828874317786,
-            "secondaryRules": []
+            "support": 0.05423501841312354,
+            "leverage": 0.03819967992088023,
+            "priority": 0.4362318176219259,
+            "pValue": 0.9512387038579269,
+            "secondaryRules": [],
+            "mostAffectedCsvRows": [
+                1027,
+                230,
+                883,
+                46,
+                2779,
+                229,
+                1100,
+                235,
+                2372,
+                1246
+            ]
         },
         {
-            "title": "If CRIM is high AND If PTRATIO is high then MEDV is verylow",
-            "coefficient": -19.82549134359085,
-            "isWhitelist": true,
-            "support": 0.005988023952095809,
-            "leverage": 0.004649383866996546,
-            "priority": 100.55846988657416,
-            "pValue": 0.026240505075683096,
-            "secondaryRules": []
+            "title": "If Experience is low then Salary is verylow",
+            "coefficient": -0.11512082566839403,
+            "isWhitelist": false,
+            "support": 0.0572480749916304,
+            "leverage": 0.03510805500321727,
+            "priority": 0.4083286250238032,
+            "pValue": 0.017694714456290894,
+            "secondaryRules": [],
+            "mostAffectedCsvRows": [
+                734,
+                464,
+                1032,
+                1569,
+                2549,
+                493,
+                527,
+                1897,
+                971,
+                2896
+            ]
+        },
+        {
+            "title": "If Experience is verylow then Salary is verylow",
+            "coefficient": -0.19793330948201468,
+            "isWhitelist": false,
+            "support": 0.010713090056913292,
+            "leverage": 0.0083218553694735,
+            "priority": 0.09393164375164828,
+            "pValue": 0,
+            "secondaryRules": [],
+            "mostAffectedCsvRows": [
+                2754,
+                1751,
+                2330,
+                2531,
+                919,
+                1146,
+                1089,
+                98,
+                341,
+                315
+            ]
         }
     ],
     "warnings": [
-        "Removed 5 rows due to outlier filter on TAX",
-        "Added 4 whitelist rules to the rule set.",
-        "Removed 2 rules based on the blacklist.",
+         "Removed 13 rows due to outlier filter on Salary",
+        "0 Duplicate columns detected and removed based on L1-Norm < 0.1: 0",
+        {
+            "Removed Rules from priority filtering": [
+                "If Experience is low AND If RANDOM is verylow then Salary is verylow",
+                "If GPA is medium AND If HiringManager is G then Salary is low",
+                "If RANDOM is low AND If HiringManager is E then Salary is low",...]
+        },
+        "Lasso did not converge after 10000 iterations - maximum difference: 0.0003146107681146759",
         [
             {
-                "log": "Removed rule \"If PTRATIO is medium then MEDV is medium\" due to linear dependence (small Cholesky diagonal value 8.699286175064224e-1).",
-                "top3LinearDependentRules": [
-                    {
-                        "rule": "Intercept",
-                        "coefficient": 615.5326910502068
-                    },
-                    {
-                        "rule": "If PTRATIO is medium then MEDV is medium",
-                        "coefficient": 0.8699286175064224
-                    },
-                    {
-                        "rule": "If CRIM is high AND If PTRATIO is high then MEDV is verylow",
-                        "coefficient": 0.020747847416468724
-                    }
-                ]
-            },...],
-        "Degrees of freedom: 165"
+                "Removed from pValue-computation due to low coefficient (<1e-5)": [
+                    "If JobPosition is management then Salary is medium",
+                    "If Gender is male AND If JobPosition is management then Salary is high",
+                    "If Experience is medium AND If UniversityReputation is veryhigh then Salary is medium",...]
+            }
+        ]
     ]
 }
 ```

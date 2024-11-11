@@ -141,14 +141,14 @@ header {
   margin-right: 10px;
   flex: 1;
 }
-
-/* Custom Tooltip Styles */
+/* Existing Tooltip Styles */
 .custom-tooltip {
   position: relative;
   display: inline-block;
   cursor: pointer;
   color: #ffcc00;
 }
+
 .custom-tooltip .custom-tooltiptext {
   visibility: hidden;
   width: 220px;
@@ -159,11 +159,14 @@ header {
   padding: 10px;
   position: absolute;
   z-index: 1002; /* Ensure it's above other elements */
-  bottom: 125%; /* Position above the tooltip trigger */
+  transition: opacity 0.3s;
+  bottom: 125%; /* Position at the top by default */
   left: 50%;
   transform: translateX(-50%);
-  transition: opacity 0.3s;
+  font-weight: normal;
 }
+
+/* Tooltip Arrow for Top Position */
 .custom-tooltip .custom-tooltiptext::after {
   content: "";
   position: absolute;
@@ -174,6 +177,52 @@ header {
   border-style: solid;
   border-color: #333 transparent transparent transparent;
 }
+
+/* Other Positions */
+.custom-tooltip.bottom .custom-tooltiptext {
+  top: 125%;
+  bottom: auto;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.custom-tooltip.left .custom-tooltiptext {
+  top: 50%;
+  right: 125%;
+  left: auto;
+  transform: translateY(-50%);
+  height: fit-content !important;
+}
+
+.custom-tooltip.right .custom-tooltiptext {
+  top: 50%;
+  left: 125%;
+  transform: translateY(-50%);
+  height: fit-content !important;
+}
+
+.custom-tooltip.bottom .custom-tooltiptext::after {
+  top: auto;
+  bottom: 100%; /* At the top of the tooltip */
+  border-color: transparent transparent #333 transparent;
+  height: fit-content !important;
+}
+
+.custom-tooltip.left .custom-tooltiptext::after {
+  top: 50%;
+  left: 100%;
+  margin-top: -5px;
+  border-color: transparent transparent transparent #333;
+}
+
+.custom-tooltip.right .custom-tooltiptext::after {
+  top: 50%;
+  right: 100%;
+  margin-top: -5px;
+  border-color: transparent #333 transparent transparent;
+}
+
+/* Show Tooltip on Hover */
 .custom-tooltip:hover .custom-tooltiptext {
   visibility: visible;
   opacity: 1;
