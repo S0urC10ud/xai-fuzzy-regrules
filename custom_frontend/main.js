@@ -4,7 +4,7 @@ worker.onerror = function (event) {
   console.error("Error in worker: ", event);
   window.specialEvent = event;
   setTimeout(() => {
-    $("#loadingModal").modal("hide"); //again delayed (might be needed)
+    $("#loadingModal").modal("hide");
   }, 200);
 };
 
@@ -12,7 +12,7 @@ worker.onmessageerror = function (event) {
   console.error("Error in worker message: ", event);
   window.specialEvent = event;
   setTimeout(() => {
-    $("#loadingModal").modal("hide"); //again delayed (might be needed)
+    $("#loadingModal").modal("hide");
   }, 200);
 };
 
@@ -29,12 +29,12 @@ worker.onmessage = function (event) {
     visualizeTable(data);
 
     setTimeout(() => {
-      $("#loadingModal").modal("hide"); //again delayed (might be needed)
+      $("#loadingModal").modal("hide");
     }, 200);
   } else {
     alert("Error running analysis: " + error);
     setTimeout(() => {
-      $("#loadingModal").modal("hide"); //again delayed (might be needed)
+      $("#loadingModal").modal("hide");
     }, 200);
   }
 };
@@ -90,7 +90,6 @@ function visualizeTable(rulesData) {
     columnColorMap[colName] = colors[index];
   });
 
-  // Define columns with tooltips
   let columns = [
     {
       data: "title",
