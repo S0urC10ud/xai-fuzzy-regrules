@@ -96,12 +96,13 @@ function lassoCoordinateDescent(
   lambda: number,
   tol = 1e-4,
   maxIter = 10000,
-  warnings: any[] = []
+  warnings: any[] = [],
+  center: boolean = true
 ): { beta: number[]; intercept: number } {
   const p = X[0].length;
 
   // Center X and y
-  const { centeredX, centeredY, meanX, meanY } = centerData(X, y);
+  const { centeredX, centeredY, meanX, meanY } = centerData(X, y, center);
 
   let beta = new Array(p).fill(0);
   let betaOld = new Array(p).fill(0);
@@ -158,12 +159,12 @@ function lassoCoordinateDescent(
   return { beta, intercept };
 }
 
-function standardizeData(X: number[][], y: number[]) {
+function standardizeData(X: number[][], y: number[], interceptIncluded:boolean = true) {
   const n = X.length;
   const p = X[0].length;
 
   // Center X and y
-  const { centeredX, centeredY } = centerData(X, y);
+  const { centeredX, centeredY } = centerData(X, y, interceptIncluded);
 
   // Compute standard deviations
   const stdX = new Array(p).fill(0);
@@ -191,13 +192,23 @@ function standardizeData(X: number[][], y: number[]) {
 
 function centerData(
   X: number[][],
-  y: number[]
+  y: number[],
+  center: boolean = true
 ): {
   centeredX: number[][];
   centeredY: number[];
   meanX: number[];
   meanY: number;
 } {
+  if (!center) {
+    // Return data as is
+    return {
+      centeredX: X,
+      centeredY: y,
+      meanX: new Array(X[0].length).fill(0),
+      meanY: 0,
+    };
+  }
   const n = X.length;
   const p = X[0].length;
 
@@ -319,7 +330,8 @@ export function performRegression(
     lambda,
     lassoConvergenceTolerance,
     maxLassoIterations,
-    warnings
+    warnings,
+    interceptIncluded
   );
 
   const coefficients = lassoResult.beta;
@@ -392,7 +404,8 @@ export function performRegression(
     // Center significant X and y
     const { centeredX, centeredY, meanX, meanY } = centerData(
       significantX,
-      yVector
+      yVector,
+      interceptIncluded
     );
 
     // Recompute intercept using centered y and x
@@ -432,7 +445,7 @@ export function performRegression(
       const lambdaNodewise =
         1.1 * Math.sqrt(Math.log(X[0].length) / yVector.length); // ratio of p and n
       // Compute Theta using nodewise Lasso (with centered X)
-      const Theta = computeDebiasingMatrix(centeredX, lambdaNodewise, warnings);
+      const Theta = computeDebiasingMatrix(centeredX, lambdaNodewise, warnings, interceptIncluded);
 
       // Compute debiased estimator: betaLasso + Theta * (X^T residuals) / n
       const debiasedBeta = computeDebiasedEstimator(
@@ -568,7 +581,8 @@ function computeSampleCovariance(X: number[][], n: number): Matrix {
 function computeDebiasingMatrix(
   X: number[][],
   lambdaNodewise: number,
-  warnings: any[]
+  warnings: any[],
+  interceptIncluded: boolean
 ): Matrix {
   const n = X.length;
   const p = X[0].length;
@@ -587,7 +601,7 @@ function computeDebiasingMatrix(
       standardizedY: X_j_std,
       stdX: stdX_minus_j,
       stdY: sigmaX_j,
-    } = standardizeData(X_minus_j, X_j);
+    } = standardizeData(X_minus_j, X_j, interceptIncluded);
 
     // Perform Lasso regression of X_j onto X_{-j}
     const result = lassoCoordinateDescent(
@@ -596,7 +610,8 @@ function computeDebiasingMatrix(
       lambdaNodewise,
       1e-4,
       10000,
-      warnings
+      warnings,
+      interceptIncluded
     );
     const gamma = result.beta;
 
