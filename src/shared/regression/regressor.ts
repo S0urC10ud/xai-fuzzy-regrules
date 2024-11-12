@@ -4,9 +4,6 @@ import { logWarning } from "../utils/logger";
 import tCDF from "@stdlib/stats-base-dists-t-cdf";
 import normalCDF from "@stdlib/stats-base-dists-normal-cdf";
 
-/**
- * Selects vectors based on orthogonalization and dependency threshold.
- */
 function selectVectors(
   vectors: number[][],
   allRules: Rule[],
@@ -27,7 +24,8 @@ function selectVectors(
     for (let j = 0; j < orthogonalBasis.length; j++) {
       const basisVector = orthogonalBasis[j];
       const projectionCoefficient =
-        dotProduct(residual, basisVector) / dotProduct(basisVector, basisVector);
+        dotProduct(residual, basisVector) /
+        dotProduct(basisVector, basisVector);
       const projection = scalarMultiply(basisVector, projectionCoefficient);
       residual = vectorSubtract(residual, projection);
 
@@ -62,37 +60,22 @@ function selectVectors(
   return keptIndices;
 }
 
-/**
- * Computes the dot product of two vectors.
- */
 function dotProduct(v1: number[], v2: number[]): number {
   return v1.reduce((sum, val, i) => sum + val * v2[i], 0);
 }
 
-/**
- * Computes the Euclidean norm of a vector.
- */
 function norm(v: number[]): number {
   return Math.sqrt(dotProduct(v, v));
 }
 
-/**
- * Subtracts one vector from another.
- */
 function vectorSubtract(v1: number[], v2: number[]): number[] {
   return v1.map((val, i) => val - v2[i]);
 }
 
-/**
- * Multiplies a vector by a scalar.
- */
 function scalarMultiply(v: number[], scalar: number): number[] {
   return v.map((val) => val * scalar);
 }
 
-/**
- * Applies the soft-thresholding operator.
- */
 function softThresholding(value: number, lambda: number): number {
   if (value > lambda) {
     return value - lambda;
@@ -105,7 +88,7 @@ function softThresholding(value: number, lambda: number): number {
 
 /**
  * Performs LASSO regression using coordinate descent.
- * Now centers X and y before performing Lasso.
+ * Centers X and y before performing Lasso.
  */
 function lassoCoordinateDescent(
   X: number[][],
@@ -175,7 +158,7 @@ function lassoCoordinateDescent(
   return { beta, intercept };
 }
 
-function standardizeData(X:number[][], y: number[]) {
+function standardizeData(X: number[][], y: number[]) {
   const n = X.length;
   const p = X[0].length;
 
@@ -185,26 +168,31 @@ function standardizeData(X:number[][], y: number[]) {
   // Compute standard deviations
   const stdX = new Array(p).fill(0);
   for (let j = 0; j < p; j++) {
-    stdX[j] = Math.sqrt(centeredX.reduce((sum, row) => sum + row[j] ** 2, 0) / (n - 1));
+    stdX[j] = Math.sqrt(
+      centeredX.reduce((sum, row) => sum + row[j] ** 2, 0) / (n - 1)
+    );
   }
 
   // Standardize X
-  const standardizedX = centeredX.map(row => row.map((val, j) => val / stdX[j]));
+  const standardizedX = centeredX.map((row) =>
+    row.map((val, j) => val / stdX[j])
+  );
 
   // Compute standard deviation of y
-  const stdY = Math.sqrt(centeredY.reduce((sum, val) => sum + val ** 2, 0) / (n - 1));
+  const stdY = Math.sqrt(
+    centeredY.reduce((sum, val) => sum + val ** 2, 0) / (n - 1)
+  );
 
   // Standardize y
-  const standardizedY = centeredY.map(val => val / stdY);
+  const standardizedY = centeredY.map((val) => val / stdY);
 
   return { standardizedX, standardizedY, stdX, stdY };
 }
 
-
-/**
- * Centers X and y by subtracting the mean.
- */
-function centerData(X: number[][], y: number[]): {
+function centerData(
+  X: number[][],
+  y: number[]
+): {
   centeredX: number[][];
   centeredY: number[];
   meanX: number[];
@@ -253,10 +241,7 @@ export function performRegression(
       warnings
     );
   } else {
-    selectedRuleIndices = Array.from(
-      { length: finalX[0].length },
-      (_, i) => i
-    );
+    selectedRuleIndices = Array.from({ length: finalX[0].length }, (_, i) => i);
   }
   if (selectedRuleIndices.length === 0) {
     const finalWarn = `No rules selected after vector selection with dependency threshold ${metadata.rule_filters.dependency_threshold}.`;
@@ -412,7 +397,8 @@ export function performRegression(
 
     // Recompute intercept using centered y and x
     if (interceptIncluded) {
-      interceptEstimate = meanY - meanX.reduce((sum, val, j) => sum + val * filteredCoeffs[j], 0);
+      interceptEstimate =
+        meanY - meanX.reduce((sum, val, j) => sum + val * filteredCoeffs[j], 0);
       allRules[interceptIndex].coefficient = interceptEstimate;
     }
 
@@ -423,7 +409,8 @@ export function performRegression(
 
     const residuals = centeredY.map((y, i) => y - predictedY[i]);
 
-    const degreesOfFreedom = yVector.length - filteredCoeffs.length - (interceptIncluded ? 1 : 0);
+    const degreesOfFreedom =
+      yVector.length - filteredCoeffs.length - (interceptIncluded ? 1 : 0);
 
     if (degreesOfFreedom <= 0) {
       const finalWarn = `Degrees of freedom is less than or equal to zero. Consider choosing a higher dependency threshold, fewer rules, or a bigger dataset!`;
@@ -442,8 +429,8 @@ export function performRegression(
       // Compute Sigma = (1/n) X^T X (with centered X)
       const Sigma = computeSampleCovariance(centeredX, yVector.length);
 
-
-      const lambdaNodewise = 1.1 * Math.sqrt(Math.log(X[0].length) / yVector.length); // ratio of p and n
+      const lambdaNodewise =
+        1.1 * Math.sqrt(Math.log(X[0].length) / yVector.length); // ratio of p and n
       // Compute Theta using nodewise Lasso (with centered X)
       const Theta = computeDebiasingMatrix(centeredX, lambdaNodewise, warnings);
 
@@ -461,7 +448,7 @@ export function performRegression(
 
       // Compute standard errors
       const standardErrors = Omega.diagonal().map(
-        (se) => Math.sqrt(se * sigmaSquared / yVector.length) // Divide by n to get standard error for Lasso, n-p for OLS
+        (se) => Math.sqrt((se * sigmaSquared) / yVector.length) // Divide by n to get standard error for Lasso, n-p for OLS
       );
 
       // Compute z-statistics
@@ -567,10 +554,6 @@ export function performRegression(
   logWarning(warnCollector, warnings);
 }
 
-/**
- * Computes the sample covariance matrix Sigma = (1/n) X^T X
- * Uses centered X.
- */
 function computeSampleCovariance(X: number[][], n: number): Matrix {
   const XMatrix = new Matrix(X);
   const Xt = XMatrix.transpose();
@@ -623,17 +606,20 @@ function computeDebiasingMatrix(
     );
     const residuals = X_j_std.map((val, idx) => val - X_j_pred[idx]);
 
-    // Compute residual variance
+    // Compute residual variance in original units
     let tau_j_squared =
-      residuals.reduce((sum, val) => sum + val * val, 0) / n;
+      (residuals.reduce((sum, val) => sum + val * val, 0) / n) *
+      sigmaX_j *
+      sigmaX_j;
 
     // Add small constant to avoid division by zero
     const delta = 1e-6;
     tau_j_squared = Math.max(tau_j_squared, delta);
 
-    // Scale back gamma coefficients
-    // Use stdX_minus_j (standard deviations of X_{-j})
-    const gammaScaled = gamma.map((g, idx) => g * (sigmaX_j / stdX_minus_j[idx]));
+    // Scale back gamma coefficients to original units
+    const gammaScaled = gamma.map(
+      (g, idx) => (g * sigmaX_j) / stdX_minus_j[idx]
+    );
 
     // Set Theta[j][j]
     Theta.set(j, j, 1 / tau_j_squared);
