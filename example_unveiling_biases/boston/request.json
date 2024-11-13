@@ -1,6 +1,7 @@
 {
     "split_char": ";",
     "target_var": "MEDV",
+    "decimal_point": ".",
     "lasso":{
         "regularization": 1,
         "max_lasso_iterations": 10000,

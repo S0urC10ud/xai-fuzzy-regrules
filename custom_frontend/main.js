@@ -606,6 +606,7 @@ $("#downloadModal").on("hidden.bs.modal", async function () {
 
   // Map JSON fields to form inputs
   document.getElementById("split_char").value = config.split_char ?? ";";
+  document.getElementById("decimal_point").value = config.decimal_point ?? ".";
   document.getElementById("target_var").value = config.target_var ?? "MEDV";
   document.getElementById("num_vars").value = config.num_vars ?? 2;
   document.getElementById("include_intercept").checked =
@@ -1203,6 +1204,7 @@ document.getElementById("runButton")?.addEventListener("click", async () => {
 
   const config = {
     split_char: document.getElementById("split_char").value,
+    decimal_point: document.getElementById("decimal_point").value,
     target_var: document.getElementById("target_var").value,
     lasso: {
       regularization: parseFloat(

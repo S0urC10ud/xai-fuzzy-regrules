@@ -9,6 +9,7 @@ export interface Metadata {
         };
     };
     split_char: string;
+    decimal_point: string;
     return_contributions: boolean;
     lasso: {
         regularization: number;
