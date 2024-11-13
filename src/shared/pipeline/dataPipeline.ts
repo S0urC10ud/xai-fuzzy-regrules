@@ -8,7 +8,7 @@ export function executeDataPipeline(
     metadata: Metadata,
     warnings: any[]
 ): { records: Record[]; numericalKeys: string[]; categoricalKeys: string[], target_mean: number, target_std: number } {
-    let records: Record[] = parseCSV(data, metadata.split_char);
+    let records: Record[] = parseCSV(data, metadata);
 
     // standardize the target variable
     let target_mean = 0;
@@ -35,6 +35,9 @@ export function executeDataPipeline(
     if(!numericalKeys.includes(metadata.target_var)) {
         throw new Error("Target variable is not numerical - please choose another dataset or target variable");
     }
+
+    if (!records.every(r=> numericalKeys.every(n=> typeof r[n] !== "string")))
+        throw new Error("Numerical key is string - maybe you have set the decimal point character wrongly")
 
     const categoricalKeys: string[] = Object.keys(records[0]).filter(
         key => !numericalKeys.includes(key)

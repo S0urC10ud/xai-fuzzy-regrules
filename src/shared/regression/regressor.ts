@@ -407,7 +407,7 @@ export function performRegression(
       yVector,
       interceptIncluded
     );
-
+    
     // Recompute intercept using centered y and x
     if (interceptIncluded) {
       interceptEstimate =

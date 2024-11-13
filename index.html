@@ -111,7 +111,7 @@
         <form class="configuration-grid">
           <!-- Data Splitting -->
           <div class="row">
-            <div class="config-item col-5">
+            <div class="config-item col-4">
               <label for="split_char"
                 >Split Char
                 <span class="custom-tooltip right"
@@ -122,7 +122,21 @@
               </label>
               <input type="text" id="split_char" name="split_char" value=";" />
             </div>
-            <div class="config-item col-7">
+            <div class="config-item col-4">
+              <label for="decimal_point"
+                >Decimal Char
+                <span class="custom-tooltip right"
+                  >?<span class="custom-tooltiptext"
+                    >Decimal point character for the CSV-file</span
+                  ></span
+                >
+              </label>
+              <select id="decimal_point" name="decimal_point">
+                <option value=",">,</option>
+                <option value="." selected>.</option>
+              </select>
+            </div>
+            <div class="config-item col-4">
               <label for="target_var"
                 >Target Variable
                 <span class="custom-tooltip"

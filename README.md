@@ -105,6 +105,7 @@ Example request metadata:
 ```json
 {
   "split_char": ";", // split character for the CSV-file
+  "decimal_point": ".", // decimal point for numbers in the CSV-file (usually ./,)
   "target_var": "Salary", // target column from csv file to explain
   "lasso": {
     "regularization": 1, // to avoid a singular matrix for inversion - should not be necessary when correctly removing linear dependencies
