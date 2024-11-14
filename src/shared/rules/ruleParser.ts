@@ -8,6 +8,14 @@ export function parseRuleString(
     const [antecedentPart, consequentPart] = ruleStr.split(' then ');
     if (!antecedentPart || !consequentPart) return null;
 
+    // Check for multiple "If" clauses
+    const ifMatches = antecedentPart.match(/If\s+/gi);
+    if (!ifMatches || ifMatches.length !== (antecedentPart.match(/and/gi)?.length || 0) + 1) {
+        throw new Error(
+            'Invalid rule format: Each condition must begin with "If". Please format as: "If A is something and If B is something then C is something".'
+        );
+    }
+
     const antecedentMatches = antecedentPart.match(/If\s+([A-Za-z0-9_]+)\s+is\s+([^\s]+)/gi);
     if (!antecedentMatches) return null;
 
