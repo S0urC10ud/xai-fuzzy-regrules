@@ -3,9 +3,12 @@ import { parseRuleString } from './ruleParser';
 import { serializeRule } from './ruleSerializer';
 import { logWarning } from '../utils/logger';
 
-function validateRule(metadata: Metadata, rule: Rule, ruleType: 'whitelist' | 'blacklist', targetVar: string): void {
+function validateRule(metadata: Metadata, rule: Rule, ruleType: 'whitelist' | 'blacklist', variableFuzzySets: { [variable: string]: string[] }, targetVar: string): void {
     for (const antecedent of rule.antecedents) {
-        if (!metadata.numerical_fuzzification.includes(antecedent.fuzzySet as FuzzySet)) {
+        if(!variableFuzzySets.hasOwnProperty(antecedent.variable)) {
+            throw new Error("Invalid antecedent value in rule: " + serializeRule(rule, targetVar) + ". Variable not found in variableFuzzySets (please also consider checking capitalization).");
+        }
+        if (!variableFuzzySets[antecedent.variable].includes(antecedent.fuzzySet as FuzzySet)) {
             throw new Error(
                 `Invalid antecedent "${antecedent}" in ${ruleType} rule "${serializeRule(rule, targetVar)}". It must be one of the numerical_fuzzification parameters.`
             );
@@ -23,6 +26,7 @@ export function applyWhitelistBlacklist(
     allRules: Rule[],
     metadata: Metadata,
     targetVar: string,
+    variableFuzzySets: { [variable: string]: string[] },
     warnings: any[]
 ): Rule[] {
     const { whitelist, blacklist, rule_filters } = metadata;
@@ -32,7 +36,7 @@ export function applyWhitelistBlacklist(
         whitelist.forEach((ruleStr: string) => {
             const parsedRule = parseRuleString(ruleStr, targetVar, true);
             if (parsedRule) {
-                validateRule(metadata, parsedRule, 'whitelist', targetVar);
+                validateRule(metadata, parsedRule, 'whitelist', variableFuzzySets, targetVar );
                 parsedWhitelistRules.push(parsedRule);
             } else {
                 logWarning(`Failed to parse whitelist rule: "${ruleStr}". It will be ignored.`, warnings);
@@ -50,7 +54,7 @@ export function applyWhitelistBlacklist(
             whitelist.forEach((ruleStr: string) => {
                 const parsedRule = parseRuleString(ruleStr, targetVar, true);
                 if (parsedRule) {
-                    validateRule(metadata, parsedRule, 'whitelist', targetVar);
+                    validateRule(metadata, parsedRule, 'whitelist', variableFuzzySets, targetVar);
                     parsedWhitelistRules.push(parsedRule);
                 } else {
                     logWarning(`Failed to parse whitelist rule: "${ruleStr}". It will be ignored.`, warnings);
@@ -81,7 +85,7 @@ export function applyWhitelistBlacklist(
             blacklist.forEach((ruleStr: string) => {
                 const parsedRule = parseRuleString(ruleStr, targetVar, false);
                 if (parsedRule) {
-                    validateRule(metadata, parsedRule, 'blacklist', targetVar);
+                    validateRule(metadata, parsedRule, 'blacklist', variableFuzzySets, targetVar);
                     parsedBlacklistRules.push(parsedRule);
                 } else {
                     logWarning(`Failed to parse blacklist rule: "${ruleStr}". It will be ignored.`, warnings);

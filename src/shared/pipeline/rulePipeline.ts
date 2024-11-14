@@ -32,7 +32,7 @@ export function executeRulePipeline(
     const num_antecedents_weight = metadata.rule_priority_weights?.num_antecedents_weight ?? 1;
     const whitelist_boolean_weight = metadata.rule_priority_weights?.whitelist_boolean_weight ?? 100;
 
-    allRules = applyWhitelistBlacklist(allRules, metadata, targetVar, warnings);
+    allRules = applyWhitelistBlacklist(allRules, metadata, targetVar, variableFuzzySets, warnings);
     const target_min_value = records.reduce((min, record) => Math.min(min, record[targetVar] as number), Infinity);
     const target_max_value = records.reduce((max, record) => Math.max(max, record[targetVar] as number), -Infinity);
 

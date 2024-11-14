@@ -8,6 +8,12 @@ export function performInference(records: Record[], allRules: Rule[], ruleOutput
             const firingStrength = Math.min(
                 ...rule.antecedents.map(ant => {
                     const key = `${ant.variable}_${ant.fuzzySet}`;
+
+                    //if record does not contain key, raise error
+                    if(!record.hasOwnProperty(key)){
+                        throw new Error(`Invalid rule property ${key} - check your whitelist / blacklist specifications and capitalization.`);
+                    }
+
                     const value = record[key];
                     if (value === undefined || value === null) {
                         throw new Error(
