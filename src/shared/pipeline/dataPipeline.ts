@@ -36,8 +36,16 @@ export function executeDataPipeline(
         throw new Error("Target variable is not numerical - please choose another dataset or target variable");
     }
 
-    if (!records.every(r=> numericalKeys.every(n=> typeof r[n] !== "string")))
-        throw new Error("Numerical key is string - maybe you have set the decimal point character wrongly")
+    records.forEach(r=> numericalKeys.forEach((n:string) => {
+        if(metadata.decimal_point == ".") {
+            if((r[n] as string).includes(",")) {
+                throw new Error("Decimal point character is set to '.' but ',' is found in the dataset")
+            }
+        } else if(metadata.decimal_point == ",") {
+            if((r[n] as string).includes(".")) {
+                throw new Error("Decimal point character is set to ',' but '.' is found in the dataset")
+            }
+    }}))
 
     const categoricalKeys: string[] = Object.keys(records[0]).filter(
         key => !numericalKeys.includes(key)
