@@ -176,6 +176,7 @@ export function main(metadata: Metadata, data: string): EvaluationMetrics {
 
     const return_dict = {
         ...metrics,
+        num_active_rules: filteredSortedRules.length,
         sorted_rules: filteredSortedRules,
         warnings,
     }
