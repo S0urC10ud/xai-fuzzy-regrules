@@ -1,9 +1,15 @@
 import wandb
 import requests
 import json
+import subprocess
+import os
+import threading
+from time import sleep
+import random
+import socket
 
 DEST_PORT = 3000
-
+script_dir = os.path.dirname(os.path.abspath(__file__))
 config = {
     "target_var": "Salary",
     "compute_pvalues": True,
@@ -50,7 +56,7 @@ config = {
 
 # Define the sweep configuration
 sweep_config = {
-    "method": "grid",  # "random" or "bayes" as needed
+    "method": "bayes",  # "random" or "bayes" as needed
     "metric": {
         "name": "average_important_rule_pValues",  
         "goal": "minimize"
@@ -68,7 +74,7 @@ sweep_config = {
     }
 }
 
-# sweep_id = wandb.sweep(sweep_config, project="FuzzyXAI-biasedSalaries-2Antecedents")
+sweep_id = wandb.sweep(sweep_config, project="FuzzyXAI-biasedSalariesFinal")
 important_rules = ["If Gender is female then Salary is verylow", "If Gender is female then Salary is low", "If HiringManager is B AND If Gender is other then Salary is high", "If Gender is male then Salary is high"]
 short_rules = {
     important_rules[0]: "femaleLow",
@@ -77,55 +83,80 @@ short_rules = {
     important_rules[3]: "maleHigh"
 }
 
+def is_port_in_use(port):
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        return s.connect_ex(('localhost', port)) == 0
+
 def train():
-    run = wandb.init()
-    
-    config["lasso"]["regularization"] = run.config["lasso.regularization"]
-    config["lasso"]["max_lasso_iterations"] = run.config["lasso.max_lasso_iterations"]
-    config["lasso"]["lasso_convergance_tolerance"] = run.config["lasso.lasso_convergance_tolerance"]
+    # Start the Node backend
+    while True:
+        DEST_PORT = random.randint(3000, 40000)
+        if not is_port_in_use(DEST_PORT):
+            break
 
-    with open("assets/biased_salaries.csv", "rb") as csv_file:
-        files = {
-            "metadata": (None, json.dumps(config), "application/json"),
-            "csvFile": ("your_file.csv", csv_file, "text/csv")
-        }
-        response = requests.post("http://localhost:3000/api/upload", files=files, timeout=3600).json()
+    env = os.environ.copy()
+    env["PORT"] = str(DEST_PORT)
+    server_process = subprocess.Popen(['C:\\Program Files\\nodejs\\npm.cmd', 'run', 'start'], env=env, cwd=script_dir)
+    sleep(30)
+    # Define a function to terminate the server
+    def stop_server():
+        server_process.kill()
+        server_process.wait()
+
+    # Start a timer to stop the server after 3600 seconds
+    timer = threading.Timer(3600, stop_server)
+    timer.start()
+
+    try:
+        run = wandb.init()
         
-        wandb.log({
-            "num_active_rules": response["num_active_rules"],
-            "runtime": response.get("runtime", 0)  # Placeholder if runtime is available in response
-        })
+        config["lasso"]["regularization"] = run.config["lasso.regularization"]
+        config["lasso"]["max_lasso_iterations"] = run.config["lasso.max_lasso_iterations"]
+        config["lasso"]["lasso_convergance_tolerance"] = run.config["lasso.lasso_convergance_tolerance"]
 
-        important_rule_pValues = []
-        
-        for rule in important_rules:
-            hm_rule = next((r for r in response["sorted_rules"] if r["title"] == rule), None)
-            if hm_rule:
-                wandb.log({
-                    f"{short_rules[rule]}_coefficient": hm_rule["coefficient"],
-                    f"{short_rules[rule]}_pValue": hm_rule.get("pValue", None)  # log pValue if available
-                })
-                important_rule_pValues.append(hm_rule.get("pValue", 1))
-            else:
-                important_rule_pValues.append(1)
-        
-        wandb.log({
-            "average_important_rule_pValues": sum(important_rule_pValues)/len(important_rule_pValues)
-        })
+        with open("assets/biased_salaries.csv", "rb") as csv_file:
+            files = {
+                "metadata": (None, json.dumps(config), "application/json"),
+                "csvFile": ("your_file.csv", csv_file, "text/csv")
+            }
+            response = requests.post(f"http://localhost:{DEST_PORT}/api/upload", files=files, timeout=3600).json()
+            
+            wandb.log({
+                "num_active_rules": response["num_active_rules"],
+                "runtime": response.get("runtime", 0)  # Placeholder if runtime is available in response
+            })
 
-        with open('response.json', 'w') as f:
-            json.dump(response, f)
-        artifact = wandb.Artifact('response_artifact', type='response')
-        artifact.add_file('response.json')
-        wandb.log_artifact(artifact)
+            important_rule_pValues = []
+            
+            for rule in important_rules:
+                hm_rule = next((r for r in response["sorted_rules"] if r["title"] == rule), None)
+                if hm_rule:
+                    wandb.log({
+                        f"{short_rules[rule]}_coefficient": hm_rule["coefficient"],
+                        f"{short_rules[rule]}_pValue": hm_rule.get("pValue", None)  # log pValue if available
+                    })
+                    important_rule_pValues.append(hm_rule.get("pValue", 1))
+                else:
+                    important_rule_pValues.append(1)
+            
+            # get the lowest 3 important rule pValues
+            lowest_3 = sorted(important_rule_pValues)[0:3]
+            wandb.log({
+                "average_important_rule_pValues": sum(lowest_3)/len(lowest_3)
+            })
 
+            with open('response.json', 'w') as f:
+                json.dump(response, f)
+            artifact = wandb.Artifact('response_artifact', type='response')
+            artifact.add_file('response.json')
+            wandb.log_artifact(artifact)
+    except Exception as e:
+        print(e)
+    finally:
+        # Cancel the timer and terminate the server
+        timer.cancel()
+        stop_server()
 
 if __name__ == "__main__":
-    # read optional dest port from command line
-    import sys
-    if len(sys.argv) > 1:
-        DEST_PORT = int(sys.argv[1])
-        print(f"Using port {DEST_PORT}")
-    
-    wandb.agent("0sqbe7jc", train, project = "FuzzyXAI-biasedSalaries-2Antecedents")
-    
+    # read optional dest port from command line    
+    wandb.agent(sweep_id, train, project = "FuzzyXAI-biasedSalariesFinal")
