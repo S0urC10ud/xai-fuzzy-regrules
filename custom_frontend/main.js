@@ -613,6 +613,8 @@ $("#downloadModal").on("hidden.bs.modal", async function () {
     config.include_intercept ?? true;
   document.getElementById("compute_pvalues").checked =
     config.compute_pvalues ?? false;
+  document.getElementById("re_fit_after_removing_insignificant_rules").checked =
+    config.re_fit_after_removing_insignificant_rules ?? false;
   document.getElementById("numerical_fuzzification").value =
     config.numerical_fuzzification.length ?? 5;
   document.getElementById("numerical_defuzzification").value =
@@ -1269,7 +1271,8 @@ document.getElementById("runButton")?.addEventListener("click", async () => {
       ),
     },
     include_intercept: document.getElementById("include_intercept").checked,
-    compute_pvalues: document.getElementById("compute_pvalues").checked
+    compute_pvalues: document.getElementById("compute_pvalues").checked,
+    re_fit_after_removing_insignificant_rules: document.getElementById("re_fit_after_removing_insignificant_rules").checked
   };
   console.log("Configuration object created:", config);
 

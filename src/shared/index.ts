@@ -20,6 +20,8 @@ export function main(metadata: Metadata, data: string): EvaluationMetrics {
     if (metadata.rule_filters.remove_insignificant_rules && !metadata.compute_pvalues)
         throw new Error("Cannot remove insignificant rules without computing p-values - please activate metadata.compute_pvalues");
 
+    if (metadata.re_fit_after_removing_insignificant_rules && !metadata.rule_filters.remove_insignificant_rules)
+        throw new Error("Cannot re-fit after removing insignificant rules without removing insignificant rules - please activate metadata.rule_filters.remove_insignificant_rules");
     const { records, numericalKeys, categoricalKeys, target_mean, target_std } = executeDataPipeline(data, metadata, warnings);
     const variableBounds: { [key: string]: { min: number; max: number } } = {};
 
