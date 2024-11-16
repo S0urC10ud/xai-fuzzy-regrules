@@ -131,6 +131,7 @@ Example request metadata:
   "variance_threshold": 1e-5, // Columns with a variance smaller than this value can be removed, set to 0 to disable
   "remove_low_variance": false, // Defaults to false, toggles only warn vs. actually remove columns below variance threshold
   "include_intercept": true, // Defaults to true; Determines, whether at absolute 0 the model should be forced to go to 0 or if an intercept can be used to offset it - this parameter cannot be removed from colinearities or the significance-test
+  "re_fit_after_removing_insignificant_rules": false, // only able to be active if remove_insignificant_rules is true
   "outlier_filtering": {
     "Salary": { // column name
       "method": "VariableBounds",

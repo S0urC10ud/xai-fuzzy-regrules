@@ -537,6 +537,60 @@ export function performRegression(
       activeIndices = filteredIndices;
       filteredCoeffs = filteredCoeffsV2;
       pValues = filteredPvalues;
+
+      if (activeIndices.length === 0) {
+        throw new Error("Regression solve failed: All coefficients are insignificant.");
+      }
+
+      if (metadata.re_fit_after_removing_insignificant_rules) {
+        let predictorsIndices = activeIndices.slice(); // Copy of activeIndices
+
+        // Exclude intercept from predictorsIndices if interceptIncluded
+        let interceptIncludedRefit = interceptIncluded;
+        const interceptIndex = allRules.findIndex((rule) => rule.isIntercept);
+        if (interceptIndex !== -1 && interceptIncludedRefit) {
+          interceptIncludedRefit = true;
+          // Remove intercept index from predictorsIndices for regression
+          predictorsIndices = predictorsIndices.filter((idx) => idx !== interceptIndex);
+        }
+      
+        const subMatrixData = finalX.map((row) =>
+          predictorsIndices.map((col) => row[col])
+        );
+      
+        const X_new = subMatrixData;
+        const lassoResultRefit = lassoCoordinateDescent(
+          X_new,
+          yVector,
+          lambda,
+          lassoConvergenceTolerance,
+          maxLassoIterations,
+          warnings,
+          interceptIncludedRefit
+        );
+      
+        const coefficientsRefit = lassoResultRefit.beta;
+        let interceptEstimateRefit = lassoResultRefit.intercept;
+      
+        if (interceptIncludedRefit) {
+          // Assign intercept coefficient
+          allRules[interceptIndex].coefficient = interceptEstimateRefit;
+          allRules[interceptIndex].pValue = null; // Intercept p-value can be computed separately if needed
+        }
+      
+        // Initialize coefficients to zero for all rules (except intercept)
+        allRules.forEach((rule) => {
+          if (!rule.isIntercept) {
+            rule.coefficient = 0;
+          }
+        });
+      
+        // Assign new coefficients
+        predictorsIndices.forEach((ruleIdx, idx) => {
+          const rule = allRules[ruleIdx];
+          rule.coefficient = coefficientsRefit[idx];
+        });
+      }
     }
 
     // Assign computed coefficients and p-values to the corresponding rules

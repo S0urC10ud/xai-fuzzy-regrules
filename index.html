@@ -190,7 +190,9 @@
                 >Compute pValues
                 <span class="custom-tooltip left"
                   >!<span class="custom-tooltiptext left"
-                    >Note: This takes long if you do not filter many rules! For every basis function the regression has to be performed!</span
+                    >Note: This takes long if you do not filter many rules! For
+                    every basis function the regression has to be
+                    performed!</span
                   ></span
                 >
               </label>
@@ -371,7 +373,7 @@
                   <span class="custom-tooltip"
                     >?<span class="custom-tooltiptext"
                       >Remove rules where H0 (coefficient=0) is not rejected if
-                      regularization is 0</span
+                      regularization is 0. Requires compute_pvalues to be true!</span
                     ></span
                   >
                 </label>
@@ -525,7 +527,7 @@
           </fieldset>
           <fieldset class="config-fieldset">
             <legend>Lasso Configuration</legend>
-            <div class="config-row">
+            <div class="row config-row" style="padding: 1rem">
               <div class="config-item">
                 <label for="lasso_regularization"
                   >Regularization
@@ -560,7 +562,9 @@
                   value="10000"
                 />
               </div>
+            </div>
 
+            <div class="row config-row" style="padding: 1rem;">
               <div class="config-item">
                 <label for="lasso_convergence_tolerance"
                   >Lasso Convergence Tolerance
@@ -576,6 +580,21 @@
                   id="lasso_convergence_tolerance"
                   name="lasso_convergence_tolerance"
                   value="0.0001"
+                />
+              </div>
+              <div class="config-item checkbox-item">
+                <label for="re_fit_after_removing_insignificant_rules"
+                  >Re-Fit after Statistical Removal
+                  <span class="custom-tooltip left"
+                    >?<span class="custom-tooltiptext left"
+                      >After removing statistically Insignificant rules, one can re-fit the LASSO coefficients on the reduced set of rules with this option. Only able to be active if remove_insignificant_rules is.</span
+                    ></span
+                  >
+                </label>
+                <input
+                  type="checkbox"
+                  id="re_fit_after_removing_insignificant_rules"
+                  name="re_fit_after_removing_insignificant_rules"
                 />
               </div>
             </div>
@@ -678,11 +697,12 @@
               data-dismiss="modal"
               aria-label="Close"
             >
-              <span aria-hidden="true" style="color: white;">&times;</span>
+              <span aria-hidden="true" style="color: white">&times;</span>
             </button>
           </div>
           <div class="modal-body">
-            Do you want to examine the custom demo dataset (biased_salaries) on GitHub in a new tab?
+            Do you want to examine the custom demo dataset (biased_salaries) on
+            GitHub in a new tab?
           </div>
           <div class="modal-footer">
             <button
@@ -692,7 +712,11 @@
             >
               Proceed to run
             </button>
-            <button type="button" id="downloadButton" class="btn btn-primary add-filter">
+            <button
+              type="button"
+              id="downloadButton"
+              class="btn btn-primary add-filter"
+            >
               Open dataset in new tab and run
             </button>
           </div>

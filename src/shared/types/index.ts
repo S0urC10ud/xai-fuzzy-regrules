@@ -29,6 +29,7 @@ export interface Metadata {
         }
     };
     compute_pvalues: boolean;
+    re_fit_after_removing_insignificant_rules?: boolean;
     numerical_fuzzification: FuzzySet[];
     numerical_defuzzification: FuzzySet[];
     variance_threshold: number;

@@ -1,7 +1,7 @@
 {
     "target_var": "Salary",
     "compute_pvalues": true,
-    "re_fit_after_removing_insignificant_rules": false,
+    "re_fit_after_removing_insignificant_rules": true,
     "outlier_filtering": {
         "Salary":
         {
