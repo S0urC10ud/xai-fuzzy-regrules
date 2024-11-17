@@ -101,13 +101,13 @@ function lassoCoordinateDescent(
 ): { beta: number[]; intercept: number } {
   const p = X[0].length;
 
-  // Center X and y
-  const { centeredX, centeredY, meanX, meanY } = centerData(X, y, center);
+  // Standardize X and y
+  const { standardizedX, standardizedY, stdX, meanX, meanY } = standardizeData(X, y, center);
 
   let beta = new Array(p).fill(0);
   let betaOld = new Array(p).fill(0);
-  const XMatrix = new Matrix(centeredX);
-  const yVector = new Matrix(centeredY.map((v) => [v]));
+  const XMatrix = new Matrix(standardizedX);
+  const yVector = new Matrix(standardizedY.map((v) => [v]));
 
   // Precompute X^T X and X^T y
   const XtX = XMatrix.transpose().mmul(XMatrix).to2DArray();
@@ -127,7 +127,11 @@ function lassoCoordinateDescent(
       }
       const z = XtX[j][j];
 
-      // Update beta_j using the soft-thresholding operator
+      if (z === 0) {
+        beta[j] = 0;
+        continue;
+      }
+
       beta[j] = softThresholding(residual, lambda) / z;
     }
 
@@ -152,11 +156,14 @@ function lassoCoordinateDescent(
       warnings
     );
 
+  // Transform beta back to original scale
+  const betaOriginalScale = beta.map((b, j) => b / stdX[j]);
+
   // Compute intercept
   const intercept =
-    meanY - meanX.reduce((sum, val, j) => sum + val * beta[j], 0);
+    meanY - meanX.reduce((sum, val, j) => sum + val * betaOriginalScale[j], 0);
 
-  return { beta, intercept };
+  return { beta: betaOriginalScale, intercept };
 }
 
 function standardizeData(X: number[][], y: number[], interceptIncluded:boolean = true) {
@@ -164,14 +171,16 @@ function standardizeData(X: number[][], y: number[], interceptIncluded:boolean =
   const p = X[0].length;
 
   // Center X and y
-  const { centeredX, centeredY } = centerData(X, y, interceptIncluded);
+  const { centeredX, centeredY, meanX, meanY } = centerData(X, y, interceptIncluded);
 
-  // Compute standard deviations
   const stdX = new Array(p).fill(0);
   for (let j = 0; j < p; j++) {
-    stdX[j] = Math.sqrt(
-      centeredX.reduce((sum, row) => sum + row[j] ** 2, 0) / (n - 1)
-    );
+    const variance =
+      centeredX.reduce((sum, row) => sum + row[j] ** 2, 0) / (n - 1);
+    stdX[j] = Math.sqrt(variance);
+    if (stdX[j] === 0) {
+      stdX[j] = 1; // Avoid division by zero
+    }
   }
 
   // Standardize X
@@ -187,8 +196,9 @@ function standardizeData(X: number[][], y: number[], interceptIncluded:boolean =
   // Standardize y
   const standardizedY = centeredY.map((val) => val / stdY);
 
-  return { standardizedX, standardizedY, stdX, stdY };
+  return { standardizedX, standardizedY, stdX, stdY, meanX, meanY };
 }
+
 
 function centerData(
   X: number[][],
@@ -251,8 +261,25 @@ export function performRegression(
       metadata,
       warnings
     );
-  } else {
-    selectedRuleIndices = Array.from({ length: finalX[0].length }, (_, i) => i);
+  }  else {
+    // Remove columns with near-zero variance
+    const varianceThreshold = metadata.variance_threshold || 1e-5;
+    selectedRuleIndices = [];
+    for (let j = 0; j < finalX[0].length; j++) {
+      const column = finalX.map((row) => row[j]);
+      const mean = column.reduce((sum, val) => sum + val, 0) / column.length;
+      const variance =
+        column.reduce((sum, val) => sum + (val - mean) ** 2, 0) /
+        (column.length - 1);
+      if (variance > varianceThreshold) {
+        selectedRuleIndices.push(j);
+      } else {
+        logWarning(
+          `Removed predictor at index ${j} due to low variance (${variance})`,
+          warnings
+        );
+      }
+    }
   }
   if (selectedRuleIndices.length === 0) {
     const finalWarn = `No rules selected after vector selection with dependency threshold ${metadata.rule_filters.dependency_threshold}.`;
@@ -284,14 +311,12 @@ export function performRegression(
     }
 
     if (selectedRuleIndices.length > finalX.length) {
-      const finalWarn = `Too many rules (${selectedRuleIndices.length} > ${finalX.length}) selected after priority- and linearity-filtering with minimum priority ${minPriority}. Either filter more rules or provide a bigger dataset.`;
+      const finalWarn = `Many rules (${selectedRuleIndices.length} > ${finalX.length}) selected after priority- and linearity-filtering with minimum priority ${minPriority}. Either filter more rules or provide a bigger dataset.`;
       logWarning(finalWarn, warnings);
-      throw new Error(`Regression solve failed: ${finalWarn}`);
     }
   } else if (selectedRuleIndices.length > finalX.length) {
-    const finalWarn = `Too many rules (${selectedRuleIndices.length} > ${finalX.length}) selected after vector selection with dependency threshold ${metadata.rule_filters.dependency_threshold}. Either filter more rules or provide a bigger dataset.`;
+    const finalWarn = `Many rules (${selectedRuleIndices.length} > ${finalX.length}) selected after vector selection with dependency threshold ${metadata.rule_filters.dependency_threshold}. Either filter more rules or provide a bigger dataset.`;
     logWarning(finalWarn, warnings);
-    throw new Error(`Regression solve failed: ${finalWarn}`);
   }
 
   let activeIndices: number[] = selectedRuleIndices;
@@ -350,7 +375,7 @@ export function performRegression(
   }
 
   // Define the threshold for coefficient significance
-  const coefficientExistenceThreshold = 1e-5;
+  const coefficientExistenceThreshold = 1e-8;
 
   // Identify significant coefficients
   const significantIndices: number[] = [];
@@ -370,8 +395,7 @@ export function performRegression(
   });
 
   warnCollector.push({
-    "Removed from pValue-computation due to low coefficient (<1e-5)":
-      tooLowCoefficients,
+    [`Removed from pValue-computation due to low coefficient (< ${coefficientExistenceThreshold})`]: tooLowCoefficients,
   });
 
   // Update activeIndices and coefficients
@@ -387,7 +411,7 @@ export function performRegression(
 
   if (activeIndices.length === 0) {
     logWarning(
-      `All coefficients are below the significance threshold (${coefficientExistenceThreshold}). No p-values computed.`,
+      `All coefficients are smaller than ${coefficientExistenceThreshold}!`,
       warnings
     );
     return;
@@ -421,22 +445,11 @@ export function performRegression(
     );
 
     const residuals = centeredY.map((y, i) => y - predictedY[i]);
-
-    const degreesOfFreedom =
-      yVector.length - filteredCoeffs.length - (interceptIncluded ? 1 : 0);
-
-    if (degreesOfFreedom <= 0) {
-      const finalWarn = `Degrees of freedom is less than or equal to zero. Consider choosing a higher dependency threshold, fewer rules, or a bigger dataset!`;
-      logWarning(finalWarn, warnings);
-      throw new Error(`Regression solve failed: ${finalWarn}`);
-    }
-
-    // Compute residual variance
     const residualSumOfSquares = residuals.reduce((sum, r) => sum + r * r, 0);
-    const sigmaSquared = residualSumOfSquares / degreesOfFreedom;
 
     let pValues: number[] | null = null;
     if (lambda > 0 && activeIndices.length > 0) {
+      const sigmaSquared = residualSumOfSquares / yVector.length;
       // Compute p-values using debiased Lasso
 
       // Compute Sigma = (1/n) X^T X (with centered X)
@@ -472,6 +485,15 @@ export function performRegression(
       // Compute p-values using standard normal distribution
       pValues = zStatistics.map((z) => 2 * (1 - normalCDF(Math.abs(z), 0, 1)));
     } else if (lambda === 0 && activeIndices.length > 0) {
+      const degreesOfFreedom =
+      yVector.length - filteredCoeffs.length - (interceptIncluded ? 1 : 0);
+
+      if (degreesOfFreedom <= 0) {
+        const finalWarn = `Degrees of freedom is less than or equal to zero. Consider choosing a higher dependency threshold, fewer rules, or a bigger dataset!`;
+        logWarning(finalWarn, warnings);
+        throw new Error(`Regression solve failed: ${finalWarn}`);
+      }
+      const sigmaSquared = residualSumOfSquares / degreesOfFreedom;
       try {
         const XMatrix = new Matrix(centeredX);
         const XtX = XMatrix.transpose().mmul(XMatrix);
