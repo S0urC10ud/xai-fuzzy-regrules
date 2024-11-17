@@ -1,45 +1,40 @@
 {
-    "split_char": ";",
     "target_var": "MEDV",
-    "decimal_point": ".",
-    "lasso":{
-        "regularization": 1,
+    "compute_pvalues": true,
+    "re_fit_after_removing_insignificant_rules": false,
+    "outlier_filtering": {
+    },
+    "split_char": ";",
+    "decimal_point": ",",
+    "lasso": {
+        "regularization": 10,
         "max_lasso_iterations": 10000,
-        "convergence_threshold": 1e-4
+        "lasso_convergance_tolerance": 0.01
     },
     "rule_filters": {
-        "l1_row_threshold": 0.1,
         "l1_column_threshold": 0.1,
-        "dependency_threshold": 0.1,
+        "l1_row_threshold": 0.1,
+        "dependency_threshold": 0,
         "significance_level": 0.05,
-        "remove_insignificant_rules": false,
+        "remove_insignificant_rules": true,
         "only_whitelist": false,
         "rule_priority_filtering": {
-            "enabled":true,
-            "min_priority": 0.2
+           "enabled": true,
+           "min_priority": 0.01
         }
     },
-    "numerical_fuzzification": ["verylow", "low", "medium", "high", "veryhigh"],
-    "numerical_defuzzification": ["verylow", "low", "medium", "high", "veryhigh"],
+    "numerical_fuzzification": ["veryhigh", "medium",  "verylow"],
+    "numerical_defuzzification": ["veryhigh", "high",  "medium", "low", "verylow"],
     "variance_threshold": 1e-5,
+    "num_vars": 2,
+    "whitelist": [],
+    "blacklist": [],
     "remove_low_variance": false,
     "include_intercept": true,
-    "outlier_filtering": {
-        "MEDV": {
-            "method": "VariableBounds",
-            "min": 5,
-            "max": 50
-        }
-    },
-    "num_vars": 2,
-    "whitelist": [
-    ],
-    "blacklist": [
-    ],
     "rule_priority_weights": {
         "support_weight": 1,
         "leverage_weight": 10,
-        "num_antecedents_weight": 1,
+        "num_antecedents_weight": 0,
         "whitelist_boolean_weight": 1000
     }
 }
