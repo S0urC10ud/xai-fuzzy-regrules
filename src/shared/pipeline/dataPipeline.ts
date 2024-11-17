@@ -41,11 +41,7 @@ export function executeDataPipeline(
             if((r[n] as string).includes(",")) {
                 throw new Error("Decimal point character is set to '.' but ',' is found in the dataset")
             }
-        } else if(metadata.decimal_point == ",") {
-            if((r[n] as string).includes(".")) {
-                throw new Error("Decimal point character is set to ',' but '.' is found in the dataset")
-            }
-    }}))
+        }}));
 
     const categoricalKeys: string[] = Object.keys(records[0]).filter(
         key => !numericalKeys.includes(key)

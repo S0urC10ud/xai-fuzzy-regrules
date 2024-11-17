@@ -21,7 +21,7 @@
         "l1_row_threshold": 0.1,
         "dependency_threshold": 0,
         "significance_level": 0.05,
-        "remove_insignificant_rules": true,
+        "remove_insignificant_rules": false,
         "only_whitelist": false,
         "rule_priority_filtering": {
            "enabled": true,

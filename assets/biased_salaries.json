@@ -1,10 +1,21 @@
 {
-  "mean_absolute_error": 2062.009780048018,
-  "root_mean_squared_error": 2574.6221757591334,
-  "r_squared": 0.9309002087913422,
-  "mean_absolute_percentage_error": 4.800816557676149,
-  "num_active_rules": 39,
+  "mean_absolute_error": 1438.754813320536,
+  "root_mean_squared_error": 1853.1576546030558,
+  "r_squared": 0.9642007061967164,
+  "mean_absolute_percentage_error": 3.3344111073834184,
+  "num_active_rules": 65,
   "sorted_rules": [
+      {
+          "title": "Intercept",
+          "coefficient": 9.862258329228077,
+          "isWhitelist": true,
+          "support": 0,
+          "leverage": 0,
+          "priority": 0,
+          "pValue": null,
+          "secondaryRules": [],
+          "mostAffectedCsvRows": []
+      },
       {
           "title": "If JobPosition is management then Salary is high",
           "coefficient": 0.13267374819457053,
@@ -16,15 +27,15 @@
           "secondaryRules": [],
           "mostAffectedCsvRows": [
               751,
-              1162,
-              2816,
-              1169,
               2666,
               620,
               1292,
+              2816,
+              1169,
+              1174,
               2897,
-              200,
-              1174
+              1162,
+              601
           ]
       },
       {
@@ -37,16 +48,16 @@
           "pValue": 0,
           "secondaryRules": [],
           "mostAffectedCsvRows": [
-              1501,
               1955,
-              1749,
               2032,
               697,
-              747,
+              1501,
+              1749,
               1112,
               581,
-              1107,
-              2084
+              1386,
+              2084,
+              747
           ]
       },
       {
@@ -59,16 +70,16 @@
           "pValue": 8.447603194738917e-8,
           "secondaryRules": [],
           "mostAffectedCsvRows": [
-              1257,
-              250,
               1902,
-              2137,
+              1257,
               2733,
-              141,
-              1993,
+              2137,
+              250,
               2523,
               1725,
-              1778
+              1111,
+              2828,
+              634
           ]
       },
       {
@@ -83,12 +94,12 @@
           "mostAffectedCsvRows": [
               1869,
               742,
-              1650,
-              2090,
-              2328,
               2834,
-              2798,
-              1612,
+              2090,
+              2437,
+              2164,
+              2328,
+              2711,
               737,
               2943
           ]
@@ -104,15 +115,37 @@
           "secondaryRules": [],
           "mostAffectedCsvRows": [
               836,
-              2768,
-              888,
               2487,
-              959,
+              888,
+              2768,
               1820,
-              792,
               2375,
               1210,
-              229
+              959,
+              229,
+              624
+          ]
+      },
+      {
+          "title": "If Experience is medium AND If Gender is female then Salary is low",
+          "coefficient": 0.0254053313321743,
+          "isWhitelist": false,
+          "support": 0.13793103448275862,
+          "leverage": 0.025349329294255693,
+          "priority": 0.3914243274253156,
+          "pValue": 0.07933372816556639,
+          "secondaryRules": [],
+          "mostAffectedCsvRows": [
+              1779,
+              2311,
+              1381,
+              505,
+              1881,
+              1276,
+              2672,
+              1189,
+              2444,
+              1710
           ]
       },
       {
@@ -129,12 +162,12 @@
               1485,
               1731,
               2623,
-              344,
-              623,
-              20,
-              974,
+              148,
+              2609,
+              1959,
               2744,
-              2609
+              974,
+              2927
           ]
       },
       {
@@ -147,16 +180,38 @@
           "pValue": 0,
           "secondaryRules": [],
           "mostAffectedCsvRows": [
-              1138,
               899,
-              811,
-              460,
+              1138,
               2297,
               671,
-              1457,
-              2483,
+              182,
+              2864,
               2983,
-              182
+              1560,
+              811,
+              460
+          ]
+      },
+      {
+          "title": "If Experience is low AND If Gender is female then Salary is low",
+          "coefficient": 0.011992172730808742,
+          "isWhitelist": false,
+          "support": 0.13391362571141613,
+          "leverage": 0.01091147231127318,
+          "priority": 0.24302834882414792,
+          "pValue": 0.07623683167764894,
+          "secondaryRules": [],
+          "mostAffectedCsvRows": [
+              377,
+              2105,
+              1897,
+              1623,
+              1676,
+              1811,
+              1443,
+              2536,
+              1533,
+              379
           ]
       },
       {
@@ -169,10 +224,10 @@
           "pValue": 0,
           "secondaryRules": [],
           "mostAffectedCsvRows": [
-              1015,
-              2689,
-              2574,
               22,
+              2689,
+              1015,
+              2574,
               535,
               1347,
               2348,
@@ -194,13 +249,57 @@
               777,
               2648,
               901,
-              539,
               2771,
-              1953,
               2061,
-              292,
+              539,
               1775,
-              1673
+              292,
+              1378,
+              1953
+          ]
+      },
+      {
+          "title": "If UniversityReputation is high AND If Gender is female then Salary is low",
+          "coefficient": 0.007630688561669511,
+          "isWhitelist": false,
+          "support": 0.06561767659859391,
+          "leverage": 0.013515435540393826,
+          "priority": 0.20077203200253219,
+          "pValue": 0.8409868087363395,
+          "secondaryRules": [],
+          "mostAffectedCsvRows": [
+              837,
+              906,
+              1728,
+              339,
+              2788,
+              2033,
+              418,
+              2393,
+              1276,
+              720
+          ]
+      },
+      {
+          "title": "If Experience is high then Salary is high",
+          "coefficient": 0.006950757080780907,
+          "isWhitelist": false,
+          "support": 0.024439236692333444,
+          "leverage": 0.014349313490923561,
+          "priority": 0.16793237160156904,
+          "pValue": 0.3060436313532289,
+          "secondaryRules": [],
+          "mostAffectedCsvRows": [
+              836,
+              2487,
+              888,
+              2768,
+              1820,
+              2375,
+              1210,
+              959,
+              229,
+              624
           ]
       },
       {
@@ -216,13 +315,13 @@
               2175,
               2518,
               175,
-              1060,
               2308,
-              1104,
+              1060,
               2787,
+              1104,
               372,
-              597,
-              2629
+              2629,
+              597
           ]
       },
       {
@@ -235,16 +334,16 @@
           "pValue": 0,
           "secondaryRules": [],
           "mostAffectedCsvRows": [
-              673,
               2778,
-              1866,
-              2631,
               1153,
-              80,
-              1064,
               783,
+              2631,
+              1064,
               820,
-              1129
+              80,
+              1129,
+              673,
+              687
           ]
       },
       {
@@ -261,12 +360,56 @@
               1613,
               1857,
               1476,
-              2593,
               1318,
               1477,
+              585,
               26,
-              1702,
-              585
+              2593,
+              1702
+          ]
+      },
+      {
+          "title": "If UniversityReputation is high AND If Gender is male then Salary is medium",
+          "coefficient": 0.005791889473710077,
+          "isWhitelist": false,
+          "support": 0.03481754268496819,
+          "leverage": 0.011271586539102766,
+          "priority": 0.14753340807599585,
+          "pValue": 0.2096465235657008,
+          "secondaryRules": [],
+          "mostAffectedCsvRows": [
+              2744,
+              974,
+              2927,
+              1977,
+              1600,
+              910,
+              2533,
+              492,
+              516,
+              2094
+          ]
+      },
+      {
+          "title": "If GPA is high AND If Gender is female then Salary is low",
+          "coefficient": 0.0053440141374072984,
+          "isWhitelist": false,
+          "support": 0.1335788416471376,
+          "leverage": 0.01384584847025426,
+          "priority": 0.2720373263496802,
+          "pValue": 0.13796784438995435,
+          "secondaryRules": [],
+          "mostAffectedCsvRows": [
+              719,
+              1770,
+              1356,
+              208,
+              2694,
+              328,
+              2684,
+              644,
+              329,
+              1668
           ]
       },
       {
@@ -279,16 +422,38 @@
           "pValue": 0.0009981659215057004,
           "secondaryRules": [],
           "mostAffectedCsvRows": [
+              1905,
               1779,
               1070,
-              1905,
-              262,
               2277,
-              508,
+              262,
               468,
-              1381,
-              1528,
-              598
+              1555,
+              505,
+              508,
+              1525
+          ]
+      },
+      {
+          "title": "If Gender is female AND If JobPosition is sales then Salary is low",
+          "coefficient": 0.0037285565442179425,
+          "isWhitelist": false,
+          "support": 0.10177435554067626,
+          "leverage": 0.01698051224988005,
+          "priority": 0.2715794780394768,
+          "pValue": 0.6441762239078208,
+          "secondaryRules": [],
+          "mostAffectedCsvRows": [
+              1905,
+              1779,
+              1070,
+              2277,
+              262,
+              468,
+              1555,
+              508,
+              2194,
+              2169
           ]
       },
       {
@@ -301,16 +466,16 @@
           "pValue": 0.0007564505858723702,
           "secondaryRules": [],
           "mostAffectedCsvRows": [
-              2185,
               2837,
-              2008,
               304,
-              2171,
-              117,
               2000,
+              2171,
+              2810,
               313,
-              206,
-              509
+              1865,
+              60,
+              509,
+              1536
           ]
       },
       {
@@ -325,14 +490,102 @@
           "mostAffectedCsvRows": [
               1902,
               2137,
-              141,
-              1993,
               2523,
               1725,
-              1778,
-              1889,
+              1111,
+              2828,
               634,
-              1111
+              1071,
+              340,
+              1924
+          ]
+      },
+      {
+          "title": "If GPA is high then Salary is high",
+          "coefficient": 0.0015304288691795572,
+          "isWhitelist": false,
+          "support": 0.02912621359223301,
+          "leverage": 0.0016082412247515158,
+          "priority": 0.04520862583974817,
+          "pValue": 0.7940106933662099,
+          "secondaryRules": [],
+          "mostAffectedCsvRows": [
+              2368,
+              1393,
+              585,
+              807,
+              2034,
+              106,
+              2386,
+              2839,
+              287,
+              1845
+          ]
+      },
+      {
+          "title": "If GPA is high then Salary is medium",
+          "coefficient": 0.0012101876071958853,
+          "isWhitelist": false,
+          "support": 0.1144961499832608,
+          "leverage": 0.008418804889259557,
+          "priority": 0.19868419887585637,
+          "pValue": 0.9699183915028782,
+          "secondaryRules": [],
+          "mostAffectedCsvRows": [
+              2368,
+              1393,
+              585,
+              807,
+              2034,
+              106,
+              2386,
+              2839,
+              287,
+              1845
+          ]
+      },
+      {
+          "title": "If UniversityReputation is high AND If GPA is high then Salary is medium",
+          "coefficient": 0.0008239106722893287,
+          "isWhitelist": false,
+          "support": 0.02912621359223301,
+          "leverage": 0.006705320197364566,
+          "priority": 0.09617941556587868,
+          "pValue": 0.2884434472248847,
+          "secondaryRules": [],
+          "mostAffectedCsvRows": [
+              2839,
+              2219,
+              1118,
+              2812,
+              1791,
+              2594,
+              1500,
+              832,
+              2609,
+              1564
+          ]
+      },
+      {
+          "title": "If Experience is medium AND If GPA is high then Salary is medium",
+          "coefficient": 0.0007720450824656806,
+          "isWhitelist": false,
+          "support": 0.06930030130565785,
+          "leverage": 0.011761377754669303,
+          "priority": 0.1869140788523509,
+          "pValue": 0.06155781866755072,
+          "secondaryRules": [],
+          "mostAffectedCsvRows": [
+              1153,
+              1129,
+              14,
+              2807,
+              1393,
+              1136,
+              2943,
+              2190,
+              2309,
+              2828
           ]
       },
       {
@@ -349,12 +602,12 @@
               1485,
               1731,
               2623,
-              344,
-              623,
-              20,
-              974,
+              148,
+              2609,
+              1959,
               2744,
-              2609
+              974,
+              2927
           ]
       },
       {
@@ -369,14 +622,14 @@
           "mostAffectedCsvRows": [
               1902,
               2137,
-              141,
-              1993,
               2523,
               1725,
-              1778,
-              1889,
+              1111,
+              2828,
               634,
-              1111
+              1071,
+              340,
+              1924
           ]
       },
       {
@@ -392,13 +645,35 @@
               2892,
               602,
               1326,
+              139,
+              2730,
               269,
               922,
-              2730,
-              139,
               2906,
               797,
-              1938
+              659
+          ]
+      },
+      {
+          "title": "If GPA is high then Salary is low",
+          "coefficient": 0.0004569768930967417,
+          "isWhitelist": false,
+          "support": 0.2641446267157683,
+          "leverage": -0.005561091703149723,
+          "priority": 0.2085337096842711,
+          "pValue": 0.7293894857008176,
+          "secondaryRules": [],
+          "mostAffectedCsvRows": [
+              2368,
+              1393,
+              585,
+              2034,
+              807,
+              106,
+              2386,
+              2839,
+              287,
+              1845
           ]
       },
       {
@@ -411,16 +686,16 @@
           "pValue": 0,
           "secondaryRules": [],
           "mostAffectedCsvRows": [
-              1257,
-              250,
               1902,
-              2137,
+              1257,
               2733,
-              141,
-              1993,
+              2137,
+              250,
               2523,
               1725,
-              1778
+              1111,
+              2828,
+              634
           ]
       },
       {
@@ -433,15 +708,15 @@
           "pValue": 1.0864208643823758e-8,
           "secondaryRules": [],
           "mostAffectedCsvRows": [
-              1028,
               2058,
+              1028,
               2984,
               1994,
               1966,
               1794,
+              214,
               1724,
               1047,
-              214,
               1808
           ]
       },
@@ -455,16 +730,16 @@
           "pValue": 0.021731583955983513,
           "secondaryRules": [],
           "mostAffectedCsvRows": [
+              1905,
               1779,
               1070,
-              1905,
-              262,
               2277,
-              508,
+              262,
               468,
-              1381,
-              1528,
-              598
+              1555,
+              505,
+              508,
+              1525
           ]
       },
       {
@@ -477,16 +752,16 @@
           "pValue": 0.042007316742987966,
           "secondaryRules": [],
           "mostAffectedCsvRows": [
-              1561,
-              2915,
-              2877,
               2767,
-              809,
+              2915,
               2399,
-              1028,
+              1561,
+              809,
+              2877,
+              2365,
               1802,
               2860,
-              2365
+              1028
           ]
       },
       {
@@ -501,14 +776,102 @@
           "mostAffectedCsvRows": [
               2817,
               859,
+              1064,
               821,
+              2917,
+              820,
+              2344,
+              1136,
+              2734,
+              547
+          ]
+      },
+      {
+          "title": "If Experience is medium AND If GPA is medium then Salary is low",
+          "coefficient": -0.0002912190231305618,
+          "isWhitelist": false,
+          "support": 0.13659189822564446,
+          "leverage": 0.008686004490612104,
+          "priority": 0.2234519431317655,
+          "pValue": 0.5395431050408199,
+          "secondaryRules": [],
+          "mostAffectedCsvRows": [
+              974,
+              1977,
+              1704,
+              1539,
+              2256,
+              506,
+              687,
+              1731,
+              2122,
+              1662
+          ]
+      },
+      {
+          "title": "If UniversityReputation is verylow AND If Gender is male then Salary is verylow",
+          "coefficient": -0.00040294581082970084,
+          "isWhitelist": false,
+          "support": 0.014060930699698694,
+          "leverage": 0.006577772736651817,
+          "priority": 0.07983865806621687,
+          "pValue": 0.8156919541636856,
+          "secondaryRules": [],
+          "mostAffectedCsvRows": [
+              2602,
+              1868,
+              2937,
+              2269,
+              1939,
+              1574,
+              2077,
+              1440,
+              897,
+              160
+          ]
+      },
+      {
+          "title": "If Experience is medium AND If GPA is medium then Salary is medium",
+          "coefficient": -0.0005063958217944699,
+          "isWhitelist": false,
+          "support": 0.05122196183461667,
+          "leverage": 0.0009155845400372897,
+          "priority": 0.06037780723498957,
+          "pValue": 0.9370934462953486,
+          "secondaryRules": [],
+          "mostAffectedCsvRows": [
+              974,
+              1977,
+              1704,
+              2256,
+              1539,
+              506,
+              687,
+              1731,
+              2122,
+              1662
+          ]
+      },
+      {
+          "title": "If Gender is male AND If JobPosition is HR then Salary is low",
+          "coefficient": -0.0005181868521802697,
+          "isWhitelist": false,
+          "support": 0.062269835955808504,
+          "leverage": 0.01016759489760842,
+          "priority": 0.1639457849318927,
+          "pValue": 0.10105861976481845,
+          "secondaryRules": [],
+          "mostAffectedCsvRows": [
               1064,
               2917,
-              2289,
-              547,
+              820,
               2344,
-              2034,
-              1136
+              1136,
+              2734,
+              2355,
+              2316,
+              2082,
+              1908
           ]
       },
       {
@@ -521,16 +884,82 @@
           "pValue": 0.00054626610142261,
           "secondaryRules": [],
           "mostAffectedCsvRows": [
-              2778,
               1153,
               1129,
-              687,
               783,
+              2778,
               2190,
-              314,
               2490,
+              687,
+              314,
               1734,
-              2106
+              1857
+          ]
+      },
+      {
+          "title": "If GPA is medium then Salary is verylow",
+          "coefficient": -0.0007405297203156565,
+          "isWhitelist": false,
+          "support": 0.042852360227653166,
+          "leverage": 0.010528493688025865,
+          "priority": 0.14813729710791182,
+          "pValue": 0.47649657702427817,
+          "secondaryRules": [],
+          "mostAffectedCsvRows": [
+              1465,
+              1548,
+              2553,
+              2851,
+              1235,
+              848,
+              814,
+              974,
+              1450,
+              178
+          ]
+      },
+      {
+          "title": "If Gender is other then Salary is high",
+          "coefficient": -0.0009411419231017072,
+          "isWhitelist": false,
+          "support": 0.012387010378305993,
+          "leverage": 0.006674946417177258,
+          "priority": 0.07913647455007856,
+          "pValue": 0.30163809156281873,
+          "secondaryRules": [],
+          "mostAffectedCsvRows": [
+              1631,
+              80,
+              884,
+              2097,
+              343,
+              1613,
+              807,
+              2389,
+              2817,
+              1399
+          ]
+      },
+      {
+          "title": "If UniversityReputation is veryhigh AND If Gender is male then Salary is medium",
+          "coefficient": -0.0012514265803359778,
+          "isWhitelist": false,
+          "support": 0.044861064613324404,
+          "leverage": 0.022359809593384745,
+          "priority": 0.26845916054717184,
+          "pValue": 0.5834424391763735,
+          "secondaryRules": [],
+          "mostAffectedCsvRows": [
+              2437,
+              2164,
+              2711,
+              1594,
+              1767,
+              744,
+              2559,
+              755,
+              1751,
+              1539
           ]
       },
       {
@@ -545,14 +974,14 @@
           "mostAffectedCsvRows": [
               1650,
               2798,
-              82,
               496,
-              1046,
-              2243,
               2396,
-              2848,
+              82,
+              746,
+              1046,
               787,
-              746
+              2243,
+              2848
           ]
       },
       {
@@ -568,13 +997,57 @@
               1037,
               1113,
               673,
-              790,
               2273,
+              790,
+              1866,
               2106,
               610,
-              1866,
               14,
-              2209
+              288
+          ]
+      },
+      {
+          "title": "If GPA is medium then Salary is low",
+          "coefficient": -0.0025513410168068007,
+          "isWhitelist": false,
+          "support": 0.23669233344492802,
+          "leverage": 0.0019257649120970333,
+          "priority": 0.25594998256589835,
+          "pValue": 0.4241319062019766,
+          "secondaryRules": [],
+          "mostAffectedCsvRows": [
+              1465,
+              1548,
+              2553,
+              2851,
+              848,
+              1235,
+              814,
+              974,
+              1450,
+              178
+          ]
+      },
+      {
+          "title": "If Experience is medium AND If UniversityReputation is verylow then Salary is low",
+          "coefficient": -0.0027506560874319503,
+          "isWhitelist": false,
+          "support": 0.06996986943421493,
+          "leverage": 0.007038535136467378,
+          "priority": 0.1403552207988887,
+          "pValue": 0.2911671815055763,
+          "secondaryRules": [],
+          "mostAffectedCsvRows": [
+              1868,
+              1704,
+              2602,
+              667,
+              2309,
+              2148,
+              897,
+              1888,
+              2660,
+              2227
           ]
       },
       {
@@ -596,7 +1069,7 @@
               902,
               2256,
               696,
-              2106
+              346
           ]
       },
       {
@@ -609,16 +1082,82 @@
           "pValue": 0.00031402592994811407,
           "secondaryRules": [],
           "mostAffectedCsvRows": [
-              1868,
               2602,
-              1939,
+              1868,
               2937,
-              1574,
-              2660,
               2269,
-              160,
-              2712,
-              2155
+              1939,
+              1574,
+              2077,
+              1440,
+              897,
+              160
+          ]
+      },
+      {
+          "title": "If GPA is medium AND If Gender is male then Salary is high",
+          "coefficient": -0.004373180456873989,
+          "isWhitelist": false,
+          "support": 0.018078339471041177,
+          "leverage": 0.007091997472811824,
+          "priority": 0.0889983141991594,
+          "pValue": 0.24468901197506288,
+          "secondaryRules": [],
+          "mostAffectedCsvRows": [
+              1465,
+              1548,
+              2553,
+              2851,
+              1235,
+              814,
+              1450,
+              974,
+              178,
+              657
+          ]
+      },
+      {
+          "title": "If Gender is other then Salary is medium",
+          "coefficient": -0.005187813056152847,
+          "isWhitelist": false,
+          "support": 0.03180448610646133,
+          "leverage": 0.009785400836948954,
+          "priority": 0.12965849447595088,
+          "pValue": 0.3321836921928605,
+          "secondaryRules": [],
+          "mostAffectedCsvRows": [
+              1631,
+              80,
+              884,
+              2097,
+              343,
+              1613,
+              807,
+              2389,
+              2817,
+              1399
+          ]
+      },
+      {
+          "title": "If Gender is male AND If JobPosition is services then Salary is low",
+          "coefficient": -0.0060462838290767365,
+          "isWhitelist": false,
+          "support": 0.07833947104117844,
+          "leverage": 0.017655684396921868,
+          "priority": 0.2548963150103971,
+          "pValue": 0.14167875680362174,
+          "secondaryRules": [],
+          "mostAffectedCsvRows": [
+              1866,
+              2106,
+              610,
+              14,
+              288,
+              91,
+              2209,
+              2852,
+              2800,
+              252
           ]
       },
       {
@@ -633,12 +1172,12 @@
           "mostAffectedCsvRows": [
               1869,
               742,
-              1650,
-              2090,
-              2328,
               2834,
-              2798,
-              1612,
+              2090,
+              2437,
+              2164,
+              2328,
+              2711,
               737,
               2943
           ]
@@ -653,16 +1192,16 @@
           "pValue": 0,
           "secondaryRules": [],
           "mostAffectedCsvRows": [
-              2778,
               1153,
               1129,
-              687,
               783,
+              2778,
               2190,
-              314,
               2490,
+              687,
+              314,
               1734,
-              2106
+              1857
           ]
       },
       {
@@ -678,13 +1217,13 @@
               1474,
               1120,
               2845,
-              1202,
-              2480,
               605,
-              771,
+              1202,
               1337,
-              872,
-              2538
+              2480,
+              771,
+              2538,
+              827
           ]
       },
       {
@@ -697,12 +1236,12 @@
           "pValue": 0,
           "secondaryRules": [],
           "mostAffectedCsvRows": [
-              2330,
               2754,
+              2330,
               1751,
-              1089,
               2531,
               1146,
+              1089,
               98,
               341,
               315,
@@ -721,14 +1260,14 @@
           "mostAffectedCsvRows": [
               2817,
               859,
-              821,
               1064,
+              821,
               2917,
-              2289,
-              547,
+              820,
               2344,
-              2034,
-              1136
+              1136,
+              2734,
+              547
           ]
       },
       {
@@ -743,14 +1282,36 @@
           "mostAffectedCsvRows": [
               591,
               1416,
-              1243,
               905,
               2909,
               1302,
+              1243,
               1877,
               572,
               675,
               2360
+          ]
+      },
+      {
+          "title": "If JobPosition is services then Salary is low",
+          "coefficient": -0.02168986678300368,
+          "isWhitelist": false,
+          "support": 0.18312688316036158,
+          "leverage": 0.025185579874131503,
+          "priority": 0.4349826819016766,
+          "pValue": 0.06488801894176444,
+          "secondaryRules": [],
+          "mostAffectedCsvRows": [
+              1037,
+              1113,
+              673,
+              2273,
+              790,
+              1866,
+              2106,
+              610,
+              14,
+              288
           ]
       },
       {
@@ -764,15 +1325,15 @@
           "secondaryRules": [],
           "mostAffectedCsvRows": [
               2631,
-              517,
               1702,
+              517,
               813,
-              2143,
-              978,
-              735,
               1661,
               188,
-              61
+              978,
+              1393,
+              61,
+              2697
           ]
       },
       {
@@ -785,16 +1346,16 @@
           "pValue": 0.01823388451966479,
           "secondaryRules": [],
           "mostAffectedCsvRows": [
-              2330,
               2754,
-              1089,
+              2330,
               2531,
               1146,
+              1089,
               98,
               341,
               315,
               333,
-              1952
+              74
           ]
       },
       {
@@ -807,16 +1368,16 @@
           "pValue": 0,
           "secondaryRules": [],
           "mostAffectedCsvRows": [
+              1569,
               464,
               734,
-              1569,
-              1811,
               377,
               2549,
-              971,
-              1032,
               2105,
-              1897
+              1897,
+              1623,
+              1676,
+              1811
           ]
       },
       {
@@ -829,16 +1390,16 @@
           "pValue": 7.674203970076121e-7,
           "secondaryRules": [],
           "mostAffectedCsvRows": [
+              1905,
               1779,
               1070,
-              1905,
-              262,
               2277,
-              508,
+              262,
               468,
-              1381,
-              1528,
-              598
+              1555,
+              505,
+              508,
+              1525
           ]
       },
       {
@@ -853,14 +1414,14 @@
           "mostAffectedCsvRows": [
               2309,
               784,
+              2602,
               1845,
               1868,
-              2602,
-              2654,
-              812,
-              84,
-              2091,
-              1939
+              2937,
+              2269,
+              1939,
+              1574,
+              1416
           ]
       }
   ],
@@ -3166,185 +3727,6 @@
           ]
       },
       "Lasso did not converge after 10000 iterations - maximum difference: 0.00014309126135358952",
-      {
-          "Removed Insignificant Rules": [
-              {
-                  "title": "If JobPosition is services then Salary is low",
-                  "leverage": 0.025185579874131503,
-                  "support": 0.18312688316036158,
-                  "coefficient": -0.02168986678300368,
-                  "pValue": 0.06488801894176444
-              },
-              {
-                  "title": "If Experience is medium AND If Gender is female then Salary is low",
-                  "leverage": 0.025349329294255693,
-                  "support": 0.13793103448275862,
-                  "coefficient": 0.0254053313321743,
-                  "pValue": 0.07933372816556639
-              },
-              {
-                  "title": "If GPA is high AND If Gender is female then Salary is low",
-                  "leverage": 0.01384584847025426,
-                  "support": 0.1335788416471376,
-                  "coefficient": 0.0053440141374072984,
-                  "pValue": 0.13796784438995435
-              },
-              {
-                  "title": "If Gender is female AND If JobPosition is sales then Salary is low",
-                  "leverage": 0.01698051224988005,
-                  "support": 0.10177435554067626,
-                  "coefficient": 0.0037285565442179425,
-                  "pValue": 0.6441762239078208
-              },
-              {
-                  "title": "If UniversityReputation is veryhigh AND If Gender is male then Salary is medium",
-                  "leverage": 0.022359809593384745,
-                  "support": 0.044861064613324404,
-                  "coefficient": -0.0012514265803359778,
-                  "pValue": 0.5834424391763735
-              },
-              {
-                  "title": "If GPA is medium then Salary is low",
-                  "leverage": 0.0019257649120970333,
-                  "support": 0.23669233344492802,
-                  "coefficient": -0.0025513410168068007,
-                  "pValue": 0.4241319062019766
-              },
-              {
-                  "title": "If Gender is male AND If JobPosition is services then Salary is low",
-                  "leverage": 0.017655684396921868,
-                  "support": 0.07833947104117844,
-                  "coefficient": -0.0060462838290767365,
-                  "pValue": 0.14167875680362174
-              },
-              {
-                  "title": "If Experience is low AND If Gender is female then Salary is low",
-                  "leverage": 0.01091147231127318,
-                  "support": 0.13391362571141613,
-                  "coefficient": 0.011992172730808742,
-                  "pValue": 0.07623683167764894
-              },
-              {
-                  "title": "If Experience is medium AND If GPA is medium then Salary is low",
-                  "leverage": 0.008686004490612104,
-                  "support": 0.13659189822564446,
-                  "coefficient": -0.0002912190231305618,
-                  "pValue": 0.5395431050408199
-              },
-              {
-                  "title": "If GPA is high then Salary is low",
-                  "leverage": -0.005561091703149723,
-                  "support": 0.2641446267157683,
-                  "coefficient": 0.0004569768930967417,
-                  "pValue": 0.7293894857008176
-              },
-              {
-                  "title": "If UniversityReputation is high AND If Gender is female then Salary is low",
-                  "leverage": 0.013515435540393826,
-                  "support": 0.06561767659859391,
-                  "coefficient": 0.007630688561669511,
-                  "pValue": 0.8409868087363395
-              },
-              {
-                  "title": "If GPA is high then Salary is medium",
-                  "leverage": 0.008418804889259557,
-                  "support": 0.1144961499832608,
-                  "coefficient": 0.0012101876071958853,
-                  "pValue": 0.9699183915028782
-              },
-              {
-                  "title": "If Experience is medium AND If GPA is high then Salary is medium",
-                  "leverage": 0.011761377754669303,
-                  "support": 0.06930030130565785,
-                  "coefficient": 0.0007720450824656806,
-                  "pValue": 0.06155781866755072
-              },
-              {
-                  "title": "If Experience is high then Salary is high",
-                  "leverage": 0.014349313490923561,
-                  "support": 0.024439236692333444,
-                  "coefficient": 0.006950757080780907,
-                  "pValue": 0.3060436313532289
-              },
-              {
-                  "title": "If Gender is male AND If JobPosition is HR then Salary is low",
-                  "leverage": 0.01016759489760842,
-                  "support": 0.062269835955808504,
-                  "coefficient": -0.0005181868521802697,
-                  "pValue": 0.10105861976481845
-              },
-              {
-                  "title": "If GPA is medium then Salary is verylow",
-                  "leverage": 0.010528493688025865,
-                  "support": 0.042852360227653166,
-                  "coefficient": -0.0007405297203156565,
-                  "pValue": 0.47649657702427817
-              },
-              {
-                  "title": "If UniversityReputation is high AND If Gender is male then Salary is medium",
-                  "leverage": 0.011271586539102766,
-                  "support": 0.03481754268496819,
-                  "coefficient": 0.005791889473710077,
-                  "pValue": 0.2096465235657008
-              },
-              {
-                  "title": "If Experience is medium AND If UniversityReputation is verylow then Salary is low",
-                  "leverage": 0.007038535136467378,
-                  "support": 0.06996986943421493,
-                  "coefficient": -0.0027506560874319503,
-                  "pValue": 0.2911671815055763
-              },
-              {
-                  "title": "If Gender is other then Salary is medium",
-                  "leverage": 0.009785400836948954,
-                  "support": 0.03180448610646133,
-                  "coefficient": -0.005187813056152847,
-                  "pValue": 0.3321836921928605
-              },
-              {
-                  "title": "If UniversityReputation is high AND If GPA is high then Salary is medium",
-                  "leverage": 0.006705320197364566,
-                  "support": 0.02912621359223301,
-                  "coefficient": 0.0008239106722893287,
-                  "pValue": 0.2884434472248847
-              },
-              {
-                  "title": "If GPA is medium AND If Gender is male then Salary is high",
-                  "leverage": 0.007091997472811824,
-                  "support": 0.018078339471041177,
-                  "coefficient": -0.004373180456873989,
-                  "pValue": 0.24468901197506288
-              },
-              {
-                  "title": "If UniversityReputation is verylow AND If Gender is male then Salary is verylow",
-                  "leverage": 0.006577772736651817,
-                  "support": 0.014060930699698694,
-                  "coefficient": -0.00040294581082970084,
-                  "pValue": 0.8156919541636856
-              },
-              {
-                  "title": "If Gender is other then Salary is high",
-                  "leverage": 0.006674946417177258,
-                  "support": 0.012387010378305993,
-                  "coefficient": -0.0009411419231017072,
-                  "pValue": 0.30163809156281873
-              },
-              {
-                  "title": "If Experience is medium AND If GPA is medium then Salary is medium",
-                  "leverage": 0.0009155845400372897,
-                  "support": 0.05122196183461667,
-                  "coefficient": -0.0005063958217944699,
-                  "pValue": 0.9370934462953486
-              },
-              {
-                  "title": "If GPA is high then Salary is high",
-                  "leverage": 0.0016082412247515158,
-                  "support": 0.02912621359223301,
-                  "coefficient": 0.0015304288691795572,
-                  "pValue": 0.7940106933662099
-              }
-          ]
-      },
       [
           {
               "Removed from pValue-computation due to low coefficient (<1e-5)": [
