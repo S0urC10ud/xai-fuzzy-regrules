@@ -47,7 +47,7 @@ def check_conflicts(rules):
     for conditions, conclusions in condition_to_conclusions.items():
         if len(conclusions) > 1:
             conflicting_rules.append( (conditions, condition_to_titles[conditions], conclusions) )
-    
+
     return conflicting_rules
 
 def find_interesting_rules(rules):
@@ -61,9 +61,11 @@ def find_interesting_rules(rules):
 
     interesting_rules = []
     for rule1, rule2 in combinations(parsed_rules, 2):
-        if rule1['conditions'].issubset(rule2['conditions']) and rule1['conclusion'] != rule2['conclusion']:
+        # Check if rule1 is a proper subset of rule2
+        if rule1['conditions'] < rule2['conditions'] and rule1['conclusion'] != rule2['conclusion']:
             interesting_rules.append( (rule1, rule2) )
-        if rule2['conditions'].issubset(rule1['conditions']) and rule2['conclusion'] != rule1['conclusion']:
+        # Check if rule2 is a proper subset of rule1
+        if rule2['conditions'] < rule1['conditions'] and rule2['conclusion'] != rule1['conclusion']:
             interesting_rules.append( (rule2, rule1) )
 
     # Remove duplicate pairs
@@ -74,11 +76,11 @@ def find_interesting_rules(rules):
         if titles not in seen:
             seen.add(titles)
             unique_interesting.append(pair)
-    
+
     return unique_interesting
 
 def format_conditions(conditions):
-    return ' AND '.join([f"If {var} is {val}" for var, val in sorted(conditions)])
+    return ' AND '.join([f"{var} is {val}" for var, val in sorted(conditions)])
 
 def main(ruleset):
     print("Checking for conflicting rules...\n")
@@ -90,10 +92,10 @@ def main(ruleset):
         for conditions, titles, conclusions in conflicts:
             cond_str = format_conditions(conditions)
             print(f"Conditions: {cond_str}")
-            for title, conclusion in zip(titles, conclusions):
+            for title in titles:
                 print(f" - Rule: '{title}'")
             print()
-    
+
     print("Finding interesting rules...\n")
     interesting = find_interesting_rules(ruleset)
     if not interesting:
@@ -103,10 +105,10 @@ def main(ruleset):
         for general_rule, specific_rule in interesting:
             gen_cond = format_conditions(general_rule['conditions'])
             spec_cond = format_conditions(specific_rule['conditions'])
-            print(f"General Rule: {gen_cond} THEN {TARGET_VAR} is {general_rule['conclusion']}")
-            print(f"Specific Rule: {spec_cond} THEN {TARGET_VAR} is {specific_rule['conclusion']}")
+            print(f"General Rule: If {gen_cond} THEN {TARGET_VAR} is {general_rule['conclusion']}")
+            print(f"Specific Rule: If {spec_cond} THEN {TARGET_VAR} is {specific_rule['conclusion']}")
             print()
-    
+
 if __name__ == "__main__":
     with open(input("Please enter the path to the response file: ")) as f: # e.g. example_unveiling_biases/boston/response.json
         data = json.load(f)

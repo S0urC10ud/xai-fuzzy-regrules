@@ -271,7 +271,7 @@ export function performRegression(
       const variance =
         column.reduce((sum, val) => sum + (val - mean) ** 2, 0) /
         (column.length - 1);
-      if (variance > varianceThreshold) {
+      if (variance > varianceThreshold || allRules[j].isIntercept) {
         selectedRuleIndices.push(j);
       } else {
         logWarning(
