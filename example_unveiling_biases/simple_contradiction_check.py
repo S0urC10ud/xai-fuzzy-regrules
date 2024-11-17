@@ -3,13 +3,16 @@ from collections import defaultdict
 from itertools import combinations
 import json
 
+TARGET_VAR = "target"
 
 def parse_rule_title(title):
-    match = re.match(r'If (.+) then MEDV is (\w+)', title, re.IGNORECASE)
+    global TARGET_VAR
+    match = re.match(r'If (.+) then (\w+) is (\w+)', title, re.IGNORECASE)
     if not match:
         return [], None
 
-    conditions_str, conclusion = match.groups()
+    conditions_str, target_var, conclusion = match.groups()
+    TARGET_VAR = target_var
 
     condition_parts = re.split(r'\s+AND\s+', conditions_str, flags=re.IGNORECASE)
     conditions = []
@@ -88,7 +91,7 @@ def main(ruleset):
             cond_str = format_conditions(conditions)
             print(f"Conditions: {cond_str}")
             for title, conclusion in zip(titles, conclusions):
-                print(f" - Rule: '{title}' leads to MEDV being '{conclusion}'")
+                print(f" - Rule: '{title}'")
             print()
     
     print("Finding interesting rules...\n")
@@ -100,18 +103,15 @@ def main(ruleset):
         for general_rule, specific_rule in interesting:
             gen_cond = format_conditions(general_rule['conditions'])
             spec_cond = format_conditions(specific_rule['conditions'])
-            print(f"General Rule: {gen_cond} THEN MEDV is {general_rule['conclusion']}")
-            # Determine the additional condition(s) in the specific rule
-            additional_conditions = specific_rule['conditions'] - general_rule['conditions']
-            add_cond_str = ' AND '.join([f"If {var} is {val}" for var, val in sorted(additional_conditions)])
-            print(f"Specific Rule: {spec_cond} THEN MEDV is {specific_rule['conclusion']}")
+            print(f"General Rule: {gen_cond} THEN {TARGET_VAR} is {general_rule['conclusion']}")
+            print(f"Specific Rule: {spec_cond} THEN {TARGET_VAR} is {specific_rule['conclusion']}")
             print()
     
 if __name__ == "__main__":
     with open(input("Please enter the path to the response file: ")) as f: # e.g. example_unveiling_biases/boston/response.json
         data = json.load(f)
 
-    min_coefficient = float(input("What should the minimum coefficient to consider be? (enter a float)"))
+    min_coefficient = float(input("What should the minimum coefficient to consider be? (e.g. 0.001) "))
     ruleset = [rule for rule in data["sorted_rules"] if rule["coefficient"] >= min_coefficient]
 
     main(ruleset)

@@ -5,7 +5,7 @@ worker.onerror = function (event) {
   window.specialEvent = event;
   setTimeout(() => {
     $("#loadingModal").modal("hide");
-  }, 200);
+  }, 1000);
 };
 
 worker.onmessageerror = function (event) {
@@ -13,7 +13,7 @@ worker.onmessageerror = function (event) {
   window.specialEvent = event;
   setTimeout(() => {
     $("#loadingModal").modal("hide");
-  }, 200);
+  }, 1000);
 };
 
 worker.onmessage = function (event) {
@@ -30,12 +30,12 @@ worker.onmessage = function (event) {
 
     setTimeout(() => {
       $("#loadingModal").modal("hide");
-    }, 200);
+    }, 1000);
   } else {
     alert("Error running analysis: " + error);
     setTimeout(() => {
       $("#loadingModal").modal("hide");
-    }, 200);
+    }, 1000);
   }
 };
 
@@ -103,7 +103,8 @@ function visualizeTable(rulesData) {
     },
     {
       data: null,
-      title: "Trend <span class='custom-tooltip'>?\
+      title:
+        "Trend <span class='custom-tooltip'>?\
         <span class='custom-tooltiptext'>Visualizes the consequent of the rule.</span>\
       </span>",
       width: "4rem",
@@ -192,11 +193,10 @@ function visualizeTable(rulesData) {
         <span class='custom-tooltiptext'>CSV rows (represents line number - starting with 1) where this rule holds with the highest leverage.</span>\
       </span>",
       render: function (data) {
-        if(data == undefined)
-          return "N/A";
+        if (data == undefined) return "N/A";
         return data.join(", ");
       },
-    }
+    },
   ];
 
   if (hasSecondaryRules) {
@@ -212,9 +212,7 @@ function visualizeTable(rulesData) {
     });
   }
 
-  if (!hasPValue)
-    columns = columns.filter((col) => col.data !="pValue");
-
+  if (!hasPValue) columns = columns.filter((col) => col.data != "pValue");
 
   let thead = "<thead><tr>";
   columns.forEach(function (column) {
@@ -448,7 +446,9 @@ document.addEventListener("DOMContentLoaded", function () {
       legend.textContent = value ? value : "New Column";
       if (window.uploadedFile && value) {
         try {
-          const data = await parseCSV(window.uploadedFile);
+          const decimalChar =
+            document.getElementById("decimal_point").value || ".";
+          const data = await parseCSV(window.uploadedFile, decimalChar);
           if (data && data[value]) {
             displayBoxPlot(data[value], fieldset, value);
           } else {
@@ -462,6 +462,7 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     });
   });
+
   container.addEventListener("change", function (e) {
     if (e.target.classList.contains("outlier-method")) {
       const method = e.target.value;
@@ -497,7 +498,15 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 });
-async function parseCSV(csvString) {
+
+async function parseCSV(csvString, decimalChar) {
+  if(decimalChar == ",")
+  {
+    const firstRow = csvString.split("\n")[0];
+    const rest = csvString.split("\n").slice(1).join("\n");
+    csvString = firstRow + "\n" + rest.replace(/,/g, ".");
+  }
+
   return new Promise((resolve, reject) => {
     Papa.parse(csvString, {
       header: true,
@@ -916,7 +925,6 @@ $(document).on("click", ".hover-item", function (event) {
         height = 200;
       }
 
-
       $this.append(
         `<div class="tooltip-chart" style="width:${width}px; height:${height}px; position:absolute; z-index:1000;">
           <canvas width="${width}" height="${height}"></canvas>
@@ -936,7 +944,6 @@ $(document).on("mouseleave", ".hover-item", function () {
 const uploadButton1 = document.getElementById("uploadButton1");
 const uploadButton2 = document.getElementById("uploadButton2");
 const fileInput1 = document.getElementById("fileInput1");
-const fileInput2 = document.getElementById("fileInput2");
 const runButton = document.getElementById("runButton");
 
 uploadButton1.addEventListener("click", () => {
@@ -1047,14 +1054,15 @@ function getOutlierFiltering() {
 
   return filters;
 }
+
 function handleFileUpload(fileInput, fileNumber) {
   const file = fileInput.files[0];
   if (file) {
     const reader = new FileReader();
     reader.onload = async function (e) {
       window.uploadedFile = e.target.result;
-      const data = await parseCSV(window.uploadedFile);
-      const filteredData = applyOutlierFiltering(data);
+      const decimalChar = document.getElementById("decimal_point").value || ".";
+      const filteredData = await parseCSV(window.uploadedFile, decimalChar);
       window.variableBounds = {};
       Object.keys(filteredData).forEach((variable) => {
         const values = filteredData[variable]
@@ -1272,9 +1280,28 @@ document.getElementById("runButton")?.addEventListener("click", async () => {
     },
     include_intercept: document.getElementById("include_intercept").checked,
     compute_pvalues: document.getElementById("compute_pvalues").checked,
-    re_fit_after_removing_insignificant_rules: document.getElementById("re_fit_after_removing_insignificant_rules").checked
+    re_fit_after_removing_insignificant_rules: document.getElementById(
+      "re_fit_after_removing_insignificant_rules"
+    ).checked,
   };
   console.log("Configuration object created:", config);
-
   worker.postMessage({ config, uploadedFile: window.uploadedFile });
 });
+
+document
+  .getElementById("decimal_point")
+  .addEventListener("change", async function () {
+    if (window.uploadedFile) {
+      const decimalChar = this.value || ".";
+      const filteredData = await parseCSV(window.uploadedFile, decimalChar);
+      window.variableBounds = {};
+      Object.keys(filteredData).forEach((variable) => {
+        const values = filteredData[variable]
+          .map((val) => parseFloat(val))
+          .filter((val) => !isNaN(val));
+        const min = Math.min(...values);
+        const max = Math.max(...values);
+        window.variableBounds[variable] = { min, max };
+      });
+    }
+  });
