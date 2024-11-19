@@ -373,7 +373,8 @@
                   <span class="custom-tooltip"
                     >?<span class="custom-tooltiptext"
                       >Remove rules where H0 (coefficient=0) is not rejected if
-                      regularization is 0. Requires compute_pvalues to be true!</span
+                      regularization is 0. Requires compute_pvalues to be
+                      true!</span
                     ></span
                   >
                 </label>
@@ -530,11 +531,11 @@
             <div class="row config-row" style="padding: 1rem">
               <div class="config-item">
                 <label for="lasso_regularization"
-                  >Regularization
+                  >Regularization (&lambda;)
                   <span class="custom-tooltip"
                     >?<span class="custom-tooltiptext"
-                      >Avoids singular matrix for inversion and fitting to many
-                      bad rules</span
+                      >Lambda for LASSO, Corresponds to the penalty on the
+                      coefficients and how much sparseness is enforced.</span
                     ></span
                   >
                 </label>
@@ -564,7 +565,7 @@
               </div>
             </div>
 
-            <div class="row config-row" style="padding: 1rem;">
+            <div class="row config-row" style="padding: 1rem">
               <div class="config-item">
                 <label for="lasso_convergence_tolerance"
                   >Lasso Convergence Tolerance
@@ -587,7 +588,10 @@
                   >Re-Fit after Statistical Removal
                   <span class="custom-tooltip left"
                     >?<span class="custom-tooltiptext left"
-                      >After removing statistically Insignificant rules, one can re-fit the LASSO coefficients on the reduced set of rules with this option. Only able to be active if remove_insignificant_rules is.</span
+                      >After removing statistically Insignificant rules, one can
+                      re-fit the LASSO coefficients on the reduced set of rules
+                      with this option. Only able to be active if
+                      remove_insignificant_rules is.</span
                     ></span
                   >
                 </label>
