@@ -12,20 +12,20 @@
     },
     "split_char": ";",
     "lasso": {
-        "regularization": 100,
-        "max_lasso_iterations": 500,
-        "lasso_convergance_tolerance": 0.01
+        "regularization": 50,
+        "max_lasso_iterations": 5000,
+        "lasso_convergance_tolerance": 0.0001
     },
     "rule_filters": {
         "l1_column_threshold": 0.1,
         "l1_row_threshold": 0.1,
         "dependency_threshold": 0,
         "significance_level": 0.05,
-        "remove_insignificant_rules": true,
+        "remove_insignificant_rules": false,
         "only_whitelist": false,
         "rule_priority_filtering": {
            "enabled": true,
-           "min_priority": 0.04
+           "min_priority": 0.01
         }
     },
     "numerical_fuzzification": ["veryhigh", "high",  "medium",  "low", "verylow"],
