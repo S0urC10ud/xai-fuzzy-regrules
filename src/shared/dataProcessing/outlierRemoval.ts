@@ -26,14 +26,13 @@ export function removeOutliers(
 
     const removedCounts: { [key: string]: number } = {};
     let nullValueRemovedCount = 0;
-    const offset = metadata.include_intercept ? 10 : 0;
 
     records = records.filter(record => {
         return numericalKeys.every(key => {
             const filterConfig = metadata.outlier_filtering![key];
             let value = Number(record[key]);
             if(key === metadata.target_var) {
-                value = (value-offset)*target_std + target_mean;
+                value = (value)*target_std + target_mean;
             }
 
             if (isNaN(value)) {
@@ -53,7 +52,7 @@ export function removeOutliers(
 
                 let values = records.map(r => r[key]) as number[];
                 if(key === metadata.target_var) {
-                    values = values.map(v => (v-10)*target_std + target_mean);
+                    values = values.map(v => (v)*target_std + target_mean);
                 }
                 const q1 = quantile(values, 0.25);
                 const q3 = quantile(values, 0.75);

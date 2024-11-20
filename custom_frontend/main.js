@@ -153,7 +153,7 @@ function visualizeTable(rulesData) {
         <span class='custom-tooltiptext'>Statistical significance of the rule.</span>\
       </span>",
       render: function (data) {
-        return isNaN(data) ? "N/A" : parseFloat(data).toFixed(6);
+        return (isNaN(data) || data == null)  ? "N/A" : parseFloat(data).toFixed(6);
       },
     },
     {
