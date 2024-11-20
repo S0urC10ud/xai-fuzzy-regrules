@@ -108,7 +108,7 @@ Example request metadata:
   "decimal_point": ".", // decimal point for numbers in the CSV-file (usually ./,)
   "target_var": "Salary", // target column from csv file to explain
   "lasso": {
-    "regularization": 1, // to avoid a singular matrix for inversion - should not be necessary when correctly removing linear dependencies
+    "regularization": 1, //  the lambda parameter for lasso regularization, it is highly recommended to set this to a non-zero value, especially when there are more rules than samples (small datasets)
     "max_lasso_iterations": 10000, // default is 10000 - lasso is applied iteratively until convergence or until this max-iterations-counter is hit
     "lasso_convergance_tolerance": 1e-4 // default is 1e-4, this is the threshold for the absolute value of difference between beta[i-1] and beta[i] until we say it converged
   },
