@@ -8,7 +8,7 @@ import { performInference } from './utils/fuzzy_inference';
 import { executeRulePipeline } from './pipeline/rulePipeline';
 
 function fix_scaling(x: number[], target_mean: number, target_std: number): number[] {
-    return x.map(v => ((v - 10) * target_std) + target_mean);
+    return x.map(v => ((v) * target_std) + target_mean);
 }
 
 export function main(metadata: Metadata, data: string): EvaluationMetrics {
