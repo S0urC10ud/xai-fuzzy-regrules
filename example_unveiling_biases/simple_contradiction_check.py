@@ -113,7 +113,8 @@ if __name__ == "__main__":
     with open(input("Please enter the path to the response file: ")) as f: # e.g. example_unveiling_biases/boston/response.json
         data = json.load(f)
 
-    min_coefficient = float(input("What should the minimum coefficient to consider be? (e.g. 0.001) "))
+    min_coefficient_input = input("What should the minimum coefficient to consider be? (e.g. 0.001, default: 0) ")
+    min_coefficient = float(min_coefficient_input) if min_coefficient_input else 0.0
     ruleset = [rule for rule in data["sorted_rules"] if rule["coefficient"] >= min_coefficient]
 
     main(ruleset)
