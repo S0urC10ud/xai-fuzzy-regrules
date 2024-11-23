@@ -7,26 +7,26 @@
     "split_char": ";",
     "decimal_point": ",",
     "lasso": {
-        "regularization": 10,
+        "regularization": 0.1,
         "max_lasso_iterations": 10000,
-        "lasso_convergance_tolerance": 0.01
+        "lasso_convergance_tolerance": 0.001
     },
     "rule_filters": {
         "l1_column_threshold": 0.1,
         "l1_row_threshold": 0.1,
         "dependency_threshold": 0,
         "significance_level": 0.05,
-        "remove_insignificant_rules": true,
+        "remove_insignificant_rules": false,
         "only_whitelist": false,
         "rule_priority_filtering": {
            "enabled": true,
            "min_priority": 0.01
         }
     },
-    "numerical_fuzzification": ["veryhigh", "medium",  "verylow"],
+    "numerical_fuzzification": ["veryhigh", "high", "medium",  "low", "verylow"],
     "numerical_defuzzification": ["veryhigh", "high",  "medium", "low", "verylow"],
     "variance_threshold": 1e-5,
-    "num_vars": 2,
+    "num_vars": 1,
     "whitelist": [],
     "blacklist": [],
     "remove_low_variance": false,
