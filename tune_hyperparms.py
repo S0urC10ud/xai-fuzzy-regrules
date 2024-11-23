@@ -54,7 +54,6 @@ config = {
     }
 }
 
-# Define the sweep configuration
 sweep_config = {
     "method": "bayes",  # "random" or "bayes" as needed
     "metric": {
@@ -74,13 +73,14 @@ sweep_config = {
     }
 }
 
-sweep_id = wandb.sweep(sweep_config, project="FuzzyXAI-biasedSalariesFinal")
-important_rules = ["If Gender is female then Salary is verylow", "If Gender is female then Salary is low", "If HiringManager is B AND If Gender is other then Salary is high", "If Gender is male then Salary is high"]
+sweep_id = wandb.sweep(sweep_config, project="FuzzyXAIbiasedSalariesFinal")
+important_rules = ["If Gender is female then Salary is verylow", "If Gender is female then Salary is low", "If HiringManager is B AND If Gender is other then Salary is high", "If Gender is other then Salary is medium", "If Gender is other then Salary is low"]
 short_rules = {
     important_rules[0]: "femaleLow",
     important_rules[1]: "femaleVeryLow",
     important_rules[2]: "HmBotherHigh",
-    important_rules[3]: "maleHigh"
+    important_rules[3]: "otherMedium",
+    important_rules[4]: "otherLow"
 }
 
 def is_port_in_use(port):
@@ -98,12 +98,10 @@ def train():
     env["PORT"] = str(DEST_PORT)
     server_process = subprocess.Popen(['C:\\Program Files\\nodejs\\npm.cmd', 'run', 'start'], env=env, cwd=script_dir)
     sleep(30)
-    # Define a function to terminate the server
     def stop_server():
         server_process.kill()
         server_process.wait()
 
-    # Start a timer to stop the server after 3600 seconds
     timer = threading.Timer(3600, stop_server)
     timer.start()
 
@@ -117,7 +115,7 @@ def train():
         with open("assets/biased_salaries.csv", "rb") as csv_file:
             files = {
                 "metadata": (None, json.dumps(config), "application/json"),
-                "csvFile": ("your_file.csv", csv_file, "text/csv")
+                "csvFile": ("assets/biased_salaries.csv", csv_file, "text/csv")
             }
             response = requests.post(f"http://localhost:{DEST_PORT}/api/upload", files=files, timeout=3600).json()
             
@@ -139,10 +137,10 @@ def train():
                 else:
                     important_rule_pValues.append(1)
             
-            # get the lowest 3 important rule pValues
-            lowest_3 = sorted(important_rule_pValues)[0:3]
+            # get the lowest 4 important rule pValues
+            lowest_4 = sorted(important_rule_pValues)[0:4]
             wandb.log({
-                "average_important_rule_pValues": sum(lowest_3)/len(lowest_3)
+                "average_important_rule_pValues": sum(lowest_4)/len(lowest_4)
             })
 
             with open('response.json', 'w') as f:
@@ -153,10 +151,8 @@ def train():
     except Exception as e:
         print(e)
     finally:
-        # Cancel the timer and terminate the server
         timer.cancel()
         stop_server()
 
 if __name__ == "__main__":
-    # read optional dest port from command line    
-    wandb.agent(sweep_id, train, project = "FuzzyXAI-biasedSalariesFinal")
+    wandb.agent(sweep_id, train, project = "FuzzyXAIbiasedSalariesFinal")
