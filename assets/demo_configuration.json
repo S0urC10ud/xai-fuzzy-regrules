@@ -12,9 +12,9 @@
     },
     "split_char": ";",
     "lasso": {
-        "regularization": 50,
+        "regularization": 0.1,
         "max_lasso_iterations": 5000,
-        "lasso_convergance_tolerance": 0.0001
+        "lasso_convergance_tolerance": 0.0000001
     },
     "rule_filters": {
         "l1_column_threshold": 0.1,
