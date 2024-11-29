@@ -48,16 +48,25 @@ export function executeDataPipeline(
 
     records = removeOutliers(records, numericalKeys, target_mean, target_std, warnings, metadata);
 
-    const { filteredKeys, updatedRecords } = filterLowVarianceColumns(
-        records,
-        numericalKeys,
-        metadata.variance_threshold,
-        metadata.target_var,
-        warnings,
-        metadata
-    );
-    records = updatedRecords;
-    numericalKeys = filteredKeys;
-
-    return { records, numericalKeys, categoricalKeys, target_mean, target_std };
+    try {
+        const { filteredKeys, updatedRecords } = filterLowVarianceColumns(
+            records,
+            numericalKeys,
+            metadata.variance_threshold,
+            metadata.target_var,
+            warnings,
+            metadata
+        );
+        records = updatedRecords;
+        numericalKeys = filteredKeys;
+    
+        return { records, numericalKeys, categoricalKeys, target_mean, target_std };
+    } catch (e) {
+        //if error contains "Cannot calculate the mean of an empty array"
+        if((e as Error).message.includes("mean of an empty array")) {
+            throw new Error("Could not compute mean of empty array (no data left) - maybe your split character or decimal character is incorrect? Maybe you filtered out all data with outlier filtering?");
+        } else {
+            throw e;
+        }
+    }
 }

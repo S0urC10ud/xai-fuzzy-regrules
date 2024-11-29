@@ -117,4 +117,9 @@ if __name__ == "__main__":
     min_coefficient = float(min_coefficient_input) if min_coefficient_input else 0.0
     ruleset = [rule for rule in data["sorted_rules"] if rule["coefficient"] >= min_coefficient]
 
+    max_pvalue_input = input("What should the maximum pValue to consider be? (e.g. 0.05, default: 1) ")
+    max_pvalue = float(max_pvalue_input) if max_pvalue_input else 1
+
+    if max_pvalue < 1:
+        ruleset = [rule for rule in data["sorted_rules"] if rule["pValue"] != None and rule["pValue"] <= max_pvalue]
     main(ruleset)
