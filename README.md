@@ -11,11 +11,12 @@ This project offers a regression-based approach over fully explainable fuzzy rul
 
 More details (especially technical documentation) will follow in the next months.
 
-## Watch the video
-
 Click the following image to play the tutorial:
-
-[![Explainable AI with Fuzzy Logic](https://img.youtube.com/vi/UVXG7UbLvCk/0.jpg)](https://www.youtube.com/watch?v=UVXG7UbLvCk)
+<p align="center">
+  <a href="https://www.youtube.com/watch?v=UVXG7UbLvCk">
+    <img src="https://i.imgur.com/konw1he.png" alt="Explainable AI with Fuzzy Logic" width="500">
+  </a>
+</p>
 
 # Web-App 
 
