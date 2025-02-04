@@ -11,6 +11,10 @@ This project offers a regression-based approach over fully explainable fuzzy rul
 
 More details (especially technical documentation) will follow in the next months.
 
+The following tutorial demonstrates all functionalities:
+
+[![Explainable AI with Fuzzy Logic](https://img.youtube.com/vi/UVXG7UbLvCk/0.jpg)](https://www.youtube.com/watch?v=UVXG7UbLvCk)
+
 # Web-App 
 
 The web-app runs in your browser🎉. https://xai.martin-dallinger.me
