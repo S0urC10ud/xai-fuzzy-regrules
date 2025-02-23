@@ -1,3 +1,7 @@
+import { Rule, Metadata, FuzzySet } from '../types/index';
+import { getCombinations, cartesianProduct } from '../utils/combinations';
+
+
 export function generateAllPossibleRules(
     numericalKeys: string[],
     categoricalKeys: string[],
@@ -11,14 +15,19 @@ export function generateAllPossibleRules(
 ): Rule[] {
     let allRules: Rule[] = [];
     const uniqueCategorical = Array.from(new Set(categoricalKeys));
-    const allVariables = [...numericalKeys, ...uniqueCategorical].filter(key => key !== targetVar);
+    
+    // Allow numerical variables to appear up to numVars times.
+    const allVariables: string[] = [
+        ...numericalKeys.flatMap(key => Array(numVars).fill(key)),
+        ...uniqueCategorical
+    ].filter(key => key !== targetVar);
 
     const allowedClasses = ["verylow", "low", "mediumlow", "medium", "mediumhigh", "high", "veryhigh"];
 
-    // Helper-Function: checks if antecedents are valid:
-    // For categorical variables, ensure they’re not assigned two different fuzzy sets.
-    // For numerical variables, ensure that if the same variable appears more than once,
-    // its fuzzy sets (based on the provided ordering in variableFuzzySets) are neighbors.
+    // Helper: checks if antecedents are valid.
+    // - For categorical variables, they must not be assigned twice (or if they are, assignments must be identical).
+    // - For numerical variables, if assigned more than once, the fuzzy sets (using the order provided in variableFuzzySets)
+    //   must be neighbors.
     const isValidAntecedents = (antecedents: { variable: string; fuzzySet: string }[]): boolean => {
         const groups = new Map<string, string[]>();
         antecedents.forEach(({ variable, fuzzySet }) => {
@@ -31,17 +40,19 @@ export function generateAllPossibleRules(
         for (const [variable, fuzzySets] of groups.entries()) {
             if (fuzzySets.length > 1) {
                 if (categoricalKeys.includes(variable)) {
-                    // Categorical: all fuzzy sets must be identical
+                    // Categorical: do not allow different assignments.
                     if (new Set(fuzzySets).size > 1) return false;
                 } else if (numericalKeys.includes(variable)) {
-                    // Numerical: fuzzy sets must be neighbors in the given ordering.
-                    const ordering = variableFuzzySets[variable]
+                    // Numerical: use the ordering given in variableFuzzySets.
+                    // (Filtering by allowedClasses if necessary, but without reordering.)
+                    const ordering = variableFuzzySets[variable].filter(cls => allowedClasses.includes(cls))
                         .filter(cls => allowedClasses.includes(cls))
                         .sort((a, b) => allowedClasses.indexOf(a) - allowedClasses.indexOf(b));
+                    
                     if (!ordering) continue;
                     const indices = fuzzySets.map(fs => ordering.indexOf(fs)).sort((a, b) => a - b);
                     for (let i = 1; i < indices.length; i++) {
-                        if (Math.abs(indices[i] - indices[i - 1]) !== 1) return false;
+                        if (indices[i] - indices[i - 1] !== 1) return false;
                     }
                 }
             }
