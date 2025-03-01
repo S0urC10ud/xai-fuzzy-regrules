@@ -24,7 +24,7 @@ config = {
     "lasso": {
         "regularization": 1,
         "max_lasso_iterations": 1000,
-        "lasso_convergance_tolerance": 1e-3
+        "lasso_convergence_tolerance": 1e-3
     },
     "rule_filters": {
         "l1_column_threshold": 0.1,
@@ -35,7 +35,7 @@ config = {
         "only_whitelist": False,
         "rule_priority_filtering": {
             "enabled": True,
-            "min_priority": 0.04
+            "min_priority": 0.01
         }
     },
     "numerical_fuzzification": ["veryhigh", "high", "medium", "low", "verylow"],
@@ -62,22 +62,22 @@ sweep_config = {
     },
     "parameters": {
         "lasso.regularization": {
-            "values": [0.0001, 0.001, 0.01, 0.1, 0.5, 1, 5, 10, 50, 100, 500, 1000]
+            "values": [5, 10, 15, 20, 25, 35, 42, 50, 65, 75, 80, 90, 100, 110, 125, 130, 150]
         },
         "lasso.max_lasso_iterations": {
             "values": [50, 500, 1000, 2500, 5000, 10000, 100000]
         },
-        "lasso.lasso_convergance_tolerance": {
+        "lasso.lasso_convergence_tolerance": {
             "values": [1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7]
         }
     }
 }
 
-sweep_id = wandb.sweep(sweep_config, project="FuzzyXAIbiasedSalariesFinal")
+#sweep_id = wandb.sweep(sweep_config, project="FuzzyXAIbiasedSalariesUpdated")
 important_rules = ["If Gender is female then Salary is verylow", "If Gender is female then Salary is low", "If HiringManager is B AND If Gender is other then Salary is high", "If Gender is other then Salary is medium", "If Gender is other then Salary is low"]
 short_rules = {
-    important_rules[0]: "femaleLow",
-    important_rules[1]: "femaleVeryLow",
+    important_rules[0]: "femaleVeryLow",
+    important_rules[1]: "femaleLow",
     important_rules[2]: "HmBotherHigh",
     important_rules[3]: "otherMedium",
     important_rules[4]: "otherLow"
@@ -110,7 +110,7 @@ def train():
         
         config["lasso"]["regularization"] = run.config["lasso.regularization"]
         config["lasso"]["max_lasso_iterations"] = run.config["lasso.max_lasso_iterations"]
-        config["lasso"]["lasso_convergance_tolerance"] = run.config["lasso.lasso_convergance_tolerance"]
+        config["lasso"]["lasso_convergence_tolerance"] = run.config["lasso.lasso_convergence_tolerance"]
 
         with open("assets/biased_salaries.csv", "rb") as csv_file:
             files = {
@@ -155,4 +155,4 @@ def train():
         stop_server()
 
 if __name__ == "__main__":
-    wandb.agent(sweep_id, train, project = "FuzzyXAIbiasedSalariesFinal")
+    wandb.agent("jyuhe62c", train, project = "FuzzyXAIbiasedSalariesUpdated")

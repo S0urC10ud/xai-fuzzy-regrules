@@ -14,7 +14,8 @@ export interface Metadata {
     lasso: {
         regularization: number;
         max_lasso_iterations?: number;
-        lasso_convergance_tolerance?: number;
+        lasso_convergence_tolerance?: number;
+        only_allow_pos_coeff?: boolean;
     }
     rule_filters: {
         l1_column_threshold: number;
