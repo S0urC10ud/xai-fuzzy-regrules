@@ -62,7 +62,7 @@ sweep_config = {
     },
     "parameters": {
         "lasso.regularization": {
-            "values": [5, 10, 15, 20, 25, 35, 42, 50, 65, 75, 80, 90, 100, 110, 125, 130, 150]
+            "values": [5, 10, 15, 20, 25, 35, 42, 50, 65, 75, 80, 90, 100, 110, 125, 130, 135, 145, 150]
         },
         "lasso.max_lasso_iterations": {
             "values": [50, 500, 1000, 2500, 5000, 10000, 100000]
@@ -72,8 +72,8 @@ sweep_config = {
         }
     }
 }
-
-#sweep_id = wandb.sweep(sweep_config, project="FuzzyXAIbiasedSalariesUpdated")
+project_id="FuzzyXAIbiasedSalariesUpdated2"
+sweep_id = wandb.sweep(sweep_config, project=project_id)
 important_rules = ["If Gender is female then Salary is verylow", "If Gender is female then Salary is low", "If HiringManager is B AND If Gender is other then Salary is high", "If Gender is other then Salary is medium", "If Gender is other then Salary is low"]
 short_rules = {
     important_rules[0]: "femaleVeryLow",
@@ -155,4 +155,4 @@ def train():
         stop_server()
 
 if __name__ == "__main__":
-    wandb.agent("jyuhe62c", train, project = "FuzzyXAIbiasedSalariesUpdated")
+    wandb.agent(sweep_id, train, project = project_id)
