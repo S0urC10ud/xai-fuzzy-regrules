@@ -122,7 +122,8 @@ Example request metadata:
   "lasso": {
     "regularization": 1, //  the lambda parameter for lasso regularization, it is highly recommended to set this to a non-zero value, especially when there are more rules than samples (small datasets)
     "max_lasso_iterations": 10000, // default is 10000 - lasso is applied iteratively until convergence or until this max-iterations-counter is hit
-    "lasso_convergance_tolerance": 1e-4 // default is 1e-4, this is the threshold for the absolute value of difference between beta[i-1] and beta[i] until we say it converged
+    "lasso_convergence_tolerance": 1e-4, // default is 1e-4, this is the threshold for the absolute value of difference between beta[i-1] and beta[i] until we say it converged
+    "only_allow_pos_coeff": false // default is false, Restricts the soft-thresholding to output non-negative numbers as a hard threshold for the Lasso optimization
   },
   "rule_filters": {
     "l1_row_threshold": 0.1, // row/(2*threshold) will be serialized to a string and checked for duplicates

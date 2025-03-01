@@ -76,14 +76,16 @@ function scalarMultiply(v: number[], scalar: number): number[] {
   return v.map((val) => val * scalar);
 }
 
+function nonNegativeSoftThresholding(value: number, lambda: number): number {
+  return value > lambda ? value - lambda : 0;
+}
+
 function softThresholding(value: number, lambda: number): number {
-  if (value > lambda) {
+  if (value > lambda) 
     return value - lambda;
-  } else if (value < -lambda) {
+  if (value < -lambda)
     return value + lambda;
-  } else {
-    return 0;
-  }
+  return 0;
 }
 
 /**
@@ -97,7 +99,8 @@ function lassoCoordinateDescent(
   tol = 1e-4,
   maxIter = 10000,
   warnings: any[] = [],
-  center: boolean = true
+  center: boolean = true,
+  softThresholdingImpl: Function
 ): { beta: number[]; intercept: number } {
   const p = X[0].length;
 
@@ -131,8 +134,7 @@ function lassoCoordinateDescent(
         beta[j] = 0;
         continue;
       }
-
-      beta[j] = softThresholding(residual, lambda) / z;
+      beta[j] = softThresholdingImpl(residual, lambda) / z;      
     }
 
     // Check convergence
@@ -346,8 +348,10 @@ export function performRegression(
 
   const maxLassoIterations = metadata.lasso.max_lasso_iterations ?? 10000;
   const lassoConvergenceTolerance =
-    metadata.lasso.lasso_convergance_tolerance ?? 1e-4;
+    metadata.lasso.lasso_convergence_tolerance ?? 1e-4;
 
+  
+  let softThresholdingImpl = metadata.lasso.only_allow_pos_coeff ? nonNegativeSoftThresholding : softThresholding; 
   // Perform Lasso regression using coordinate descent
   const lassoResult = lassoCoordinateDescent(
     X,
@@ -356,7 +360,8 @@ export function performRegression(
     lassoConvergenceTolerance,
     maxLassoIterations,
     warnings,
-    interceptIncluded
+    interceptIncluded,
+    softThresholdingImpl
   );
 
   const coefficients = lassoResult.beta;
@@ -458,7 +463,7 @@ export function performRegression(
       const lambdaNodewise =
         1.1 * Math.sqrt(Math.log(X[0].length) / yVector.length); // ratio of p and n
       // Compute Theta using nodewise Lasso (with centered X)
-      const Theta = computeDebiasingMatrix(centeredX, lambdaNodewise, warnings, interceptIncluded);
+      const Theta = computeDebiasingMatrix(centeredX, lambdaNodewise, warnings, interceptIncluded, softThresholdingImpl);
 
       // Compute debiased estimator: betaLasso + Theta * (X^T residuals) / n
       const debiasedBeta = computeDebiasedEstimator(
@@ -588,7 +593,8 @@ export function performRegression(
           lassoConvergenceTolerance,
           maxLassoIterations,
           warnings,
-          interceptIncludedRefit
+          interceptIncludedRefit,
+          softThresholdingImpl
         );
       
         const coefficientsRefit = lassoResultRefit.beta;
@@ -658,7 +664,8 @@ function computeDebiasingMatrix(
   X: number[][],
   lambdaNodewise: number,
   warnings: any[],
-  interceptIncluded: boolean
+  interceptIncluded: boolean,
+  softThresholdingImpl: Function
 ): Matrix {
   const n = X.length;
   const p = X[0].length;
@@ -687,7 +694,8 @@ function computeDebiasingMatrix(
       1e-4,
       10000,
       warnings,
-      interceptIncluded
+      interceptIncluded,
+      softThresholdingImpl
     );
     const gamma = result.beta;
 

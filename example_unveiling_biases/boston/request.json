@@ -9,7 +9,7 @@
     "lasso": {
         "regularization": 0.1,
         "max_lasso_iterations": 10000,
-        "lasso_convergance_tolerance": 0.001
+        "lasso_convergence_tolerance": 0.001
     },
     "rule_filters": {
         "l1_column_threshold": 0.1,

@@ -585,7 +585,7 @@
               </div>
               <div class="config-item checkbox-item">
                 <label for="re_fit_after_removing_insignificant_rules"
-                  >Re-Fit after Statistical Removal
+                  >Re-Fit After Statistical Removal
                   <span class="custom-tooltip left"
                     >?<span class="custom-tooltiptext left"
                       >After removing statistically Insignificant rules, one can
@@ -601,6 +601,21 @@
                   name="re_fit_after_removing_insignificant_rules"
                 />
               </div>
+            </div>
+            <div class="config-item checkbox-item">
+              <label for="only_allow_pos_coeff"
+                >Only Allow Positive Coefficients
+                <span class="custom-tooltip left"
+                  >?<span class="custom-tooltiptext left"
+                    >Restricts the soft-thresholding to output non-negative numbers as a hard threshold for the Lasso optimization</span
+                  ></span
+                >
+              </label>
+              <input
+                type="checkbox"
+                id="only_allow_pos_coeff"
+                name="only_allow_pos_coeff"
+              />
             </div>
           </fieldset>
 

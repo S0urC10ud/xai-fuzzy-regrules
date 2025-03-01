@@ -624,6 +624,8 @@ $("#downloadModal").on("hidden.bs.modal", async function () {
     config.compute_pvalues ?? false;
   document.getElementById("re_fit_after_removing_insignificant_rules").checked =
     config.re_fit_after_removing_insignificant_rules ?? false;
+  document.getElementById("only_allow_pos_coeff").checked =
+    config.only_allow_pos_coeff ?? false;
   document.getElementById("numerical_fuzzification").value =
     config.numerical_fuzzification.length ?? 5;
   document.getElementById("numerical_defuzzification").value =
@@ -1282,6 +1284,9 @@ document.getElementById("runButton")?.addEventListener("click", async () => {
     compute_pvalues: document.getElementById("compute_pvalues").checked,
     re_fit_after_removing_insignificant_rules: document.getElementById(
       "re_fit_after_removing_insignificant_rules"
+    ).checked,
+    only_allow_pos_coeff: document.getElementById(
+      "only_allow_pos_coeff"
     ).checked,
   };
   console.log("Configuration object created:", config);
