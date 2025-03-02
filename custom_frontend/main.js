@@ -1229,6 +1229,9 @@ document.getElementById("runButton")?.addEventListener("click", async () => {
       lasso_convergence_tolerance: parseFloat(
         document.getElementById("lasso_convergence_tolerance").value
       ),
+      only_allow_pos_coeff: document.getElementById(
+        "only_allow_pos_coeff"
+      ).checked
     },
     rule_filters: {
       l1_row_threshold: parseFloat(
@@ -1284,9 +1287,6 @@ document.getElementById("runButton")?.addEventListener("click", async () => {
     compute_pvalues: document.getElementById("compute_pvalues").checked,
     re_fit_after_removing_insignificant_rules: document.getElementById(
       "re_fit_after_removing_insignificant_rules"
-    ).checked,
-    only_allow_pos_coeff: document.getElementById(
-      "only_allow_pos_coeff"
     ).checked,
   };
   console.log("Configuration object created:", config);
