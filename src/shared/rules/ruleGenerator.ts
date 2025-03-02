@@ -14,6 +14,9 @@ export function generateAllPossibleRules(
     metadata: Metadata
 ): Rule[] {
     let allRules: Rule[] = [];
+    // Set to keep track of generated rule signatures.
+    const ruleSignatures = new Set<string>();
+    
     const uniqueCategorical = Array.from(new Set(categoricalKeys));
     
     // Allow numerical variables to appear up to numVars times.
@@ -25,9 +28,6 @@ export function generateAllPossibleRules(
     const allowedClasses = ["verylow", "low", "mediumlow", "medium", "mediumhigh", "high", "veryhigh"];
 
     // Helper: checks if antecedents are valid.
-    // - For categorical variables, they must not be assigned twice (or if they are, assignments must be identical).
-    // - For numerical variables, if assigned more than once, the fuzzy sets (using the order provided in variableFuzzySets)
-    //   must be neighbors.
     const isValidAntecedents = (antecedents: { variable: string; fuzzySet: string }[]): boolean => {
         const groups = new Map<string, string[]>();
         antecedents.forEach(({ variable, fuzzySet }) => {
@@ -44,12 +44,10 @@ export function generateAllPossibleRules(
                     if (new Set(fuzzySets).size > 1) return false;
                 } else if (numericalKeys.includes(variable)) {
                     // Numerical: use the ordering given in variableFuzzySets.
-                    // (Filtering by allowedClasses if necessary, but without reordering.)
-                    const ordering = variableFuzzySets[variable].filter(cls => allowedClasses.includes(cls))
+                    const ordering = variableFuzzySets[variable]
                         .filter(cls => allowedClasses.includes(cls))
                         .sort((a, b) => allowedClasses.indexOf(a) - allowedClasses.indexOf(b));
                     
-                    if (!ordering) continue;
                     const indices = fuzzySets.map(fs => ordering.indexOf(fs)).sort((a, b) => a - b);
                     for (let i = 1; i < indices.length; i++) {
                         if (indices[i] - indices[i - 1] !== 1) return false;
@@ -81,8 +79,19 @@ export function generateAllPossibleRules(
                     );
 
                     if (antecedentsNonEmpty && outputFuzzySetNonEmpty[outputSet]) {
-                        const rule: Rule = new Rule(antecedents, outputSet, false);
-                        allRules.push(rule);
+                        // Create a unique signature for the rule.
+                        // Sorting the antecedents ensures that the order does not affect uniqueness.
+                        const sortedAntecedents = [...antecedents].sort((a, b) => a.variable.localeCompare(b.variable));
+                        const signature = sortedAntecedents
+                            .map(ant => `${ant.variable}:${ant.fuzzySet}`)
+                            .join('|') + '->' + outputSet;
+                        
+                        // Only add if the rule hasn't been created yet.
+                        if (!ruleSignatures.has(signature)) {
+                            const rule: Rule = new Rule(antecedents, outputSet, false);
+                            allRules.push(rule);
+                            ruleSignatures.add(signature);
+                        }
                     }
                 });
             });
