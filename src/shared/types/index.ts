@@ -1,5 +1,6 @@
 export interface Metadata {
     target_var: string;
+    use_reduced_rulesets: boolean;
     outlier_filtering?: {
         [key: string]: {
             method: "IQR" | "VariableBounds";
