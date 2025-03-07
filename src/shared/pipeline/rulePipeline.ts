@@ -2,6 +2,7 @@ import { Rule, Metadata, Record } from '../types/index';
 import { generateAllPossibleRules } from '../rules/ruleGenerator';
 import { applyWhitelistBlacklist } from '../rules/ruleManager';
 import { computeMembershipDegrees } from '../utils/fuzzy';
+import {generateRulesWithConstrainedOA} from '../rules/oaRuleGenerator';
 
 export function executeRulePipeline(
     numericalKeys: string[],
@@ -15,17 +16,32 @@ export function executeRulePipeline(
     records: Record[],
     warnings: any[]
 ) {
-    let allRules: Rule[] = generateAllPossibleRules(
-        numericalKeys,
-        categoricalKeys,
-        targetVar,
-        metadata.num_vars,
-        variableFuzzySets,
-        inputFuzzySetNonEmpty,
-        outputFuzzySetNonEmpty,
-        warnings,
-        metadata
-    );
+    let allRules: Rule[];
+    if (metadata.use_reduced_rulesets){
+        allRules = generateRulesWithConstrainedOA(
+            numericalKeys,
+            categoricalKeys,
+            targetVar,
+            metadata.num_vars,
+            variableFuzzySets,
+            inputFuzzySetNonEmpty,
+            outputFuzzySetNonEmpty,
+            warnings,
+            metadata
+        );
+    } else {
+        allRules = generateAllPossibleRules(
+            numericalKeys,
+            categoricalKeys,
+            targetVar,
+            metadata.num_vars,
+            variableFuzzySets,
+            inputFuzzySetNonEmpty,
+            outputFuzzySetNonEmpty,
+            warnings,
+            metadata
+        );
+    }
 
     const support_weight = metadata.rule_priority_weights?.support_weight ?? 2;
     const leverage_weight = metadata.rule_priority_weights?.leverage_weight ?? 10;
