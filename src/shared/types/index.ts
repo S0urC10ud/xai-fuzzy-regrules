@@ -24,6 +24,7 @@ export interface Metadata {
         significance_level: number;
         remove_insignificant_rules: boolean;
         only_whitelist?: boolean;
+        coefficient_existence_threshold?: number;
         rule_priority_filtering?: {
             enabled: boolean;
             min_priority: number;

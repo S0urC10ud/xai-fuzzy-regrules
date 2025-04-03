@@ -655,6 +655,10 @@ $("#downloadModal").on("hidden.bs.modal", async function () {
   document.getElementById("min_priority").value =
     config.rule_filters.rule_priority_filtering.min_priority ?? 10;
 
+  // Coefficient Filtering
+  document.getElementById("coefficient_existence_threshold").value = 
+    Math.log10(config.rule_filters.coefficient_existence_threshold) ?? -8;
+
   // Rule Priority Weights
   document.getElementById("support_weight").value =
     config.rule_priority_weights.support_weight ?? 1;
@@ -1254,6 +1258,7 @@ document.getElementById("runButton")?.addEventListener("click", async () => {
         enabled: document.getElementById("rule_priority_enabled").checked,
         min_priority: parseFloat(document.getElementById("min_priority").value),
       },
+      coefficient_existence_threshold: 10 ** Number(document.getElementById("coefficient_existence_threshold").value)
     },
     numerical_fuzzification: getNumericalFuzzification(),
     numerical_defuzzification: getNumericalDefuzzification(),
