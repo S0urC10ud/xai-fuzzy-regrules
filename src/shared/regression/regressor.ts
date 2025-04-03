@@ -380,7 +380,7 @@ export function performRegression(
   }
 
   // Define the threshold for coefficient significance
-  const coefficientExistenceThreshold = 1e-8;
+  const coefficient_existence_threshold = metadata.rule_filters.coefficient_existence_threshold ?? 1e-8;
 
   // Identify significant coefficients
   const significantIndices: number[] = [];
@@ -389,7 +389,7 @@ export function performRegression(
 
   // Filter coefficients and update significantIndices and filteredCoeffs
   coefficients.forEach((coef, idx) => {
-    if (Math.abs(coef) >= coefficientExistenceThreshold) {
+    if (Math.abs(coef) >= coefficient_existence_threshold) {
       significantIndices.push(predictorsIndices[idx]); // Map back to original indices
       filteredCoeffs.push(coef);
     } else {
@@ -400,7 +400,7 @@ export function performRegression(
   });
 
   warnCollector.push({
-    [`Removed from pValue-computation due to low coefficient (< ${coefficientExistenceThreshold})`]: tooLowCoefficients,
+    [`Removed from pValue-computation due to low coefficient (< ${coefficient_existence_threshold})`]: tooLowCoefficients,
   });
 
   // Update activeIndices and coefficients
@@ -416,7 +416,7 @@ export function performRegression(
 
   if (activeIndices.length === 0) {
     logWarning(
-      `All coefficients are smaller than ${coefficientExistenceThreshold}!`,
+      `All coefficients are smaller than ${coefficient_existence_threshold}!`,
       warnings
     );
     return;
@@ -635,9 +635,9 @@ export function performRegression(
     // Assign coefficients without computing p-values
     activeIndices.forEach((ruleIdx, idx) => {
       const rule = allRules[ruleIdx];
-      if (Math.abs(filteredCoeffs[idx]) < coefficientExistenceThreshold) {
+      if (Math.abs(filteredCoeffs[idx]) < coefficient_existence_threshold) {
         throw new Error(
-          `Regression solve failed: Coefficient ${filteredCoeffs[idx]} is below the significance threshold ${coefficientExistenceThreshold}.`
+          `Regression solve failed: Coefficient ${filteredCoeffs[idx]} is below the significance threshold ${coefficient_existence_threshold}.`
         );
       }
 

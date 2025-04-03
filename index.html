@@ -401,7 +401,29 @@
                 />
               </div>
             </div>
-
+            <fieldset class="nested-fieldset">
+              <legend>Remove Rules with Low Coefficients</legend>
+                <div class="checkbox-item config-item col-12">
+                  <label for="coefficient_existence_threshold"
+                    >Minimum coefficient magnitude
+                    <span class="custom-tooltip"
+                      >?<span class="custom-tooltiptext"
+                        >Minimum magnitude of the Lasso coefficient to survive this filtering as a power of 10</span
+                      ></span
+                    >
+                  </label>
+                  <div>
+                    10^
+                  <input
+                  style="display: inline-block; width: 3rem !important;"
+                    type="number"
+                    id="coefficient_existence_threshold"
+                    name="coefficient_existence_threshold"
+                    value="-8"
+                  />
+                  </div>
+                </div>
+            </fieldset>
             <fieldset class="nested-fieldset">
               <legend>Rule Priority Filtering</legend>
               <div class="row">
