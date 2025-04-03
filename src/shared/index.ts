@@ -176,6 +176,16 @@ export function main(metadata: Metadata, data: string): EvaluationMetrics {
         mostAffectedCsvRows: rule.mostContributions.map(row => row + 2) // as we start counting at 0 and the first row is the header
     }));
 
+    if(metadata.compute_pvalues) {
+        const approx_sigma = Math.sqrt(y.reduce((acc, val, idx) => acc + Math.pow(val - y_pred[idx], 2), 0) / (y.length - filteredSortedRules.length));
+        const max_diag_entry = Math.max(...regressionX.map((row, i) => row[i]).filter(i=>i != undefined));
+        const lambdaMin = 2 * approx_sigma * max_diag_entry * Math.sqrt(2 * Math.log(outputRules.length) / y.length); //5.18 in Bachelor's Thesis
+
+        if (lambdaMin < metadata.lasso.regularization)
+            warnings.push(`[Info] Minimal regularization (lambda) for good statistical test would be ${lambdaMin} which is smaller than the chosen lambda ${metadata.lasso.regularization} (this is good!)`);
+        else
+            warnings.push(`[Warning] Minimal regularization (lambda) for a good statistical test with this dataset and filters is ${lambdaMin}, but ${metadata.lasso.regularization} was chosen - you should ideally choose a bigger regularization parameter!`);
+    }
     const return_dict = {
         ...metrics,
         num_active_rules: filteredSortedRules.length,
