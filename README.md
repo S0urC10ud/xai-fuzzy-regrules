@@ -7,14 +7,13 @@ Author: Martin Dallinger (martin.dallinger@outlook.com)\
 Supervisor: Univ.-Prof. Priv.-Doz. DDI Dr. Stefan Rass\
 Linz Institute of Technology Secure and Correct Systems Lab
 
-**TL;DR**: This project is about extracting a dataset's underlying rules in natural language to find potential biases from the actors generating the data:
+Publication: https://www.sciencedirect.com/science/article/pii/S0957417425037716
 
+**TL;DR**: This project is about extracting a dataset's underlying rules in natural language to find potential biases from the actors generating the data:
 <p align="center">
 <img src="assets/bias_discovery.png" alt="Project Overview " width="500">
 </p>
-This project offers a regression-based approach over fully explainable fuzzy rules (Mamdani FIS) to discover biases in arbitrary datasets.
-
-More details (especially technical documentation) will follow in the next months.
+We offer a regression-based approach over fully explainable fuzzy rules (Mamdani FIS) to discover biases in arbitrary datasets.
 
 Click the following image to play the tutorial:
 <p align="center">
